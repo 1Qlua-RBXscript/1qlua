@@ -593,8 +593,22 @@ function ScriptManager:InitGUI()
 end
 
 -- Добавление скриптов (примеры)
-ScriptManager:AddScript("Порно игра", "https://pastebin.com/raw/aXuM2Fps")
+ScriptManager:AddScript("porno game", "https://pastebin.com/raw/aXuM2Fps")
 ScriptManager:AddScript("DJ MENOR DA DZ7 - Simplesmente o Melhor", "https://pastebin.com/raw/y20MFubc")
+ScriptManager:AddScript("itgmq Hardstyle - All The Things She Said", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/itgmq%20Hardstyle%20-%20All%20The%20Things%20She%20Said")
+ScriptManager:AddScript("шизоняшка - рвётся бошка", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/WIZO_HAWKA")
+ScriptManager:AddScript("ПОЛМАТЕРИ - докс", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/DOKS_POLMERIZ")
+ScriptManager:AddScript("Lida - Аниме музончик", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/LIDA-ANIMEMUZON")
+ScriptManager:AddScript("5mewmet - это называется любовь -3", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/5MEWMETLOVENAME")
+ScriptManager:AddScript("ZXCUR$EDD - Демон в голове 2", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/ZXCUR%24EDDDemonvgolove2")
+ScriptManager:AddScript("说辞․ - 老天保佑金山银山", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/kitaibabai")
+ScriptManager:AddScript("Серега Пират - Почему ты еще не фанат？", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/CEREGAPIRATPOWEMITIEIENEFANAT")
+ScriptManager:AddScript("ФРЭНК - Саня и Лёха", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/FRANKECAWALEXA")
+ScriptManager:AddScript("VHM4D - MONTAGEM NECK HURT MANGO FUNK", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/MANGONEG")
+
+
+
+
 
 -- Загрузка избранного
 ScriptManager:LoadFavorites()
