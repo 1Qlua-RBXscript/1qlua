@@ -1,8 +1,3 @@
---[[
-  1Qlua Script Hub
-  Версия: 1.0
-  Автор: Ваше имя
-]]
 
 -- ======== НАСТРОЙКИ ======== --
 local SETTINGS = {
@@ -462,7 +457,7 @@ local Script = PlayerTab:DrawSection({
 Script:AddButton({
     Name = "телепорд к игрокам",
     Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/9bNj1EcR'))()
+        loadstring(game:HttpGet('https://pastebin.com/raw/z4HARAHs'))()
     end
 })
 
