@@ -1,4 +1,4 @@
--- Script Manager by DeepSeek - Premium Edition with Draggable GUI
+
 local ScriptManager = {
     Scripts = {},
     Favorites = {},
@@ -605,6 +605,14 @@ ScriptManager:AddScript("说辞․ - 老天保佑金山银山", "https://raw.git
 ScriptManager:AddScript("Серега Пират - Почему ты еще не фанат？", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/CEREGAPIRATPOWEMITIEIENEFANAT")
 ScriptManager:AddScript("ФРЭНК - Саня и Лёха", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/FRANKECAWALEXA")
 ScriptManager:AddScript("VHM4D - MONTAGEM NECK HURT MANGO FUNK", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/MANGONEG")
+ScriptManager:AddScript("PHARAOH - Caramel", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/PHARAONCaramel")
+ScriptManager:AddScript("Toxi$ - ВЗЛОМ prod. by SLAVA MARLOW", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/TOXIKBZLOM")
+ScriptManager:AddScript("nxvctresx - X1v1v1d3", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/X1v1v1d3")
+ScriptManager:AddScript("enveel - Призрак Speed Up", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/eveelprizrak")
+ScriptManager:AddScript("Асфальт", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/discortkorolwit/ASVALT")
+ScriptManager:AddScript("Король и Шут - Дурак и молния", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/discortkorolwit/KOROLWITGurakUMolnii")
+ScriptManager:AddScript("Король и Шут - Мёртвый анархист", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/discortkorolwit/KOROLWITMertvianarxict")
+ScriptManager:AddScript("Король и Шут - Кукла колдуна", "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/discortkorolwit/korolwitKYKLA")
 
 
 
