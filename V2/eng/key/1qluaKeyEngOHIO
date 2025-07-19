@@ -1,0 +1,735 @@
+-- ======== SETTINGS ======== --
+local SETTINGS = {
+    WALK_SPEED = {
+        DEFAULT = 16,
+        MIN = 0,
+        MAX = 150
+    },
+    JUMP_POWER = {
+        DEFAULT = 50,
+        MIN = 0,
+        MAX = 500
+    },
+    FOV = {
+        DEFAULT = 70,
+        MIN = 0,
+        MAX = 120
+    },
+    TIME = {
+        DEFAULT = 12,
+        MIN = 0,
+        MAX = 24
+    }
+}
+
+-- ======== LIBRARY INITIALIZATION ======== --
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))()
+local Notifier = Compkiller.newNotify()
+local ConfigManager = Compkiller:ConfigManager({
+    Directory = "1Qlua-Config",
+    Config = "Main-Config"
+})
+
+-- Load interface
+Compkiller:Loader("rbxassetid://80494437171393", 2.5).yield()
+
+-- ======== CREATE WINDOW ======== --
+local Window = Compkiller.new({
+    Name = "1Qlua ",
+    Keybind = "LeftAlt",
+    Logo = "rbxassetid://80494437171393",
+    Scale = Compkiller.Scale.Window,
+    TextSize = 15,
+})
+
+-- Startup notification
+Notifier.new({
+    Title = "1Qlua",
+    Content = "Universal Script Hub successfully loaded!",
+    Duration = 5,
+    Icon = "rbxassetid://80494437171393"
+})
+
+-- ======== WATERMARK ======== --
+local Watermark = Window:Watermark()
+
+Watermark:AddText({
+    Icon = "user",
+    Text = "1Qlua",
+})
+
+local Time = Watermark:AddText({
+    Icon = "server",
+    Text = "V2",
+})
+
+Watermark:AddText({
+    Icon = "clock",
+    Text = Compkiller:GetDate(),
+})
+
+
+-- ======== FUNCTIONAL FUNCTIONS ======== --
+local Functions = {}
+
+-- Character speed control
+Functions.WalkSpeed = function(value)
+    local player = game.Players.LocalPlayer
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    
+    if humanoid then
+        humanoid.WalkSpeed = value
+    end
+    
+    -- Connect automatic update on character change
+    player.CharacterAdded:Connect(function(character)
+        local hum = character:WaitForChild("Humanoid")
+        hum.WalkSpeed = value
+    end)
+end
+
+-- Jump power control
+Functions.JumpPower = function(value)
+    local player = game.Players.LocalPlayer
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    
+    if humanoid then
+        humanoid.JumpPower = value
+    end
+    
+    player.CharacterAdded:Connect(function(character)
+        local hum = character:WaitForChild("Humanoid")
+        hum.JumpPower = value
+    end)
+end
+
+-- Field of view control
+Functions.FOV = function(value)
+    workspace.CurrentCamera.FieldOfView = value
+    workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+        if workspace.CurrentCamera then
+            workspace.CurrentCamera.FieldOfView = value
+        end
+    end)
+end
+
+-- Time of day control
+Functions.TimeOfDay = function(hours)
+    local Lighting = game:GetService("Lighting")
+    hours = math.clamp(hours, 0, 24)
+    local robloxTime = hours % 12
+    if robloxTime == 0 then robloxTime = 12 end
+    Lighting.ClockTime = robloxTime
+    if hours >= 6 and hours < 18 then
+        Lighting:SetMinutesAfterMidnight(hours * 60)
+    end
+end
+
+-- Load scripts
+Functions.LoadScript = function(url)
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(url))()
+    end)
+    
+    if not success then
+        Notifier.new({
+            Title = "Error",
+            Content = "Failed to load script: " .. err,
+            Duration = 5,
+            Icon = "rbxassetid://7734068321"
+        })
+    end
+end
+
+-- ======== CREATE TABS ======== --
+Window:DrawCategory({
+	Name = "Scripts"
+});
+
+-- Player Tab
+local PlayerTab = Window:DrawTab({
+    Name = "Player",
+    Icon = "user",
+    EnableScrolling = true
+})
+
+-- Useful scripts section (FULLY RESTORED)
+local scriptOc = PlayerTab:DrawSection({
+    Name = "Useful scripts",
+    Position = "right"
+})
+
+scriptOc:AddParagraph({
+	Title = "Infinite Yield",
+	Content = "Very useful script \nAdmin command-like"
+})
+
+scriptOc:AddButton({
+    Name = "Infinite Yield",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua"))()
+    end
+})
+
+scriptOc:AddParagraph({
+	Title = "Sigma Spy",
+	Content = "Event interception\nCan farm money with this script"
+})
+
+scriptOc:AddButton({
+    Name = "Sigma Spy",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/depthso/Sigma-Spy/refs/heads/main/Main.lua"))()
+    end
+})
+
+scriptOc:AddParagraph({
+	Title = "Dex Explorer",
+	Content = "View everything in the game"
+})
+
+scriptOc:AddButton({
+    Name = "Dex Explorer",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MariyaFurmanova/Library/main/dex2.0", true))()
+    end
+})
+
+scriptOc:AddParagraph({
+	Title = "Yandex Music (beta)",
+	Content = "Listen to music in-game\nWant to add your own music?\nContact us on Discord"
+})
+
+scriptOc:AddButton({
+    Name = "Yandex Music (beta)",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/YandexMusic'))()
+    end
+})
+
+-- Scripts section (FULLY RESTORED)
+local scriptSection = PlayerTab:DrawSection({
+    Name = "Game Scripts",
+    Position = "right"
+})
+
+scriptSection:AddParagraph({
+	Title = "Checkpoints",
+	Content = "Teleports to saved positions"
+})
+
+scriptSection:AddButton({
+    Name = "Checkpoints",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/rz7uUmED'))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Wallhack (ESP)",
+	Content = "See players through walls"
+})
+
+scriptSection:AddButton({
+    Name = "Wallhack (ESP)",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/r97SAaUa'))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Teleport to Players",
+	Content = "Teleport to any player"
+})
+
+scriptSection:AddButton({
+    Name = "Teleport to Players",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/z4HARAHs'))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Penis Play",
+	Content = "Fun script visible to all players"
+})
+
+scriptSection:AddButton({
+    Name = "Penis Play",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/73RsNXY2"))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Model Editor Tool",
+	Content = "Edit, delete, duplicate objects\nBypasses anti-cheat systems"
+})
+
+scriptSection:AddButton({
+    Name = "Model Editor Tool",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/FBKJTUyw"))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Coordinate Teleport",
+	Content = "Teleport using coordinates"
+})
+
+scriptSection:AddButton({
+    Name = "Coordinate Teleport",
+    Callback = function()
+        loadstring(game:HttpGetAsync("https://pastebin.com/raw/9ybHwgLa"))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Private World TP",
+	Content = "Create and teleport to private worlds"
+})
+
+scriptSection:AddButton({
+    Name = "Private World TP",
+    Callback = function()
+        loadstring(game:HttpGetAsync("https://pastebin.com/raw/SRZJGHyq"))()
+    end
+})
+
+scriptSection:AddParagraph({
+	Title = "Fly Script",
+	Content = "Fly by pressing a button"
+})
+
+scriptSection:AddButton({
+    Name = "Fly Script",
+    Callback = function()
+        loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()
+    end
+})
+
+-- Main settings section
+local PlayerMainSection = PlayerTab:DrawSection({
+    Name = "Main Settings",
+    Position = "left"
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Movement Speed",
+    Min = SETTINGS.WALK_SPEED.MIN,
+    Max = SETTINGS.WALK_SPEED.MAX,
+    Default = SETTINGS.WALK_SPEED.DEFAULT,
+    Flag = "WalkSpeed",
+    Callback = Functions.WalkSpeed
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Jump Height",
+    Min = SETTINGS.JUMP_POWER.MIN,
+    Max = SETTINGS.JUMP_POWER.MAX,
+    Default = SETTINGS.JUMP_POWER.DEFAULT,
+    Flag = "JumpPower",
+    Callback = Functions.JumpPower
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Field of View (FOV)",
+    Min = SETTINGS.FOV.MIN,
+    Max = SETTINGS.FOV.MAX,
+    Default = SETTINGS.FOV.DEFAULT,
+    Flag = "FOV",
+    Callback = Functions.FOV
+})
+
+-- Button-bound scripts section (FULLY RESTORED)
+local ButtonScriptsSection = PlayerTab:DrawSection({
+    Name = "Button-bound Scripts",
+    Position = "left"
+})
+
+ButtonScriptsSection:AddParagraph({
+	Title = "CTRL+Click Teleport",
+	Content = "Teleport to where you're looking"
+})
+
+ButtonScriptsSection:AddButton({
+    Name = "CTRL+Click Teleport",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/icB69Hhf'))()
+    end
+})
+
+ButtonScriptsSection:AddParagraph({
+	Title = "Invisibility (Press E)",
+	Content = "Become invisible to everyone"
+})
+
+ButtonScriptsSection:AddButton({
+    Name = "Invisibility (Press E)",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/VtWhnEnm"))()
+    end
+})
+
+ButtonScriptsSection:AddParagraph({
+	Title = "Car Flight (Press V)",
+	Content = "Fly with your vehicle"
+})
+
+ButtonScriptsSection:AddButton({
+    Name = "Car Flight (Press V)",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/9bNj1EcR'))()
+    end
+})
+
+ButtonScriptsSection:AddParagraph({
+	Title = "Fall in Place (Press R)",
+	Content = "Fall down on the spot"
+})
+
+ButtonScriptsSection:AddButton({
+    Name = "Fall in Place (Press R)",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/CTUaCKN1'))()
+    end
+})
+
+-- Button-bound scripts section (FULLY RESTORED)
+local ButtonScriptsSection = PlayerTab:DrawSection({
+    Name = "Button-bound Scripts",
+    Position = "left"
+})
+
+ButtonScriptsSection:AddParagraph({
+	Title = "Free Camera",
+	Content = "Fly with camera (Press Shift+P)"
+})
+
+ButtonScriptsSection:AddButton({
+    Name = "Free Camera (Shift+P)",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/ct8Kq5F0'))()
+    end
+})
+
+-- Graphics Tab
+local GraphicsTab = Window:DrawTab({
+    Name = "Graphics",
+    Icon = "image",
+    EnableScrolling = true
+})
+
+-- Graphics settings section
+local GraphicsTimeSection = GraphicsTab:DrawSection({
+    Name = "Graphics Settings",
+    Position = "left"
+})
+
+GraphicsTimeSection:AddSlider({
+    Name = "Time of Day",
+    Min = SETTINGS.TIME.MIN,
+    Max = SETTINGS.TIME.MAX,
+    Default = SETTINGS.TIME.DEFAULT,
+    Flag = "TimeOfDay",
+    Callback = Functions.TimeOfDay
+})
+
+-- Shaders section
+local GraphicsShadersSection = GraphicsTab:DrawSection({
+    Name = "Shaders",
+    Position = "left"
+})
+
+GraphicsShadersSection:AddButton({
+    Name = "Enable Shaders",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/mXAwCUEk")
+    end
+})
+
+GraphicsShadersSection:AddButton({
+    Name = "Alternative Shaders",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/1XA5qM3D")
+    end
+})
+
+Window:DrawCategory({
+	Name = "Ohio"
+});
+
+-- Useful Scripts Tab
+local OhioTab = Window:DrawTab({
+    Name = "Useful Scripts",
+    Icon = "flag",
+    EnableScrolling = true
+})
+
+local OhioSection = OhioTab:DrawSection({
+    Name = "Ohio Scripts",
+    Position = "left"
+})
+
+OhioSection:AddParagraph({
+	Title = "Teleport to Players",
+	Content = "Choose any player to teleport to"
+})
+
+OhioSection:AddButton({
+    Name = "Teleport to Players",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/z4HARAHs'))()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "Flight (Press V)",
+	Content = "Fly quickly through the map"
+})
+
+OhioSection:AddButton({
+    Name = "Flight (Press V)",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/9bNj1EcR'))()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "Invisibility (Press T)",
+	Content = "Become invisible\nCan kill everyone with automatic weapons"
+})
+
+OhioSection:AddButton({
+    Name = "Invisibility (Press T)",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/Dqji3mkq"))()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "TP by CTRL+Click",
+	Content = "Teleport to where you're looking"
+})
+
+OhioSection:AddButton({
+    Name = "TP by CTRL+Click",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/icB69Hhf'))()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "Collect Useful Items",
+	Content = "Teleport to useful items"
+})
+
+OhioSection:AddButton({
+    Name = "Collect Useful Items",
+    Callback = function()
+        loadstring(game:HttpGet"https://pastebin.com/raw/ftE4WZvV")()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "Ammo for Weapons",
+	Content = "Teleport to ammunition"
+})
+
+OhioSection:AddButton({
+    Name = "Ammo for Weapons",
+    Callback = function()
+        loadstring(game:HttpGet"https://pastebin.com/raw/6Frtt9qE")()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "TP to Locations",
+	Content = "Choose useful locations"
+})
+
+OhioSection:AddButton({
+    Name = "TP to Locations",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/nrJ7cVcJ'))()
+    end
+})
+
+OhioSection:AddParagraph({
+	Title = "Auto Farm Crates",
+	Content = "Farm crates\nExchange for rolls\nSell for 15k each"
+})
+
+OhioSection:AddButton({
+    Name = "Auto Farm Crates",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/HNwdknXk'))()
+    end
+})
+
+local TeleportSection = OhioTab:DrawSection({
+    Name = "Teleports",
+    Position = "right"
+})
+
+TeleportSection:AddParagraph({
+	Title = "TP to Locations",
+	Content = "Choose useful locations"
+})
+
+TeleportSection:AddButton({
+    Name = "TP to Locations",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/nrJ7cVcJ'))()
+    end
+})
+
+TeleportSection:AddParagraph({
+	Title = "Collect Useful Items",
+	Content = "Teleport to useful items"
+})
+
+TeleportSection:AddButton({
+    Name = "Collect Useful Items",
+    Callback = function()
+        loadstring(game:HttpGet"https://pastebin.com/raw/ftE4WZvV")()
+    end
+})
+
+TeleportSection:AddParagraph({
+	Title = "Ammo for Weapons",
+	Content = "Teleport to ammunition"
+})
+
+TeleportSection:AddButton({
+    Name = "Ammo for Weapons",
+    Callback = function()
+        loadstring(game:HttpGet"https://pastebin.com/raw/6Frtt9qE")()
+    end
+})
+
+TeleportSection:AddParagraph({
+	Title = "Teleport to Players",
+	Content = "Choose any player to teleport to"
+})
+
+TeleportSection:AddButton({
+    Name = "Teleport to Players",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/9bNj1EcR'))()
+    end
+})
+
+-- Auto Farm Tab
+local AutoFarmTab = Window:DrawTab({
+    Name = "Auto Farm",
+    Icon = "loader",
+    EnableScrolling = true
+})
+
+local AutoFarmSection = AutoFarmTab:DrawSection({
+    Name = "Auto Farms",
+    Position = "left"
+})
+
+AutoFarmSection:AddParagraph({
+	Title = "Auto Farm Crates",
+	Content = "Farm crates\nExchange for rolls\nSell for 15k each"
+})
+
+AutoFarmSection:AddButton({
+    Name = "Auto Farm Crates",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/HNwdknXk'))()
+    end
+})
+
+AutoFarmSection:AddParagraph({
+	Title = "Auto Farm ATMs",
+	Content = "Farm money\nNote: Script may be unstable"
+})
+
+AutoFarmSection:AddButton({
+    Name = "Auto Farm ATMs",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/HNwdknXk'))()
+    end
+})
+
+Window:DrawCategory({
+	Name = "Settings"
+});
+
+-- ======== INTERFACE SETTINGS ======== --
+local SettingsTab = Window:DrawTab({
+    Name = "Settings",
+    Icon = "settings",
+    Type = "Single"
+})
+
+local UISettings = SettingsTab:DrawSection({
+    Name = "Interface Settings",
+    Position = "left"
+})
+
+UISettings:AddToggle({
+    Name = "Always Show Frame",
+    Default = false,
+    Flag = "AlwaysShowFrame",
+    Callback = function(v)
+        Window.AlwayShowTab = v
+    end
+})
+
+UISettings:AddColorPicker({
+    Name = "Main Color",
+    Default = Compkiller.Colors.Highlight,
+    Flag = "MainColor",
+    Callback = function(v)
+        Compkiller.Colors.Highlight = v
+        Compkiller:RefreshCurrentColor()
+    end
+})
+
+UISettings:AddButton({
+    Name = "Save Settings",
+    Callback = function()
+        ConfigManager:Save()
+        Notifier.new({
+            Title = "Success",
+            Content = "Settings saved successfully!",
+            Duration = 3,
+            Icon = "rbxassetid://7734068321"
+        })
+    end
+})
+
+UISettings:AddButton({
+    Name = "Load Settings",
+    Callback = function()
+        ConfigManager:Load()
+        Notifier.new({
+            Title = "Success",
+            Content = "Settings loaded successfully!",
+            Duration = 3,
+            Icon = "rbxassetid://7734068321"
+        })
+    end
+})
+
+-- ======== CONFIGURATION ======== --
+local ConfigUI = Window:DrawConfig({
+    Name = "Configuration",
+    Icon = "folder",
+    Config = ConfigManager
+})
+
+ConfigUI:Init()
+
+-- ======== AUTOMATIC SETTINGS LOAD ======== --
+task.spawn(function()
+    -- Give time for interface to load
+    wait(1)
+    ConfigManager:Load()
+end)
