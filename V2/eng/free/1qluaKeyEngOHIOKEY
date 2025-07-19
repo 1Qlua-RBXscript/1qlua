@@ -440,6 +440,12 @@ Duration = 5,
     end
 })
 
+-- Basic Settings section
+local GraphicsTimeSection = PlayerTab:DrawSection({
+    Name = "scripts with a button ticket",
+    Position = "left"
+})
+
     GraphicsTimeSection:AddParagraph({
 		Title = "Fall on the spot (Press R)",
 Content = "You can fall on the spot"
