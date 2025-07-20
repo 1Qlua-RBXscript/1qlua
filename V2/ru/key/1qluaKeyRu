@@ -22,6 +22,36 @@ local SETTINGS = {
     }
 }
 
+
+-- Variables
+local viewing = nil
+local viewDied = nil
+local viewChanged = nil
+local Players = game:GetService("Players")
+local speaker = Players.LocalPlayer
+
+-- Helper functions
+local function StopFreecam()
+    -- Add your freecam stopping logic here if needed
+end
+
+local function getPlayer(name, speaker)
+    local found = {}
+    local nameLower = name:lower()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= speaker then
+            if player.Name:lower():find(nameLower) or player.DisplayName:lower():find(nameLower) then
+                table.insert(found, player)
+            end
+        end
+    end
+    return found
+end
+
+local function getRoot(character)
+    return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+end
+
 -- Инициализация сервисов
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
@@ -1114,6 +1144,195 @@ TextSettings:AddDropdown({
         end
     end
 })
+
+-- Create Camera Tab
+local CameraTab = Window:DrawTab({
+    Name = "Camera",
+    Icon = "camera",
+    EnableScrolling = true
+})
+
+-- Spectate Section
+local SpectateSection = CameraTab:DrawSection({
+    Name = "Spectate",
+    Position = 'left'
+})
+
+-- Player List Dropdown
+local playerDropdown = SpectateSection:AddDropdown({
+    Name = "Player List",
+    Default = "Select Player",
+    Values = {"Select Player"},
+    Callback = function(selectedPlayer)
+        if selectedPlayer ~= "Select Player" then
+            StopFreecam()
+            local player = Players:FindFirstChild(selectedPlayer)
+            if player then
+                if viewDied then
+                    viewDied:Disconnect()
+                    viewChanged:Disconnect()
+                end
+                viewing = player
+                workspace.CurrentCamera.CameraSubject = player.Character
+                notify('Spectate', 'Viewing ' .. player.Name)
+                
+                local function viewDiedFunc()
+                    repeat wait() until player.Character ~= nil and getRoot(player.Character)
+                    workspace.CurrentCamera.CameraSubject = player.Character
+                end
+                viewDied = player.CharacterAdded:Connect(viewDiedFunc)
+                
+                local function viewChangedFunc()
+                    workspace.CurrentCamera.CameraSubject = player.Character
+                end
+                viewChanged = workspace.CurrentCamera:GetPropertyChangedSignal("CameraSubject"):Connect(viewChangedFunc)
+            end
+        end
+    end
+})
+
+-- Update player list function
+local function updatePlayerList()
+    local playerNames = {"Select Player"}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= speaker then
+            table.insert(playerNames, player.Name)
+        end
+    end
+    playerDropdown:SetValues(playerNames)
+end
+
+-- Initial update and connect to player added/removed
+updatePlayerList()
+Players.PlayerAdded:Connect(updatePlayerList)
+Players.PlayerRemoving:Connect(updatePlayerList)
+
+-- Unspectate
+SpectateSection:AddButton({
+    Name = "Unspectate",
+    Callback = function()
+        StopFreecam()
+        if viewing ~= nil then
+            viewing = nil
+            notify('Spectate', 'View turned off')
+        end
+        if viewDied then
+            viewDied:Disconnect()
+            viewChanged:Disconnect()
+        end
+        workspace.CurrentCamera.CameraSubject = speaker.Character
+        playerDropdown:SetValue("Select Player")
+    end
+})
+
+-- View Part Section
+local ViewPartSection = CameraTab:DrawSection({
+    Name = "View Parts",
+    Position = 'right'
+})
+
+-- View Part by Name
+ViewPartSection:AddTextBox({
+    Name = "View Part",
+    Placeholder = "Part Name",
+    Callback = function(name)
+        StopFreecam()
+        if name then
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v.Name:lower() == name:lower() and v:IsA("BasePart") then
+                    wait(0.1)
+                    workspace.CurrentCamera.CameraSubject = v
+                    notify('View Part', 'Viewing ' .. v.Name)
+                    break
+                end
+            end
+        end
+    end
+})
+
+-- Return Camera to Player
+ViewPartSection:AddButton({
+    Name = "Return to Player",
+    Callback = function()
+        StopFreecam()
+        if viewing ~= nil then
+            viewing = nil
+        end
+        if viewDied then
+            viewDied:Disconnect()
+            viewChanged:Disconnect()
+        end
+        workspace.CurrentCamera.CameraSubject = speaker.Character
+        playerDropdown:SetValue("Select Player")
+        notify('Camera', 'Returned to player view')
+    end
+})
+
+-- Camera Settings Section
+local CameraSettingsSection = CameraTab:DrawSection({
+    Name = "Camera Settings",
+    Position = 'left'
+})
+
+-- FOV Slider
+CameraSettingsSection:AddSlider({
+    Name = "Field of View",
+    Min = 1,
+    Max = 120,
+    Default = 70,
+    Round = 0,
+    Callback = function(value)
+        workspace.CurrentCamera.FieldOfView = value
+    end
+})
+
+-- Max Zoom Distance
+CameraSettingsSection:AddSlider({
+    Name = "Max Zoom Distance",
+    Min = 1,
+    Max = 1000,
+    Default = 400,
+    Round = 0,
+    Callback = function(value)
+        speaker.CameraMaxZoomDistance = value
+    end
+})
+
+-- Fix Camera
+CameraSettingsSection:AddButton({
+    Name = "Fix Camera",
+    Callback = function()
+        StopFreecam()
+        viewing = nil
+        if viewDied then
+            viewDied:Disconnect()
+            viewChanged:Disconnect()
+        end
+        workspace.CurrentCamera:remove()
+        wait(.1)
+        repeat wait() until speaker.Character ~= nil
+        workspace.CurrentCamera.CameraSubject = speaker.Character:FindFirstChildWhichIsA('Humanoid')
+        workspace.CurrentCamera.CameraType = "Custom"
+        speaker.CameraMinZoomDistance = 0.5
+        speaker.CameraMaxZoomDistance = 400
+        speaker.CameraMode = "Classic"
+        if speaker.Character and speaker.Character:FindFirstChild("Head") then
+            speaker.Character.Head.Anchored = false
+        end
+        playerDropdown:SetValue("Select Player")
+        notify('Camera', 'Camera fixed')
+    end
+})
+
+-- Shift Lock
+CameraSettingsSection:AddButton({
+    Name = "Enable Shift Lock",
+    Callback = function()
+        speaker.DevEnableMouseLock = true
+        notify('Shiftlock', 'Shift lock is now available')
+    end
+})
+
 
 -- Вкладка Slap Battles
 local SlapBattlesTab = Window:DrawTab({
