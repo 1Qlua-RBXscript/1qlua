@@ -22,6 +22,26 @@ local SETTINGS = {
     }
 }
 
+-- Инициализация сервисов
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Глобальные переменные
+local xrayEnabled = false
+local xrayLoop = nil
+local brightLoop = nil
+
+-- Функция XRay
+local function xray()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and not v.Parent:FindFirstChildOfClass("Humanoid") and not v.Parent.Parent:FindFirstChildOfClass("Humanoid") then
+            v.LocalTransparencyModifier = xrayEnabled and 0.7 or 0
+        end
+    end
+end
+
 -- Variables
 local ESPenabled = false
 local CHMSenabled = false -- Assuming you have chams elsewhere
@@ -453,6 +473,76 @@ local PlayerScriptsSection = PlayerTab:DrawSection({
     Name = "Основные скрипты",
     Position = "right"
 })
+
+-- XRay Toggle
+local XRayToggle = PlayerScriptsSection:AddToggle({
+    Name = "X-Ray",
+    Flag = "XRay_Enabled",
+    Default = false,
+    Callback = function(state)
+        xrayEnabled = state
+        xray()
+    end
+})
+
+-- Fullbright Toggle
+local FullbrightToggle = PlayerScriptsSection:AddToggle({
+    Name = "Fullbright",
+    Flag = "Fullbright_Enabled",
+    Default = false,
+    Callback = function(state)
+        if state then
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        else
+            Lighting.Brightness = 1
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 1000000
+            Lighting.GlobalShadows = true
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        end
+    end
+})
+
+-- Auto Fullbright Toggle
+PlayerScriptsSection:AddToggle({
+    Name = "Авто Fullbright",
+    Flag = "AutoFullbright_Enabled",
+    Default = false,
+    Callback = function(state)
+        if state then
+            if brightLoop then brightLoop:Disconnect() end
+            
+            brightLoop = RunService.RenderStepped:Connect(function()
+                Lighting.Brightness = 2
+                Lighting.ClockTime = 14
+                Lighting.FogEnd = 100000
+                Lighting.GlobalShadows = false
+                Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+                
+                -- Автоматически включаем Fullbright если он выключен
+                if not FullbrightToggle.Value then
+                    FullbrightToggle:Set(true)
+                end
+            end)
+        else
+            if brightLoop then
+                brightLoop:Disconnect()
+                brightLoop = nil
+            end
+        end
+    end
+})
+
+-- Обработчик изменения персонажа
+player.CharacterAdded:Connect(function(character)
+    if xrayEnabled then
+        xray()
+    end
+end)
 
 PlayerScriptsSection:AddButton({
     Name = "Infinite Yield",
