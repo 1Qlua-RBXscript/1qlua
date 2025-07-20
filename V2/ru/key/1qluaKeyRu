@@ -1,4 +1,3 @@
-
 -- ======== НАСТРОЙКИ ======== --
 local SETTINGS = {
     WALK_SPEED = {
@@ -23,6 +22,10 @@ local SETTINGS = {
     }
 }
 
+-- Глобальные переменные
+_G.Walk = SETTINGS.WALK_SPEED.DEFAULT
+_G.WalkSpeedEnabled = true
+
 -- ======== ИНИЦИАЛИЗАЦИЯ БИБЛИОТЕКИ ======== --
 local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))()
 local Notifier = Compkiller.newNotify()
@@ -36,7 +39,7 @@ Compkiller:Loader("rbxassetid://80494437171393", 2.5).yield()
 
 -- ======== СОЗДАНИЕ ОКНА ======== --
 local Window = Compkiller.new({
-    Name = "1Qlua ",
+    Name = "1Qlua - Универсальный хаб",
     Keybind = "LeftAlt",
     Logo = "rbxassetid://80494437171393",
     Scale = Compkiller.Scale.Window,
@@ -46,65 +49,60 @@ local Window = Compkiller.new({
 -- Уведомление при запуске
 Notifier.new({
     Title = "1Qlua",
-    Content = "Universal Script Hub успешно загружен!",
-    Duration = 5,
+    Content = "Универсальный хаб скриптов загружен!",
+    Duration = 8,
     Icon = "rbxassetid://80494437171393"
 })
 
 -- ======== ВОДЯНОЙ ЗНАК ======== --
 local Watermark = Window:Watermark()
-
 Watermark:AddText({
     Icon = "user",
     Text = "1Qlua",
 })
-
-local Time = Watermark:AddText({
+Watermark:AddText({
     Icon = "server",
-    Text = "V2",
+    Text = "Версия 19",
 })
-
 Watermark:AddText({
     Icon = "clock",
     Text = Compkiller:GetDate(),
 })
 
+-- ======== ОБРАБОТЧИК СКОРОСТИ ======== --
+local Heartbeat = game:GetService("RunService").Heartbeat
+local Player = game:GetService("Players").LocalPlayer
 
--- ======== ФУНКЦИОНАЛЬНЫЕ ФУНКЦИИ ======== --
-local Functions = {}
-
--- Управление скоростью персонажа
-Functions.WalkSpeed = function(value)
-    local player = game.Players.LocalPlayer
-    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-    
-    if humanoid then
-        humanoid.WalkSpeed = value
+local function UpdateSpeed()
+    if not _G.WalkSpeedEnabled then return end
+    local character = Player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = _G.Walk
+        end
     end
-    
-    -- Подключим автоматическое обновление при изменении персонажа
-    player.CharacterAdded:Connect(function(character)
-        local hum = character:WaitForChild("Humanoid")
-        hum.WalkSpeed = value
-    end)
 end
 
--- Управление силой прыжка
+Heartbeat:Connect(UpdateSpeed)
+Player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid")
+    UpdateSpeed()
+end)
+
+-- ======== ФУНКЦИИ ======== --
+local Functions = {}
+
 Functions.JumpPower = function(value)
-    local player = game.Players.LocalPlayer
-    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-    
+    local humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
         humanoid.JumpPower = value
     end
-    
-    player.CharacterAdded:Connect(function(character)
-        local hum = character:WaitForChild("Humanoid")
-        hum.JumpPower = value
+    Player.CharacterAdded:Connect(function(character)
+        character:WaitForChild("Humanoid").JumpPower = value
     end)
 end
 
--- Управление полем зрения
 Functions.FOV = function(value)
     workspace.CurrentCamera.FieldOfView = value
     workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
@@ -114,38 +112,25 @@ Functions.FOV = function(value)
     end)
 end
 
--- Управление временем суток
 Functions.TimeOfDay = function(hours)
     local Lighting = game:GetService("Lighting")
-    hours = math.clamp(hours, 0, 24)
-    local robloxTime = hours % 12
-    if robloxTime == 0 then robloxTime = 12 end
-    Lighting.ClockTime = robloxTime
-    if hours >= 6 and hours < 18 then
-        Lighting:SetMinutesAfterMidnight(hours * 60)
-    end
+    Lighting.ClockTime = hours % 12 == 0 and 12 or hours % 12
 end
 
--- Загрузка скриптов
 Functions.LoadScript = function(url)
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(url))()
-    end)
-    
+    local success, err = pcall(loadstring(game:HttpGet(url)))
     if not success then
         Notifier.new({
             Title = "Ошибка",
-            Content = "Не удалось загрузить скрипт: " .. err,
+            Content = "Ошибка загрузки: "..err,
             Duration = 5,
             Icon = "rbxassetid://7734068321"
         })
     end
 end
 
--- ======== СОЗДАНИЕ ВКЛАДОК ======== --
-Window:DrawCategory({
-	Name = "Скрипты"
-});
+-- ======== ВКЛАДКИ ======== --
+Window:DrawCategory({Name = "Основные"})
 
 -- Вкладка Игрока
 local PlayerTab = Window:DrawTab({
@@ -154,164 +139,6 @@ local PlayerTab = Window:DrawTab({
     EnableScrolling = true
 })
 
--- Раздел Основные настройки
-local scriptOc = PlayerTab:DrawSection({
-    Name = "Полезные скрипты",
-    Position = "right"
-})
-
-    scriptOc:AddParagraph({
-		Title = "Infinite Yield",
-		Content = "Очень полезый скрипт \nПо типу админ командом"
-	})
-
-scriptOc:AddButton({
-    Name = "Infinite Yield",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua"))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "sigma spy",
-		Content = "Перехват эвентов\nС помошью этого скрипта\nможно накрутить деньги"
-	})
-
-scriptOc:AddButton({
-    Name = "sigma spy",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/depthso/Sigma-Spy/refs/heads/main/Main.lua"))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "dex 2.0",
-		Content = "Просмотор всего что есть в игре"
-	})
-
-scriptOc:AddButton({
-    Name = "dex 2.0",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/MariyaFurmanova/Library/main/dex2.0", true))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "Яндекс музыка (бета)",
-		Content = "Можно слушать музыку \nПрям в игре\nХотите добавить своб музыку?\nТо напишите в Дискорд"
-	})
-
-scriptOc:AddButton({
-    Name = "Яндекс музыка (бета)",
-    Callback = function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/YandexMusic'))()
-    end
-})
-
--- Раздел Основные настройки
-local scriptOc = PlayerTab:DrawSection({
-    Name = "скрипты",
-    Position = "right"
-})
-
-    scriptOc:AddParagraph({
-		Title = "Чекпоинты",
-		Content = "Телепортурет туда \nгде ты сохранил позицию"
-	})
-
-scriptOc:AddButton({
-    Name = "Чекпойнты",
-    Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/rz7uUmED'))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "вх",
-		Content = "Видеть где находяться игроки \nувидешь сковось стены игроков"
-	})
-
-scriptOc:AddButton({
-    Name = "вх",
-    Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/r97SAaUa'))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "Телепорд к игрокам",
-		Content = "Ты можешь выбрать игрока \nкоторого ты выберешь)"
-	})
-
-scriptOc:AddButton({
-    Name = "Телепорд к игрокам",
-    Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/z4HARAHs'))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "Играть с писюном",
-		Content = "Ты можешь дрочить \nЭто видят все игроки)"
-	})
-
-scriptOc:AddButton({
-    Name = "Играть с писюном",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/73RsNXY2"))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "Tool Для изменения моделий",
-		Content = "Ты можешь удалять стены \nДублировать стены\nДвигать стены\nИ также он удаляет анти чит на\nчто ты не видишь tool"
-	})
-
-scriptOc:AddButton({
-    Name = "Tool Для изменения моделий",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/FBKJTUyw"))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "Телепорд по координатам",
-		Content = "Дает сразу 2 топовых скрипта \nМожно скопировать свои \nкоординаты\nИ также телепортироваться по \nкоординатам"
-	})
-
-scriptOc:AddButton({
-    Name = "Телепорд по координатам",
-    Callback = function()
-        loadstring(game:HttpGetAsync("https://pastebin.com/raw/9ybHwgLa"))()
-    end
-})
-
-    scriptOc:AddParagraph({
-		Title = "Тп в свой мир",
-		Content = "Дает сразу 3 скрипта \nМожно создать мир\nтелепортироваться в мир\nСохранения свое позиции"
-	})
-
-scriptOc:AddButton({
-    Name = "Тп в свой мир",
-    Callback = function()
-        loadstring(game:HttpGetAsync("https://pastebin.com/raw/SRZJGHyq"))()
-    end
-})
-
-
-    scriptOc:AddParagraph({
-		Title = "Летать",
-		Content = "Можно летать на кнопку"
-	})
-
-scriptOc:AddButton({
-    Name = "Летать",
-    Callback = function()
-        loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()
-    end
-})
-
--- Раздел Основные настройки
 local PlayerMainSection = PlayerTab:DrawSection({
     Name = "Основные настройки",
     Position = "left"
@@ -319,145 +146,875 @@ local PlayerMainSection = PlayerTab:DrawSection({
 
 PlayerMainSection:AddSlider({
     Name = "Скорость передвижения",
-    Min = SETTINGS.WALK_SPEED.MIN,
-    Max = SETTINGS.WALK_SPEED.MAX,
-    Default = SETTINGS.WALK_SPEED.DEFAULT,
-    Flag = "WalkSpeed",
-    Callback = Functions.WalkSpeed
+    Description = "Изменяет скорость вашего персонажа",
+    Min = 0,
+    Max = 150,
+    Default = 16,
+    Callback = function(v) _G.Walk = v end
 })
 
 PlayerMainSection:AddSlider({
     Name = "Высота прыжка",
-    Min = SETTINGS.JUMP_POWER.MIN,
-    Max = SETTINGS.JUMP_POWER.MAX,
-    Default = SETTINGS.JUMP_POWER.DEFAULT,
-    Flag = "JumpPower",
+    Description = "Изменяет высоту прыжка персонажа",
+    Min = 0,
+    Max = 500,
+    Default = 50,
     Callback = Functions.JumpPower
 })
 
 PlayerMainSection:AddSlider({
     Name = "Поле зрения (FOV)",
-    Min = SETTINGS.FOV.MIN,
-    Max = SETTINGS.FOV.MAX,
-    Default = SETTINGS.FOV.DEFAULT,
-    Flag = "FOV",
+    Description = "Изменяет угол обзора камеры",
+    Min = 0,
+    Max = 120,
+    Default = 70,
     Callback = Functions.FOV
 })
 
--- Вкладка Графика
-local GraphicsTab = Window:DrawTab({
-    Name = "Графика",
-    Icon = "image",
-    EnableScrolling = true
-})
-
--- Раздел Настройки графики
-local GraphicsTimeSection = GraphicsTab:DrawSection({
-    Name = "Настройки графики",
-    Position = "left"
-})
-
-GraphicsTimeSection:AddSlider({
+PlayerMainSection:AddSlider({
     Name = "Время суток",
-    Min = SETTINGS.TIME.MIN,
-    Max = SETTINGS.TIME.MAX,
-    Default = SETTINGS.TIME.DEFAULT,
-    Flag = "TimeOfDay",
+    Description = "Изменяет текущее время в игре",
+    Min = 0,
+    Max = 24,
+    Default = 12,
     Callback = Functions.TimeOfDay
 })
 
--- Раздел Основные настройки
-local GraphicsTimeSection = PlayerTab:DrawSection({
-    Name = "скрипты с билтом на кнопку",
-    Position = "left"
+local PlayerScriptsSection = PlayerTab:DrawSection({
+    Name = "Основные скрипты",
+    Position = "right"
 })
 
-    GraphicsTimeSection:AddParagraph({
-		Title = "ctrl+клик=телепорд",
-		Content = "Телепортурет туда \nкуда ты смотришь"
-	})
-
-GraphicsTimeSection:AddButton({
-    Name = "ctrl+клик=телепорд",
+PlayerScriptsSection:AddButton({
+    Name = "Infinite Yield",
+    Description = "Мощные админ-команды для управления игрой",
     Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/icB69Hhf'))()
+        Functions.LoadScript("https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua")
     end
 })
 
-    GraphicsTimeSection:AddParagraph({
-		Title = "Невидимость (Нажми E)",
-		Content = "Ты становишься \nдля всех не видимым"
-	})
-
-GraphicsTimeSection:AddButton({
-    Name = "Невидимость (Нажми E)",
+PlayerScriptsSection:AddButton({
+    Name = "DEX Explorer",
+    Description = "Инструмент для исследования игровых объектов",
     Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/VtWhnEnm"))()
+        Functions.LoadScript("https://raw.githubusercontent.com/MariyaFurmanova/Library/main/dex2.0")
     end
 })
 
-    GraphicsTimeSection:AddParagraph({
-		Title = "Полет на машине (Нажми V)",
-		Content = "Ты можешь летать на машине"
-	})
-
-GraphicsTimeSection:AddButton({
-    Name = "Полет на машине (Нажми V)",
+PlayerScriptsSection:AddButton({
+    Name = "Полёт (F)",
+    Description = "Включение режима полёта по нажатию F",
     Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/9bNj1EcR'))()
+        loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()
     end
 })
 
-    GraphicsTimeSection:AddParagraph({
-		Title = "Падение на месте (Нажми R)",
-		Content = "Ты можешь упасть на месте"
-	})
-
-GraphicsTimeSection:AddButton({
-    Name = "Падение на месте (Нажми R)",
+PlayerScriptsSection:AddButton({
+    Name = "Невидимость (E)",
+    Description = "Делает вашего персонажа невидимым",
     Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/CTUaCKN1'))()
+        Functions.LoadScript("https://pastebin.com/raw/VtWhnEnm")
     end
 })
 
-    GraphicsTimeSection:AddParagraph({
-		Title = "Свободная камера",
-		Content = "Ты можешь летать на камеры \nна кнопку shift+P"
-	})
+PlayerScriptsSection:AddButton({
+    Name = "ТП к игрокам",
+    Description = "Телепортироваться к другим игрокам",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/z4HARAHs")
+    end
+})
 
-GraphicsTimeSection:AddButton({
+PlayerScriptsSection:AddButton({
+    Name = "Играть с писюном",
+    Description = "Добавляет анимацию для развлечения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/73RsNXY2")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Удалить стены",
+    Description = "Удаляет препятствия в игре",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/FBKJTUyw")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Падение на месте (R)",
+    Description = "Персонаж падает на месте без движения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/CTUaCKN1")
+    end
+})
+
+PlayerScriptsSection:AddButton({
     Name = "Свободная камера (Shift+P)",
+    Description = "Отключает привязку камеры к персонажу",
     Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/ct8Kq5F0'))()
+        Functions.LoadScript("https://pastebin.com/raw/ct8Kq5F0")
     end
 })
 
+PlayerScriptsSection:AddButton({
+    Name = "Полет на машине (V)",
+    Description = "Позволяет транспорту летать",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/9bNj1EcR")
+    end
+})
 
--- Раздел Шейдеры
-local GraphicsShadersSection = GraphicsTab:DrawSection({
+PlayerScriptsSection:AddButton({
+    Name = "Добавить всех в друзья",
+    Description = "Автоматически отправляет заявки в друзья",
+    Callback = function()
+        local plrs = game:GetService('Players')
+        for i,v in pairs(plrs:GetChildren()) do
+            task.wait(1)
+            plrs.LocalPlayer:RequestFriendship(v)
+        end
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Чекпойнты",
+    Description = "Создает точки для быстрой телепортации",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/rz7uUmED")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Обход голосового чата",
+    Description = "Позволяет обойти ограничения голосового чата",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/CorpseCMD/MyScripts/main/VoicechatBypass.lua")
+    end
+})
+
+PlayerScriptsSection:AddButton({
     Name = "Шейдеры",
-    Position = "left"
-})
-
-GraphicsShadersSection:AddButton({
-    Name = "Включить шейдеры",
-    Callback = function()
-        Functions.LoadScript("https://pastebin.com/raw/mXAwCUEk")
-    end
-})
-
-GraphicsShadersSection:AddButton({
-    Name = "Альтернативные шейдеры",
+    Description = "Улучшает визуальные эффекты игры",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/1XA5qM3D")
     end
 })
 
-Window:DrawCategory({
-	Name = "Настройки"
-});
+PlayerScriptsSection:AddButton({
+    Name = "Sigma Spy",
+    Description = "Мониторинг игровых событий",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/depthso/Sigma-Spy/main/Main.lua")
+    end
+})
 
--- ======== НАСТРОЙКИ ИНТЕРФЕЙСА ======== --
+PlayerScriptsSection:AddButton({
+    Name = "English version",
+    Description = "Переключиться на английскую версию",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/32k6f2Ns")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Админ Команды от 1qlua",
+    Description = "Набор административных команд",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/t3chuwNu")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Тест инжектора",
+    Description = "Проверить ваш инжектор",
+    Callback = function()
+        Functions.LoadScript("https://rawscripts.net/raw/Universal-Script-UNChecker-GUI-Version-27355")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Поменять сервер",
+    Description = "Быстро поменять сервер",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/Syr0nix/RedFoxServerBowser/main/Mainlua")
+    end
+})
+
+-- Вкладка Slap Battles
+local SlapBattlesTab = Window:DrawTab({
+    Name = "Slap Battles",
+    Icon = "hand",
+    EnableScrolling = true
+})
+
+local SlapBattlesSection = SlapBattlesTab:DrawSection({
+    Name = "Эксклюзивные скрипты",
+    Position = "left"
+})
+
+SlapBattlesSection:AddButton({
+    Name = "Хитбоксы",
+    Description = "Увеличивает зону поражения",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/Bilmemi/hitbox2/main/op")
+    end
+})
+
+SlapBattlesSection:AddButton({
+    Name = "Авто-автобус",
+    Description = "Автоматически использует способность автобуса",
+    Callback = function()
+        while task.wait(6) do
+            game:GetService("ReplicatedStorage"):WaitForChild("busmoment"):FireServer()
+        end
+    end
+})
+
+SlapBattlesSection:AddButton({
+    Name = "Бесконечное Уно",
+    Description = "Постоянно активирует способность Уно",
+    Callback = function()
+        while task.wait(6) do
+            game:GetService("ReplicatedStorage"):WaitForChild("ReverseAbility"):FireServer()
+        end
+    end
+})
+
+SlapBattlesSection:AddButton({
+    Name = "Аура убийства",
+    Description = "Автоматическая атака ближайших игроков",
+    Callback = function()
+        local json = game:HttpGet("https://raw.githubusercontent.com/LeoKholYt/lkhub/main/list.json")
+        local jsonData = game:GetService("HttpService"):JSONDecode(json)
+        local url = jsonData[tostring(game.PlaceId)] or "universal.lua"
+        url = url.s or url
+        Functions.LoadScript("https://lkhub.net/s/"..url)
+    end
+})
+
+-- Вкладка Lumber Tycoon 2
+local LumberTycoonTab = Window:DrawTab({
+    Name = "Lumber Tycoon 2",
+    Icon = "tree-pine",
+    EnableScrolling = true
+})
+
+local LumberTycoonSection = LumberTycoonTab:DrawSection({
+    Name = "Фарм-скрипты",
+    Position = "left"
+})
+
+LumberTycoonSection:AddButton({
+    Name = "Kron Hub",
+    Description = "Лучший скрипт для автоматизации",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/DevKron/Kron_Hub/main/version_1.0")
+    end
+})
+
+LumberTycoonSection:AddButton({
+    Name = "LT2 LuaWare",
+    Description = "Оптимизированный скрипт для мобильных устройств",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/frencaliber/LuaWareLoader.lw/main/luawareloader.wtf")
+    end
+})
+
+LumberTycoonSection:AddButton({
+    Name = "LT2 Better Script",
+    Description = "Улучшенная версия для ПК",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/Butterisgood/Butter/main/Root2.lua")
+    end
+})
+
+LumberTycoonSection:AddButton({
+    Name = "Удалить защитные стены",
+    Description = "Убирает защитные барьеры",
+    Callback = function()
+        while task.wait() do
+            game:GetService("Workspace").Effects:Destroy()
+        end
+    end
+})
+
+-- Вкладка MM2
+local MM2Tab = Window:DrawTab({
+    Name = "Murder Mystery 2",
+    Icon = "sword",
+    EnableScrolling = true
+})
+
+local MM2Section = MM2Tab:DrawSection({
+    Name = "Скрипты для MM2",
+    Position = "left"
+})
+
+MM2Section:AddButton({
+    Name = "Лучший скрипт для MM2",
+    Description = "Различные функции для Murder Mystery 2",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/FOGOTY/mm2-piano-reborn/main/scr")
+    end
+})
+
+-- Вкладка Огайо
+local OhioTab = Window:DrawTab({
+    Name = "Огайо",
+    Icon = "map",
+    EnableScrolling = true
+})
+
+local OhioSection = OhioTab:DrawSection({
+    Name = "Функции для Огайо",
+    Position = "left"
+})
+
+OhioSection:AddButton({
+    Name = "ESP игроков",
+    Description = "Показывает игроков через стены",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/r97SAaUa")
+    end
+})
+
+OhioSection:AddButton({
+    Name = "Авто-фарм хлама V2",
+    Description = "Автоматически собирает ресурсы",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/HNwdknXk")
+    end
+})
+
+OhioSection:AddButton({
+    Name = "Автофарм банкоматов",
+    Description = "Автоматический сбор денег",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/szznrYvx")
+    end
+})
+
+OhioSection:AddButton({
+    Name = "ТП по CTRL+Клик",
+    Description = "Телепортация к месту клика",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/icB69Hhf")
+    end
+})
+
+OhioSection:AddButton({
+    Name = "ТП к местам",
+    Description = "Быстрая телепортация по локациям",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/nrJ7cVcJ")
+    end
+})
+
+OhioSection:AddButton({
+    Name = "Мини хаб",
+    Description = "Коллекция скриптов для Огайо",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/fef2FzGc")
+    end
+})
+
+OhioSection:AddButton({
+    Name = "Скрипт для Ohio",
+    Description = "Универсальный скрипт для Ohio",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/JENqZVm5")
+    end
+})
+
+-- Вкладка Kat
+local KatTab = Window:DrawTab({
+    Name = "Kat",
+    Icon = "contact",
+    EnableScrolling = true
+})
+
+local KatSection = KatTab:DrawSection({
+    Name = "Функции для Kat",
+    Position = "left"
+})
+
+KatSection:AddSlider({
+    Name = "Скорость передвижения",
+    Description = "Настройка скорости персонажа",
+    Min = 0,
+    Max = 25,
+    Default = 16,
+    Callback = function(v) _G.Walk = v end
+})
+
+KatSection:AddSlider({
+    Name = "Прыгучесть",
+    Description = "Настройка высоты прыжка",
+    Min = 0,
+    Max = 200,
+    Default = 50,
+    Callback = function(v)
+        getgenv().JumpPowerValue = v
+        pcall(function()
+            local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.JumpPower = v end
+        end)
+    end
+})
+
+KatSection:AddSlider({
+    Name = "Поле зрения",
+    Description = "Настройка угла обзора камеры",
+    Min = 0,
+    Max = 120,
+    Default = 70,
+    Callback = Functions.FOV
+})
+
+KatSection:AddButton({
+    Name = "Удалить стены",
+    Description = "Убирает препятствия на карте",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/FBKJTUyw")
+    end
+})
+
+KatSection:AddButton({
+    Name = "Kill Aura",
+    Description = "Автоматическая атака врагов",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/mk1ge1hm")
+    end
+})
+
+KatSection:AddButton({
+    Name = "ESP",
+    Description = "Видеть сквозь стены",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/r97SAaUa")
+    end
+})
+
+KatSection:AddButton({
+    Name = "Падение на месте (R)",
+    Description = "Падать без перемещения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/CTUaCKN1")
+    end
+})
+
+-- Вкладка Jailbreak
+local JailbreakTab = Window:DrawTab({
+    Name = "Jailbreak",
+    Icon = "shield",
+    EnableScrolling = true
+})
+
+local JailbreakSection = JailbreakTab:DrawSection({
+    Name = "Функции для Jailbreak",
+    Position = "left"
+})
+
+JailbreakSection:AddButton({
+    Name = "Автофарм",
+    Description = "Автоматический сбор денег",
+    Callback = function()
+        Functions.LoadScript("http://scripts.projectauto.xyz/AutoRobV5")
+    end
+})
+
+JailbreakSection:AddButton({
+    Name = "Ускорение",
+    Description = "Увеличение скорости передвижения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/P8VjFPsQ")
+    end
+})
+
+JailbreakSection:AddButton({
+    Name = "ESP",
+    Description = "Видеть сквозь стены",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/r97SAaUa")
+    end
+})
+
+JailbreakSection:AddButton({
+    Name = "ТП по CTRL+Клик",
+    Description = "Телепортация к выбранной точке",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/icB69Hhf")
+    end
+})
+
+-- Вкладка A Dusty Trip
+local DustyTripTab = Window:DrawTab({
+    Name = "A Dusty Trip",
+    Icon = "car",
+    EnableScrolling = true
+})
+
+local DustyTripSection = DustyTripTab:DrawSection({
+    Name = "Функции для A Dusty Trip",
+    Position = "left"
+})
+
+DustyTripSection:AddButton({
+    Name = "Скорость 5000",
+    Description = "Экстремальная скорость передвижения",
+    Callback = function()
+        _G.Walk = 5000
+        _G.WalkSpeed = true
+    end
+})
+
+DustyTripSection:AddButton({
+    Name = "Скорость 1000",
+    Description = "Очень высокая скорость",
+    Callback = function()
+        _G.Walk = 1000
+        _G.WalkSpeed = true
+    end
+})
+
+DustyTripSection:AddButton({
+    Name = "Скорость 50",
+    Description = "Умеренное ускорение",
+    Callback = function()
+        _G.Walk = 50
+        _G.WalkSpeed = true
+    end
+})
+
+DustyTripSection:AddButton({
+    Name = "Скорость 25",
+    Description = "Небольшое ускорение",
+    Callback = function()
+        _G.Walk = 25
+        _G.WalkSpeed = true
+    end
+})
+
+DustyTripSection:AddButton({
+    Name = "Полёт на машине (V)",
+    Description = "Летать на транспорте",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/9bNj1EcR")
+    end
+})
+
+-- Вкладка Build A Boat
+local BuildBoatTab = Window:DrawTab({
+    Name = "Build A Boat",
+    Icon = "sailboat",
+    EnableScrolling = true
+})
+
+local BuildBoatSection = BuildBoatTab:DrawSection({
+    Name = "Функции для Build A Boat",
+    Position = "left"
+})
+
+BuildBoatSection:AddButton({
+    Name = "Автофарм",
+    Description = "Автоматический сбор ресурсов",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/24e7Skmv")
+    end
+})
+
+BuildBoatSection:AddButton({
+    Name = "Хаб-скрипт",
+    Description = "Пароль: N-314159",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/novakoolhub/Scripts/main/Scripts/NovBoatR1")
+    end
+})
+
+BuildBoatSection:AddButton({
+    Name = "Полёт (F)",
+    Description = "Активировать возможность летать",
+    Callback = function()
+        loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()
+    end
+})
+
+-- Вкладка Вырасти сад
+local GrowGardenTab = Window:DrawTab({
+    Name = "Вырасти сад",
+    Icon = "flower",
+    EnableScrolling = true
+})
+
+local GrowGardenSection = GrowGardenTab:DrawSection({
+    Name = "Функции для Вырасти сад",
+    Position = "left"
+})
+
+GrowGardenSection:AddButton({
+    Name = "Автофарм",
+    Description = "Автоматический сбор растений",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/UZU3cmQZ")
+    end
+})
+
+GrowGardenSection:AddButton({
+    Name = "Хаб скриптов",
+    Description = "Коллекция функций для игры",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/ameicaa1/Grow-a-Garden/main/Grow_A_Garden.lua")
+    end
+})
+
+GrowGardenSection:AddButton({
+    Name = "Ускорение",
+    Description = "Увеличение скорости передвижения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/Zzqq3U0u")
+    end
+})
+
+-- Вкладка Dig to Earth's CORE
+local DigToCoreTab = Window:DrawTab({
+    Name = "Dig to Earth's CORE",
+    Icon = "shovel",
+    EnableScrolling = true
+})
+
+local DigToCoreSection = DigToCoreTab:DrawSection({
+    Name = "Функции для Dig to Earth's CORE",
+    Position = "left"
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать деньги",
+    Description = "Добавляет игровую валюту",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.AddRewardEvent:FireServer("Cash", 241561515)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать спины",
+    Description = "Добавляет спины для рулетки",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.AddRewardEvent:FireServer("Spins", 51)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать петов",
+    Description = "Добавляет редких питомцев",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.PetCageEvent:FireServer("Lava Dominus")
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать 25к",
+    Description = "Добавляет 25000 денег",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(2)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать 375 гемов",
+    Description = "Добавляет 375 гемов",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(5)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать спины",
+    Description = "Добавляет спины",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(3)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "X10 МОНЕТ",
+    Description = "Увеличивает доход в 10 раз",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(8)
+    end
+})
+
+-- Вкладка Human Kebabs
+local HumanKebabsTab = Window:DrawTab({
+    Name = "Human Kebabs",
+    Icon = "meh",
+    EnableScrolling = true
+})
+
+local HumanKebabsSection = HumanKebabsTab:DrawSection({
+    Name = "Функции для Human Kebabs",
+    Position = "left"
+})
+
+HumanKebabsSection:AddButton({
+    Name = "Kill All",
+    Description = "Автоматически атакует всех игроков",
+    Callback = function()
+        local player = game:GetService("Players").LocalPlayer
+        local running = true
+        
+        _G.StopAutoSkewer = function()
+            running = false
+            return "Скрипт остановлен!"
+        end
+        
+        task.spawn(function()
+            while running do
+                task.wait(0.1)
+                for _, target in ipairs(game:GetService("Players"):GetPlayers()) do
+                    if target ~= player and target.Character then
+                        game:GetService("ReplicatedStorage").Remotes.Client.SkewerHit:FireServer(target)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+HumanKebabsSection:AddButton({
+    Name = "Остановить Kill All",
+    Description = "Прекращает автоматическую атаку",
+    Callback = function()
+        if _G.StopAutoSkewer then
+            _G.StopAutoSkewer()
+        end
+    end
+})
+
+-- Вкладка Baseplate
+local BaseplateTab = Window:DrawTab({
+    Name = "Baseplate",
+    Icon = "meh",
+    EnableScrolling = true
+})
+
+local BaseplateSection = BaseplateTab:DrawSection({
+    Name = "Функции для Baseplate",
+    Position = "left"
+})
+
+BaseplateSection:AddButton({
+    Name = "Скрипт для Baseplate",
+    Description = "Различные функции для Baseplate",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/aAYx0WZG")
+    end
+})
+
+-- Вкладка ESP
+local EspTab = Window:DrawTab({
+    Name = "ESP",
+    Icon = "meh",
+    EnableScrolling = true
+})
+
+local EspSection = EspTab:DrawSection({
+    Name = "Функции ESP",
+    Position = "left"
+})
+
+EspSection:AddButton({
+    Name = "ESP игроков",
+    Description = "Показывает игроков через стены",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/yKvD4NzC")
+    end
+})
+
+-- Вкладка Aimbot
+local AimbotTab = Window:DrawTab({
+    Name = "Aimbot",
+    Icon = "crosshair",
+    EnableScrolling = true
+})
+
+local AimbotSection = AimbotTab:DrawSection({
+    Name = "Настройки Aimbot",
+    Position = "left"
+})
+
+local aimbotEnabled = false
+local aimParts = {"Head"}
+local aimFov = 100
+local smoothing = 0.05
+local prediction = 0.1
+local wallCheck = true
+local teamCheck = false
+
+AimbotSection:AddToggle({
+    Name = "Включить Aimbot",
+    Default = false,
+    Callback = function(v)
+        aimbotEnabled = v
+    end
+})
+
+AimbotSection:AddDropdown({
+    Name = "Часть тела",
+    Values = {"Head", "HumanoidRootPart", "Torso"},
+    Default = "Head",
+    Callback = function(v)
+        aimParts = {v}
+    end
+})
+
+AimbotSection:AddSlider({
+    Name = "Поле зрения",
+    Min = 10,
+    Max = 500,
+    Default = 100,
+    Callback = function(v)
+        aimFov = v
+    end
+})
+
+AimbotSection:AddSlider({
+    Name = "Сглаживание",
+    Min = 1,
+    Max = 100,
+    Default = 5,
+    Callback = function(v)
+        smoothing = v / 100
+    end
+})
+
+AimbotSection:AddSlider({
+    Name = "Предсказание",
+    Min = 0,
+    Max = 20,
+    Default = 10,
+    Callback = function(v)
+        prediction = v / 100
+    end
+})
+
+AimbotSection:AddToggle({
+    Name = "Проверка стен",
+    Default = true,
+    Callback = function(v)
+        wallCheck = v
+    end
+})
+
+AimbotSection:AddToggle({
+    Name = "Проверка команды",
+    Default = false,
+    Callback = function(v)
+        teamCheck = v
+    end
+})
+
+-- Вкладка Настройки
 local SettingsTab = Window:DrawTab({
     Name = "Настройки",
     Icon = "settings",
@@ -470,18 +1027,18 @@ local UISettings = SettingsTab:DrawSection({
 })
 
 UISettings:AddToggle({
-    Name = "Всегда показывать фрейм",
+    Name = "Всегда показывать UI",
+    Description = "Отключает автоматическое скрытие интерфейса",
     Default = false,
-    Flag = "AlwaysShowFrame",
     Callback = function(v)
         Window.AlwayShowTab = v
     end
 })
 
 UISettings:AddColorPicker({
-    Name = "Основной цвет",
+    Name = "Цвет интерфейса",
+    Description = "Изменяет основной цвет элементов",
     Default = Compkiller.Colors.Highlight,
-    Flag = "MainColor",
     Callback = function(v)
         Compkiller.Colors.Highlight = v
         Compkiller:RefreshCurrentColor()
@@ -494,9 +1051,8 @@ UISettings:AddButton({
         ConfigManager:Save()
         Notifier.new({
             Title = "Успех",
-            Content = "Настройки успешно сохранены!",
-            Duration = 3,
-            Icon = "rbxassetid://7734068321"
+            Content = "Настройки сохранены!",
+            Duration = 3
         })
     end
 })
@@ -507,14 +1063,13 @@ UISettings:AddButton({
         ConfigManager:Load()
         Notifier.new({
             Title = "Успех",
-            Content = "Настройки успешно загружены!",
-            Duration = 3,
-            Icon = "rbxassetid://7734068321"
+            Content = "Настройки загружены!",
+            Duration = 3
         })
     end
 })
 
--- ======== КОНФИГУРАЦИЯ ======== --
+-- Конфигурация
 local ConfigUI = Window:DrawConfig({
     Name = "Конфигурация",
     Icon = "folder",
@@ -523,9 +1078,8 @@ local ConfigUI = Window:DrawConfig({
 
 ConfigUI:Init()
 
--- ======== АВТОМАТИЧЕСКАЯ ЗАГРУЗКА НАСТРОЕК ======== --
+-- Автозагрузка
 task.spawn(function()
-    -- Даем время интерфейсу полностью загрузиться
-    wait(1)
+    task.wait(1)
     ConfigManager:Load()
 end)
