@@ -1,3 +1,229 @@
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MobileCheckUI"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game:GetService("CoreGui")
+
+-- Создаем контейнер для плавной анимации
+local Container = Instance.new("Frame")
+Container.Name = "Container"
+Container.Size = UDim2.new(1, 0, 1, 0)
+Container.BackgroundTransparency = 1
+Container.Parent = ScreenGui
+
+local function CreateButton()
+    -- Основная кнопка
+    local MainButton = Instance.new("TextButton")
+    MainButton.Name = "MobileCheckBtn"
+    MainButton.Text = "Вы на телефоне?"
+    MainButton.Size = UDim2.new(0.3, 0, 0.08, 0)
+    MainButton.Position = UDim2.new(0.5, 0, 0.92, 0)
+    MainButton.AnchorPoint = Vector2.new(0.5, 1)
+    MainButton.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    MainButton.TextColor3 = Color3.fromRGB(220, 220, 255)
+    MainButton.TextSize = 18
+    MainButton.Font = Enum.Font.GothamBold
+    MainButton.AutoButtonColor = false
+    MainButton.Parent = Container
+    
+    -- Стилизация кнопки
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0.3, 0)
+    Corner.Parent = MainButton
+    
+    local Stroke = Instance.new("UIStroke")
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Stroke.Color = Color3.fromRGB(100, 180, 255)
+    Stroke.Thickness = 3
+    Stroke.Transparency = 0.3
+    Stroke.Parent = MainButton
+    
+    local Gradient = Instance.new("UIGradient")
+    Gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 80, 140)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 130, 220))
+    }
+    Gradient.Rotation = 90
+    Gradient.Parent = MainButton
+    
+    -- Эффект свечения
+    local Glow = Instance.new("ImageLabel")
+    Glow.Name = "GlowEffect"
+    Glow.Size = UDim2.new(1.2, 0, 1.5, 0)
+    Glow.Position = UDim2.new(0, 0, 0.5, 0)
+    Glow.AnchorPoint = Vector2.new(0, 0.5)
+    Glow.BackgroundTransparency = 1
+    Glow.Image = "rbxassetid://8992231221"
+    Glow.ImageColor3 = Color3.fromRGB(80, 150, 255)
+    Glow.ScaleType = Enum.ScaleType.Slice
+    Glow.SliceCenter = Rect.new(100, 100, 900, 900)
+    Glow.Parent = MainButton
+    Glow.ZIndex = -1
+    Glow.Visible = false
+    
+    -- Кнопка выключения
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Name = "CloseBtn"
+    CloseButton.Text = "X"
+    CloseButton.Size = UDim2.new(0.18, 0, 0.6, 0)
+    CloseButton.Position = UDim2.new(1.05, 0, 0.2, 0)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.TextSize = 18
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.ZIndex = 2
+    CloseButton.Parent = MainButton
+    
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0.4, 0)
+    CloseCorner.Parent = CloseButton
+    
+    -- Анимация при наведении
+    MainButton.MouseEnter:Connect(function()
+        game:GetService("TweenService"):Create(
+            MainButton,
+            TweenInfo.new(0.3),
+            {Size = UDim2.new(0.32, 0, 0.085, 0)}
+        ):Play()
+        game:GetService("TweenService"):Create(
+            Stroke,
+            TweenInfo.new(0.3),
+            {Thickness = 4, Transparency = 0}
+        ):Play()
+    end)
+    
+    MainButton.MouseLeave:Connect(function()
+        game:GetService("TweenService"):Create(
+            MainButton,
+            TweenInfo.new(0.3),
+            {Size = UDim2.new(0.3, 0, 0.08, 0)}
+        ):Play()
+        game:GetService("TweenService"):Create(
+            Stroke,
+            TweenInfo.new(0.3),
+            {Thickness = 3, Transparency = 0.3}
+        ):Play()
+    end)
+    
+    -- Обработчики событий
+    local function RunScript()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/mobileKeySustem'))()
+    end
+
+    MainButton.MouseButton1Click:Connect(function()
+        -- Анимация нажатия
+        local ClickTween = game:GetService("TweenService"):Create(
+            MainButton,
+            TweenInfo.new(0.2),
+            {Size = UDim2.new(0.28, 0, 0.075, 0)}
+        )
+        
+        ClickTween:Play()
+        ClickTween.Completed:Wait()
+        
+        game:GetService("TweenService"):Create(
+            MainButton,
+            TweenInfo.new(0.3),
+            {Size = UDim2.new(0.3, 0, 0.08, 0)}
+        ):Play()
+        
+        -- Запуск скрипта
+        RunScript()
+        
+        -- Эффект успешного запуска
+        Glow.Visible = true
+        for i = 1, 3 do
+            game:GetService("TweenService"):Create(
+                Glow,
+                TweenInfo.new(0.4),
+                {ImageTransparency = 0.3}
+            ):Play()
+            game:GetService("TweenService"):Create(
+                Stroke,
+                TweenInfo.new(0.4),
+                {Color = Color3.fromRGB(50, 255, 100)}
+            ):Play()
+            task.wait(0.4)
+            game:GetService("TweenService"):Create(
+                Glow,
+                TweenInfo.new(0.4),
+                {ImageTransparency = 0.8}
+            ):Play()
+            game:GetService("TweenService"):Create(
+                Stroke,
+                TweenInfo.new(0.4),
+                {Color = Color3.fromRGB(100, 180, 255)}
+            ):Play()
+            task.wait(0.4)
+        end
+        Glow.Visible = false
+    end)
+    
+    -- Улучшенная анимация закрытия
+    CloseButton.MouseButton1Click:Connect(function()
+        -- Отключаем взаимодействие
+        MainButton.Active = false
+        CloseButton.Active = false
+        
+        -- Анимация исчезновения
+        local tweenOut = game:GetService("TweenService"):Create(
+            MainButton,
+            TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                Size = UDim2.new(0, 0, 0, 0),
+                Position = UDim2.new(0.5, 0, 0.92, 0),
+                BackgroundTransparency = 1,
+                TextTransparency = 1
+            }
+        )
+        
+        local glowTween = game:GetService("TweenService"):Create(
+            Glow,
+            TweenInfo.new(0.5),
+            {ImageTransparency = 1}
+        )
+        
+        local strokeTween = game:GetService("TweenService"):Create(
+            Stroke,
+            TweenInfo.new(0.5),
+            {Transparency = 1}
+        )
+        
+        local closeTween = game:GetService("TweenService"):Create(
+            CloseButton,
+            TweenInfo.new(0.3),
+            {BackgroundTransparency = 1, TextTransparency = 1}
+        )
+        
+        tweenOut:Play()
+        glowTween:Play()
+        strokeTween:Play()
+        closeTween:Play()
+        
+        tweenOut.Completed:Wait()
+        ScreenGui:Destroy() -- Полное удаление GUI
+    end)
+    
+    -- Адаптация под экран
+    local function UpdateSize()
+        local viewport = workspace.CurrentCamera.ViewportSize
+        if viewport.Y < 700 then -- Mobile
+            MainButton.Size = UDim2.new(0.4, 0, 0.1, 0)
+            MainButton.TextSize = 16
+            CloseButton.TextSize = 16
+        else -- PC
+            MainButton.Size = UDim2.new(0.3, 0, 0.08, 0)
+            MainButton.TextSize = 18
+            CloseButton.TextSize = 18
+        end
+    end
+
+    UpdateSize()
+    workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateSize)
+end
+
+CreateButton()
+
+
 -- Создаем основной GUI в CoreGui
 local CoreGui = game:GetService("CoreGui")
 local ScreenGui = Instance.new("ScreenGui")
