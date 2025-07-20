@@ -1,3 +1,13 @@
+local CoreGui = game:GetService("CoreGui")
+local gui = CoreGui:FindFirstChild("ScriptLauncher")
+
+if gui then
+    gui:Destroy()
+    print("GUI успешно удален")
+else
+    warn("GUI не найден в CoreGui")
+end
+
 local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/Pro666Pro/DraggableOrionLib/main/main.lua'))()
 
 local Window = OrionLib:MakeWindow({
