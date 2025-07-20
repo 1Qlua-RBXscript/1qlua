@@ -22,9 +22,17 @@ local SETTINGS = {
     }
 }
 
+-- Variables
+local ESPenabled = false
+local CHMSenabled = false -- Assuming you have chams elsewhere
+local speaker = game.Players.LocalPlayer
+
 -- Глобальные переменные
 _G.Walk = SETTINGS.WALK_SPEED.DEFAULT
 _G.WalkSpeedEnabled = true
+
+local Players = game:GetService("Players")
+local COREGUI = game:GetService("CoreGui")
 
 -- ======== ИНИЦИАЛИЗАЦИЯ БИБЛИОТЕКИ ======== --
 local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))()
@@ -334,6 +342,113 @@ game.Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
+
+-- Переменные для CFly
+local CFlyEnabled = false
+local CFlySpeed = 50
+local CFlyLoop = nil
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local head = character:WaitForChild("Head")
+
+-- Функция включения CFly
+local function EnableCFly()
+    if CFlyLoop then CFlyLoop:Disconnect() end
+    
+    humanoid.PlatformStand = true
+    head.Anchored = true
+    
+    CFlyLoop = game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
+        if not character or not humanoid or not head then return end
+        
+        local moveDirection = humanoid.MoveDirection * (CFlySpeed * deltaTime)
+        local headCF = head.CFrame
+        local cameraCF = workspace.CurrentCamera.CFrame
+        
+        -- Вычисляем смещение камеры относительно головы
+        local cameraOffset = headCF:ToObjectSpace(cameraCF).Position
+        
+        -- Корректируем позицию камеры
+        cameraCF = cameraCF * CFrame.new(-cameraOffset.X, -cameraOffset.Y, -cameraOffset.Z + 1)
+        
+        -- Получаем позиции камеры и головы
+        local cameraPos = cameraCF.Position
+        local headPos = headCF.Position
+        
+        -- Вычисляем новую позицию головы
+        local lookCF = CFrame.new(cameraPos, Vector3.new(headPos.X, cameraPos.Y, headPos.Z))
+        local objectSpaceVelocity = lookCF:VectorToObjectSpace(moveDirection)
+        
+        -- Применяем новую позицию
+        head.CFrame = CFrame.new(headPos) * (cameraCF - cameraPos) * CFrame.new(objectSpaceVelocity)
+    end)
+end
+
+-- Функция выключения CFly
+local function DisableCFly()
+    if CFlyLoop then
+        CFlyLoop:Disconnect()
+        CFlyLoop = nil
+    end
+    
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
+    
+    if head then
+        head.Anchored = false
+    end
+end
+
+-- Автоматическое отключение при смерти
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = newChar:WaitForChild("Humanoid")
+    head = newChar:WaitForChild("Head")
+    
+    if CFlyEnabled then
+        DisableCFly()
+        EnableCFly() -- Перезапускаем CFly
+    end
+end)
+
+-- Секция для CFly
+local CFlySection = PlayerTab:DrawSection({
+    Name = "Camera Fly",
+    Position = 'left'
+})
+
+-- Переключатель CFly
+local CFlyToggle = CFlySection:AddToggle({
+    Name = "Enable Camera Fly",
+    Flag = "CFly_Toggle",
+    Default = false,
+    Callback = function(enabled)
+        CFlyEnabled = enabled
+        
+        if enabled then
+            EnableCFly()
+        else
+            DisableCFly()
+        end
+    end
+})
+
+-- Ползунок скорости CFly
+CFlySection:AddSlider({
+    Name = "CFly Speed",
+    Min = 10,
+    Max = 500,
+    Default = 50,
+    Round = 0,
+    Flag = "CFly_Speed",
+    Callback = function(speed)
+        CFlySpeed = speed
+    end
+})
+
+
 local PlayerScriptsSection = PlayerTab:DrawSection({
     Name = "Основные скрипты",
     Position = "right"
@@ -500,6 +615,413 @@ PlayerScriptsSection:AddButton({
     Description = "Быстро поменять сервер",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/Syr0nix/RedFoxServerBowser/main/Mainlua")
+    end
+})
+
+-- ESP Functions
+local function CreateESP(player, teamCheck)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    local espGui = Instance.new("BillboardGui")
+    espGui.Name = player.Name .. "_ESP"
+    espGui.AlwaysOnTop = true
+    espGui.Size = UDim2.new(2, 0, 2, 0)
+    espGui.StudsOffset = Vector3.new(0, 2.5, 0)
+    espGui.Adornee = humanoidRootPart
+    espGui.Parent = COREGUI
+    
+    local espFrame = Instance.new("Frame")
+    espFrame.BackgroundTransparency = 1
+    espFrame.Size = UDim2.new(1, 0, 1, 0)
+    espFrame.Parent = espGui
+    
+    local espText = Instance.new("TextLabel")
+    espText.Name = "ESPText"
+    espText.BackgroundTransparency = 1
+    espText.Size = UDim2.new(1, 0, 1, 0)
+    espText.Font = Enum.Font.SourceSansBold
+    espText.TextSize = 18
+    espText.Text = player.Name
+    espText.TextColor3 = teamCheck and player.Team == speaker.Team and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+    espText.Parent = espFrame
+    
+    -- Health bar
+    local healthBar = Instance.new("Frame")
+    healthBar.Name = "HealthBar"
+    healthBar.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    healthBar.BorderSizePixel = 0
+    healthBar.Size = UDim2.new(1, 0, 0.1, 0)
+    healthBar.Position = UDim2.new(0, 0, 0, -15)
+    healthBar.Parent = espFrame
+    
+    local healthFill = Instance.new("Frame")
+    healthFill.Name = "HealthFill"
+    healthFill.BackgroundColor3 = Color3.new(0, 1, 0)
+    healthFill.BorderSizePixel = 0
+    healthFill.Size = UDim2.new(1, 0, 1, 0)
+    healthFill.Parent = healthBar
+    
+    local function updateHealth()
+        if character and character:FindFirstChild("Humanoid") then
+            local humanoid = character.Humanoid
+            healthFill.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+            
+            -- Change color based on health
+            if humanoid.Health / humanoid.MaxHealth < 0.3 then
+                healthFill.BackgroundColor3 = Color3.new(1, 0, 0)
+            elseif humanoid.Health / humanoid.MaxHealth < 0.6 then
+                healthFill.BackgroundColor3 = Color3.new(1, 1, 0)
+            else
+                healthFill.BackgroundColor3 = Color3.new(0, 1, 0)
+            end
+        end
+    end
+    
+    character:WaitForChild("Humanoid").HealthChanged:Connect(updateHealth)
+    updateHealth()
+    
+    -- Box ESP
+    local box = Instance.new("Frame")
+    box.Name = "Box"
+    box.BackgroundTransparency = 0.8
+    box.BackgroundColor3 = teamCheck and player.Team == speaker.Team and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+    box.BorderSizePixel = 1
+    box.BorderColor3 = Color3.new(1, 1, 1)
+    box.Size = UDim2.new(1.5, 0, 2.5, 0)
+    box.Position = UDim2.new(-0.25, 0, -0.5, 0)
+    box.Parent = espFrame
+    
+    -- Tracer
+    local tracer = Instance.new("Frame")
+    tracer.Name = "Tracer"
+    tracer.BackgroundColor3 = teamCheck and player.Team == speaker.Team and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+    tracer.BorderSizePixel = 0
+    tracer.Size = UDim2.new(0, 1, 0, 1000)
+    tracer.AnchorPoint = Vector2.new(0.5, 1)
+    tracer.Position = UDim2.new(0.5, 0, 1, 0)
+    tracer.Parent = espFrame
+    
+    player.CharacterAdded:Connect(function(newChar)
+        espGui.Adornee = newChar:WaitForChild("HumanoidRootPart")
+        newChar:WaitForChild("Humanoid").HealthChanged:Connect(updateHealth)
+        updateHealth()
+    end)
+    
+    player:GetPropertyChangedSignal("Team"):Connect(function()
+        if teamCheck then
+            espText.TextColor3 = player.Team == speaker.Team and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+            box.BackgroundColor3 = player.Team == speaker.Team and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+            tracer.BackgroundColor3 = player.Team == speaker.Team and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+        end
+    end)
+    
+    return espGui
+end
+
+local function ESP(player, teamCheck)
+    if not player.Character then
+        player.CharacterAdded:Wait()
+    end
+    return CreateESP(player, teamCheck)
+end
+
+local function ToggleESP(teamCheck)
+    if not CHMSenabled then
+        ESPenabled = not ESPenabled
+        
+        if ESPenabled then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= speaker then
+                    ESP(player, teamCheck)
+                end
+            end
+            
+            Players.PlayerAdded:Connect(function(player)
+                if ESPenabled then
+                    ESP(player, teamCheck)
+                end
+            end)
+            
+            Notifier.new({
+                Title = "ESP",
+                Content = "ESP has been enabled" .. (teamCheck and " (Team Check)" or ""),
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        else
+            for _, child in pairs(COREGUI:GetChildren()) do
+                if string.sub(child.Name, -4) == "_ESP" then
+                    child:Destroy()
+                end
+            end
+            
+            Notifier.new({
+                Title = "ESP",
+                Content = "ESP has been disabled",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        end
+    else
+        Notifier.new({
+            Title = "ESP",
+            Content = "Disable chams (nochams) before using esp",
+            Duration = 3,
+            Icon = "rbxassetid://120245531583106"
+        })
+    end
+end
+
+
+
+local ESPTab = Window:DrawTab({
+    Name = "ESP Settings",
+    Icon = "eye",
+    EnableScrolling = true
+})
+
+local ESSettings = ESPTab:DrawSection({
+    Name = "ESP Settings",
+    Position = 'left'
+})
+
+-- ESP Toggles
+ESSettings:AddToggle({
+    Name = "Enable ESP",
+    Flag = "ESP_Enabled",
+    Default = false,
+    Callback = function(state)
+        if state then
+            ToggleESP(false)
+        else
+            ToggleESP(false)
+        end
+    end
+})
+
+ESSettings:AddToggle({
+    Name = "Team Check",
+    Flag = "ESP_TeamCheck",
+    Default = false,
+    Callback = function(state)
+        if ESPenabled then
+            -- Refresh ESP with new team check setting
+            ToggleESP(false) -- Turn off
+            ToggleESP(state) -- Turn on with new setting
+        end
+    end
+})
+
+ESSettings:AddToggle({
+    Name = "Show Names",
+    Flag = "ESP_ShowNames",
+    Default = true,
+    Callback = function(state)
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local espText = child:FindFirstChild("Frame"):FindFirstChild("ESPText")
+                if espText then
+                    espText.Visible = state
+                end
+            end
+        end
+    end
+})
+
+ESSettings:AddToggle({
+    Name = "Show Health Bar",
+    Flag = "ESP_ShowHealth",
+    Default = true,
+    Callback = function(state)
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local healthBar = child:FindFirstChild("Frame"):FindFirstChild("HealthBar")
+                if healthBar then
+                    healthBar.Visible = state
+                end
+            end
+        end
+    end
+})
+
+ESSettings:AddToggle({
+    Name = "Show Box",
+    Flag = "ESP_ShowBox",
+    Default = true,
+    Callback = function(state)
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local box = child:FindFirstChild("Frame"):FindFirstChild("Box")
+                if box then
+                    box.Visible = state
+                end
+            end
+        end
+    end
+})
+
+ESSettings:AddToggle({
+    Name = "Show Tracer",
+    Flag = "ESP_ShowTracer",
+    Default = true,
+    Callback = function(state)
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local tracer = child:FindFirstChild("Frame"):FindFirstChild("Tracer")
+                if tracer then
+                    tracer.Visible = state
+                end
+            end
+        end
+    end
+})
+
+-- ESP Colors
+local ESPColors = ESPTab:DrawSection({
+    Name = "ESP Colors",
+    Position = 'right'
+})
+
+ESPColors:AddColorPicker({
+    Name = "Enemy Color",
+    Flag = "ESP_EnemyColor",
+    Default = Color3.fromRGB(255, 0, 0),
+    Callback = function(color)
+        if not ESPenabled or not ConfigManager:GetValue("ESP_TeamCheck") then return end
+        
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local playerName = string.sub(child.Name, 1, -5)
+                local player = Players:FindFirstChild(playerName)
+                
+                if player and player.Team ~= speaker.Team then
+                    local frame = child:FindFirstChild("Frame")
+                    if frame then
+                        local espText = frame:FindFirstChild("ESPText")
+                        local box = frame:FindFirstChild("Box")
+                        local tracer = frame:FindFirstChild("Tracer")
+                        
+                        if espText then espText.TextColor3 = color end
+                        if box then box.BackgroundColor3 = color end
+                        if tracer then tracer.BackgroundColor3 = color end
+                    end
+                end
+            end
+        end
+    end
+})
+
+ESPColors:AddColorPicker({
+    Name = "Team Color",
+    Flag = "ESP_TeamColor",
+    Default = Color3.fromRGB(0, 255, 0),
+    Callback = function(color)
+        if not ESPenabled or not ConfigManager:GetValue("ESP_TeamCheck") then return end
+        
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local playerName = string.sub(child.Name, 1, -5)
+                local player = Players:FindFirstChild(playerName)
+                
+                if player and player.Team == speaker.Team then
+                    local frame = child:FindFirstChild("Frame")
+                    if frame then
+                        local espText = frame:FindFirstChild("ESPText")
+                        local box = frame:FindFirstChild("Box")
+                        local tracer = frame:FindFirstChild("Tracer")
+                        
+                        if espText then espText.TextColor3 = color end
+                        if box then box.BackgroundColor3 = color end
+                        if tracer then tracer.BackgroundColor3 = color end
+                    end
+                end
+            end
+        end
+    end
+})
+
+ESPColors:AddColorPicker({
+    Name = "Text Color",
+    Flag = "ESP_TextColor",
+    Default = Color3.fromRGB(255, 255, 255),
+    Callback = function(color)
+        if not ESPenabled then return end
+        
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local frame = child:FindFirstChild("Frame")
+                if frame then
+                    local espText = frame:FindFirstChild("ESPText")
+                    if espText then
+                        espText.TextColor3 = color
+                    end
+                end
+            end
+        end
+    end
+})
+
+-- Text Settings
+local TextSettings = ESPTab:DrawSection({
+    Name = "Text Settings",
+    Position = 'right'
+})
+
+TextSettings:AddSlider({
+    Name = "Text Size",
+    Min = 10,
+    Max = 30,
+    Default = 18,
+    Round = 0,
+    Flag = "ESP_TextSize",
+    Callback = function(value)
+        if not ESPenabled then return end
+        
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local frame = child:FindFirstChild("Frame")
+                if frame then
+                    local espText = frame:FindFirstChild("ESPText")
+                    if espText then
+                        espText.TextSize = value
+                    end
+                end
+            end
+        end
+    end
+})
+
+TextSettings:AddDropdown({
+    Name = "Text Font",
+    Default = "SourceSansBold",
+    Flag = "ESP_TextFont",
+    Values = {"SourceSans", "SourceSansBold", "SourceSansItalic", "Code", "Highway", "SciFi", "Arcade", "Fantasy"},
+    Callback = function(value)
+        if not ESPenabled then return end
+        
+        local fontMap = {
+            SourceSans = Enum.Font.SourceSans,
+            SourceSansBold = Enum.Font.SourceSansBold,
+            SourceSansItalic = Enum.Font.SourceSansItalic,
+            Code = Enum.Font.Code,
+            Highway = Enum.Font.Highway,
+            SciFi = Enum.Font.SciFi,
+            Arcade = Enum.Font.Arcade,
+            Fantasy = Enum.Font.Fantasy
+        }
+        
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local frame = child:FindFirstChild("Frame")
+                if frame then
+                    local espText = frame:FindFirstChild("ESPText")
+                    if espText then
+                        espText.Font = fontMap[value]
+                    end
+                end
+            end
+        end
     end
 })
 
