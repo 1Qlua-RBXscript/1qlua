@@ -180,6 +180,160 @@ PlayerMainSection:AddSlider({
     Callback = Functions.TimeOfDay
 })
 
+local HitboxSection = PlayerTab:DrawSection({
+    Name = "Main Settings",
+    Position = 'left'
+});
+
+-- Переменные для хранения настроек
+local hitboxEnabled = false
+local currentPlayers = {}
+local hitboxSize = 2
+local hitboxTransparency = 0.4
+local selectedPlayerOptions = {"All"}
+
+-- Функция для получения списка игроков
+local function getPlayerList()
+    local players = {}
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            table.insert(players, player.Name)
+        end
+    end
+    return players
+end
+
+-- Функция для обновления хитбоксов
+local function updateHitboxes()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild('HumanoidRootPart') then
+            local root = player.Character.HumanoidRootPart
+            
+            -- Проверяем, должен ли этот игрок иметь хитбокс
+            local shouldHaveHitbox = false
+            if hitboxEnabled then
+                if table.find(selectedPlayerOptions, "All") then
+                    shouldHaveHitbox = (player ~= game.Players.LocalPlayer)
+                else
+                    local isEnemy = not player.Team or player.Team ~= game.Players.LocalPlayer.Team
+                    if table.find(selectedPlayerOptions, "Enemies") and isEnemy then
+                        shouldHaveHitbox = true
+                    elseif table.find(selectedPlayerOptions, "Team") and not isEnemy then
+                        shouldHaveHitbox = true
+                    elseif table.find(selectedPlayerOptions, player.Name) then
+                        shouldHaveHitbox = true
+                    end
+                end
+            end
+            
+            if shouldHaveHitbox then
+                root.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+                root.Transparency = hitboxTransparency
+            else
+                root.Size = Vector3.new(2, 1, 1)
+                root.Transparency = 1
+            end
+        end
+    end
+end
+
+-- Тоггл для включения/выключения хитбоксов
+HitboxSection:AddToggle({
+    Name = "Enable Hitboxes",
+    Flag = "Hitbox_Enabled",
+    Default = false,
+    Callback = function(value)
+        hitboxEnabled = value
+        updateHitboxes()
+    end
+})
+
+-- Слайдер для размера хитбокса
+HitboxSection:AddSlider({
+    Name = "Hitbox Size",
+    Min = 1,
+    Max = 10,
+    Default = 2,
+    Round = 1,
+    Flag = "Hitbox_Size",
+    Callback = function(value)
+        hitboxSize = value
+        if hitboxEnabled then
+            updateHitboxes()
+        end
+    end
+})
+
+-- Слайдер для прозрачности
+HitboxSection:AddSlider({
+    Name = "Transparency",
+    Min = 0,
+    Max = 1,
+    Default = 0.4,
+    Round = 0.1,
+    Flag = "Hitbox_Transparency",
+    Callback = function(value)
+        hitboxTransparency = value
+        if hitboxEnabled then
+            updateHitboxes()
+        end
+    end
+})
+
+-- Выбор игроков
+local playerOptions = {"All", "Enemies", "Team"}
+local playerNames = getPlayerList()
+for _, name in pairs(playerNames) do
+    table.insert(playerOptions, name)
+end
+
+HitboxSection:AddDropdown({
+    Name = "Select Players",
+    Default = {"All"},
+    Multi = true,
+    Flag = "Hitbox_Players",
+    Values = playerOptions,
+    Callback = function(selected)
+        selectedPlayerOptions = selected
+        if hitboxEnabled then
+            updateHitboxes()
+        end
+    end
+})
+
+-- Кнопка для обновления списка игроков
+HitboxSection:AddButton({
+    Name = "Refresh Players",
+    Callback = function()
+        playerOptions = {"All", "Enemies", "Team"}
+        playerNames = getPlayerList()
+        for _, name in pairs(playerNames) do
+            table.insert(playerOptions, name)
+        end
+        
+        -- Сохраняем текущий выбор
+        local currentSelection = selectedPlayerOptions
+        updateHitboxes()
+    end
+})
+
+-- Автоматическое обновление при появлении новых игроков
+game.Players.PlayerAdded:Connect(function(player)
+    playerOptions = {"All", "Enemies", "Team"}
+    playerNames = getPlayerList()
+    for _, name in pairs(playerNames) do
+        table.insert(playerOptions, name)
+    end
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+    playerOptions = {"All", "Enemies", "Team"}
+    playerNames = getPlayerList()
+    for _, name in pairs(playerNames) do
+        table.insert(playerOptions, name)
+    end
+end)
+
 local PlayerScriptsSection = PlayerTab:DrawSection({
     Name = "Основные скрипты",
     Position = "right"
@@ -194,10 +348,18 @@ PlayerScriptsSection:AddButton({
 })
 
 PlayerScriptsSection:AddButton({
+    Name = "f3x",
+    Description = "Прикольный кубик",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/infyiff/backup/refs/heads/main/f3x.lua")
+    end
+})
+
+PlayerScriptsSection:AddButton({
     Name = "DEX Explorer",
     Description = "Инструмент для исследования игровых объектов",
     Callback = function()
-        Functions.LoadScript("https://raw.githubusercontent.com/MariyaFurmanova/Library/main/dex2.0")
+        Functions.LoadScript("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua")
     end
 })
 
