@@ -106,7 +106,7 @@ local function CreateButton()
     
     -- Обработчики событий
     local function RunScript()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/mobileKeySustem'))()
+        loadstring(game:HttpGet('https://pastebin.com/raw/Kw1tndff'))()
     end
 
     MainButton.MouseButton1Click:Connect(function()
