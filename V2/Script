@@ -14,7 +14,7 @@ local function CreateButton()
     -- Основная кнопка
     local MainButton = Instance.new("TextButton")
     MainButton.Name = "MobileCheckBtn"
-    MainButton.Text = "Вы на телефоне?"
+    MainButton.Text = "Are you on the phone?"
     MainButton.Size = UDim2.new(0.3, 0, 0.08, 0)
     MainButton.Position = UDim2.new(0.5, 0, 0.92, 0)
     MainButton.AnchorPoint = Vector2.new(0.5, 1)
