@@ -1,6 +1,6 @@
 local gameScripts = {
-    [7239319209] = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/eng/free/1qluaKeyEngOHIOKEY",    -- Ohio
-    ["default"] = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/eng/free/1qluaKeyEngKEY"      -- Другие игры
+    [7239319209] = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/eng/key/1qluaKeyEngOHIO",    -- Ohio
+    ["default"] = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/eng/key/1qluaKeyEng"      -- Другие игры
 }
 
 local currentGameId = game.PlaceId
