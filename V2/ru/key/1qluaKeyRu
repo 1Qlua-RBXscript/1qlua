@@ -1214,6 +1214,255 @@ TextSettings:AddDropdown({
     end
 })
 
+-- Создаем вкладку Fling
+local FlingTab = Window:DrawTab({
+    Name = "Fling",
+    Icon = "target",
+    EnableScrolling = true
+})
+
+-- Секция для обычного fling
+local FlingSection = FlingTab:DrawSection({
+    Name = "Main Fling",
+    Position = 'left'
+})
+
+-- Переменные для управления
+local flinging = false
+local walkflinging = false
+local antifling = nil
+local flingDied = nil
+
+-- Функция включения fling
+local function enableFling()
+    if flinging then return end
+    
+    flinging = true
+    for _, child in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+        if child:IsA("BasePart") then
+            child.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+        end
+    end
+    
+    game:GetService("RunService").Stepped:Connect(function()
+        if not flinging then return end
+        game.Players.LocalPlayer.Character.Humanoid:ChangeState(11)
+    end)
+    
+    wait(.1)
+    local bambam = Instance.new("BodyAngularVelocity")
+    bambam.Name = "FlingVelocity"
+    bambam.Parent = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    bambam.AngularVelocity = Vector3.new(0,99999,0)
+    bambam.MaxTorque = Vector3.new(0,math.huge,0)
+    bambam.P = math.huge
+    
+    for i, v in next, game.Players.LocalPlayer.Character:GetChildren() do
+        if v:IsA("BasePart") then
+            v.CanCollide = false
+            v.Massless = true
+            v.Velocity = Vector3.new(0, 0, 0)
+        end
+    end
+    
+    local function flingDiedF()
+        disableFling()
+    end
+    
+    flingDied = game.Players.LocalPlayer.Character:FindFirstChildOfClass('Humanoid').Died:Connect(flingDiedF)
+    
+    while flinging do
+        bambam.AngularVelocity = Vector3.new(0,99999,0)
+        wait(.2)
+        bambam.AngularVelocity = Vector3.new(0,0,0)
+        wait(.1)
+    end
+end
+
+-- Функция выключения fling
+local function disableFling()
+    if not flinging then return end
+    
+    if flingDied then
+        flingDied:Disconnect()
+    end
+    
+    flinging = false
+    wait(.1)
+    
+    local speakerChar = game.Players.LocalPlayer.Character
+    if not speakerChar or not speakerChar:FindFirstChild("HumanoidRootPart") then return end
+    
+    for i,v in pairs(speakerChar.HumanoidRootPart:GetChildren()) do
+        if v.ClassName == 'BodyAngularVelocity' then
+            v:Destroy()
+        end
+    end
+    
+    for _, child in pairs(speakerChar:GetDescendants()) do
+        if child:IsA("BasePart") then
+            child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+        end
+    end
+end
+
+-- Функция включения walkfling
+local function enableWalkFling()
+    if walkflinging then return end
+    
+    walkflinging = true
+    local RunService = game:GetService("RunService")
+    
+    local humanoid = game.Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            disableWalkFling()
+        end)
+    end
+    
+    while walkflinging do
+        RunService.Heartbeat:Wait()
+        local character = game.Players.LocalPlayer.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        local vel, movel = nil, 0.1
+
+        while not (character and character.Parent and root and root.Parent) do
+            RunService.Heartbeat:Wait()
+            character = game.Players.LocalPlayer.Character
+            root = character and character:FindFirstChild("HumanoidRootPart")
+        end
+
+        vel = root.Velocity
+        root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+
+        RunService.RenderStepped:Wait()
+        if character and character.Parent and root and root.Parent then
+            root.Velocity = vel
+        end
+
+        RunService.Stepped:Wait()
+        if character and character.Parent and root and root.Parent then
+            root.Velocity = vel + Vector3.new(0, movel, 0)
+            movel = movel * -1
+        end
+    end
+end
+
+-- Функция выключения walkfling
+local function disableWalkFling()
+    walkflinging = false
+end
+
+-- Функция включения antifling
+local function enableAntiFling()
+    if antifling then
+        antifling:Disconnect()
+        antifling = nil
+    end
+    
+    antifling = game:GetService("RunService").Stepped:Connect(function()
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                for _, v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Функция выключения antifling
+local function disableAntiFling()
+    if antifling then
+        antifling:Disconnect()
+        antifling = nil
+    end
+end
+
+-- Добавляем элементы в UI
+FlingSection:AddToggle({
+    Name = "Fling",
+    Flag = "Fling_Toggle",
+    Default = false,
+    Callback = function(state)
+        if state then
+            enableFling()
+        else
+            disableFling()
+        end
+    end
+})
+
+FlingSection:AddToggle({
+    Name = "WalkFling",
+    Flag = "WalkFling_Toggle",
+    Default = false,
+    Callback = function(state)
+        if state then
+            enableWalkFling()
+        else
+            disableWalkFling()
+        end
+    end
+})
+
+FlingSection:AddToggle({
+    Name = "AntiFling",
+    Flag = "AntiFling_Toggle",
+    Default = false,
+    Callback = function(state)
+        if state then
+            enableAntiFling()
+        else
+            disableAntiFling()
+        end
+    end
+})
+
+-- Секция для настроек флинга
+local FlingSettings = FlingTab:DrawSection({
+    Name = "Fling Settings",
+    Position = 'right'
+})
+
+FlingSettings:AddSlider({
+    Name = "Fling Power",
+    Min = 1000,
+    Max = 99999,
+    Default = 99999,
+    Round = 0,
+    Flag = "Fling_Power",
+    Callback = function(value)
+        -- Можно добавить логику изменения силы флинга
+    end
+})
+
+FlingSettings:AddDropdown({
+    Name = "Fling Type",
+    Default = "Normal",
+    Values = {"Normal", "Reverse", "Chaos"},
+    Callback = function(value)
+        -- Можно добавить разные типы флинга
+    end
+})
+
+FlingSettings:AddButton({
+    Name = "Reset Character",
+    Callback = function()
+        game.Players.LocalPlayer.Character:BreakJoints()
+    end
+})
+
+-- Автоматическое отключение при смерти
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        disableFling()
+        disableWalkFling()
+    end)
+end)
+
 -- Create Camera Tab
 local CameraTab = Window:DrawTab({
     Name = "Camera",
