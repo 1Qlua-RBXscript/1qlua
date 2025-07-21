@@ -668,6 +668,14 @@ PlayerScriptsSection:AddButton({
 })
 
 PlayerScriptsSection:AddButton({
+    Name = "DEX++",
+    Description = "Инструмент для исследования игровых объектов",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/refs/heads/main/DexPlusBackup.luau")
+    end
+})
+
+PlayerScriptsSection:AddButton({
     Name = "Полёт (F)",
     Description = "Включение режима полёта по нажатию F",
     Callback = function()
