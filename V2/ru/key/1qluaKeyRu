@@ -643,6 +643,387 @@ player.CharacterAdded:Connect(function(character)
     end
 end)
 
+
+-- Сервисы
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local speaker = Players.LocalPlayer
+
+-- Переменные
+local Noclipping, Clip
+local partHighlights = {}
+local espTransparency = 0.5
+local autoRejoinConnection
+local antiAfkEnabled = false
+local antiLagEnabled = false
+
+-- Функция уведомлений
+local function notify(title, text)
+    Compkiller.newNotify().new({
+        Title = title,
+        Content = text,
+        Duration = 3
+    })
+end
+
+-- Part ESP Functions
+local function createHighlight(part)
+    local highlight = Instance.new("BoxHandleAdornment")
+    highlight.Name = "PART_HIGHLIGHT_"..part.Name
+    highlight.Parent = part
+    highlight.Adornee = part
+    highlight.AlwaysOnTop = true
+    highlight.ZIndex = 0
+    highlight.Size = part.Size
+    highlight.Transparency = espTransparency
+    highlight.Color = BrickColor.new("Lime green")
+    return highlight
+end
+
+local function highlightPart(partName)
+    partName = partName:lower()
+    local found = false
+    
+    -- Удаляем старую подсветку если есть
+    if partHighlights[partName] then
+        for _, part in pairs(partHighlights[partName].parts) do
+            if part and part.Parent then
+                local highlight = part:FindFirstChild("PART_HIGHLIGHT_"..part.Name)
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+        if partHighlights[partName].connection then
+            partHighlights[partName].connection:Disconnect()
+        end
+        partHighlights[partName] = nil
+        notify("Part ESP", "Removed from "..partName)
+        return
+    end
+    
+    -- Добавляем новую подсветку
+    partHighlights[partName] = {parts = {}, connection = nil}
+    
+    -- Подсвечиваем существующие части
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name:lower() == partName then
+            table.insert(partHighlights[partName].parts, part)
+            createHighlight(part)
+            found = true
+        end
+    end
+    
+    -- Подписываемся на новые части
+    partHighlights[partName].connection = workspace.DescendantAdded:Connect(function(child)
+        if child:IsA("BasePart") and child.Name:lower() == partName then
+            table.insert(partHighlights[partName].parts, child)
+            createHighlight(child)
+        end
+    end)
+    
+    if found then
+        notify("Part ESP", "Highlighted "..partName)
+    else
+        notify("Part ESP", "No parts found")
+    end
+end
+
+local function clearAllHighlights()
+    for partName, data in pairs(partHighlights) do
+        for _, part in pairs(data.parts) do
+            if part and part.Parent then
+                local highlight = part:FindFirstChild("PART_HIGHLIGHT_"..part.Name)
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+        if data.connection then
+            data.connection:Disconnect()
+        end
+    end
+    partHighlights = {}
+    notify("Part ESP", "All highlights cleared")
+end
+
+-- Utility Section
+local UtilitySection = PlayerTab:DrawSection({
+    Name = "Utility",
+    Position = "left"
+})
+
+UtilitySection:AddButton({
+    Name = "Copy Server Link",
+    Callback = function()
+        setclipboard("roblox://placeId="..game.PlaceId.."&gameInstanceId="..game.JobId)
+        notify("Server Link", "Copied to clipboard!")
+    end
+})
+
+UtilitySection:AddToggle({
+    Name = "Auto Rejoin",
+    Flag = "AutoRejoin",
+    Default = false,
+    Callback = function(state)
+        if state then
+            if autoRejoinConnection then
+                autoRejoinConnection:Disconnect()
+            end
+            autoRejoinConnection = GuiService.ErrorMessageChanged:Connect(function()
+                TeleportService:Teleport(game.PlaceId)
+            end)
+            notify("Auto Rejoin", "Enabled")
+        else
+            if autoRejoinConnection then
+                autoRejoinConnection:Disconnect()
+                autoRejoinConnection = nil
+            end
+            notify("Auto Rejoin", "Disabled")
+        end
+    end
+})
+
+UtilitySection:AddToggle({
+    Name = "Anti-AFK",
+    Flag = "AntiAFK",
+    Default = false,
+    Callback = function(state)
+        antiAfkEnabled = state
+        if state then
+            local GC = getconnections or get_signal_cons
+            if GC then
+                for i,v in pairs(GC(Players.LocalPlayer.Idled)) do
+                    if v["Disable"] then
+                        v["Disable"](v)
+                    elseif v["Disconnect"] then
+                        v["Disconnect"](v)
+                    end
+                end
+            else
+                local VirtualUser = game:GetService("VirtualUser")
+                Players.LocalPlayer.Idled:Connect(function()
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new())
+                end)
+            end
+            notify('Anti-AFK', 'Enabled')
+        else
+            notify('Anti-AFK', 'Disabled')
+        end
+    end
+})
+
+-- Visual Section
+local VisualSection = PlayerTab:DrawSection({
+    Name = "Visual",
+    Position = "left"
+})
+
+VisualSection:AddTextBox({
+    Name = "Highlight Part",
+    Placeholder = "Enter part name",
+    Callback = highlightPart
+})
+
+VisualSection:AddButton({
+    Name = "Clear Highlights",
+    Callback = clearAllHighlights
+})
+
+VisualSection:AddSlider({
+    Name = "Highlight Transparency",
+    Min = 0,
+    Max = 1,
+    Default = 0.5,
+    Increment = 0.1,
+    Callback = function(value)
+        espTransparency = value
+        for _, data in pairs(partHighlights) do
+            for _, part in pairs(data.parts) do
+                local highlight = part:FindFirstChild("PART_HIGHLIGHT_"..part.Name)
+                if highlight then
+                    highlight.Transparency = value
+                end
+            end
+        end
+    end
+})
+
+-- Teleport Section
+local TPSection = PlayerTab:DrawSection({
+    Name = "Teleport",
+    Position = "left"
+})
+
+local playerList = {}
+local selectedPlayer = ""
+local tpDistance = 5
+
+local function updatePlayerList()
+    playerList = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer then
+            table.insert(playerList, player.Name)
+        end
+    end
+end
+
+updatePlayerList()
+
+TPSection:AddDropdown({
+    Name = "Select Player",
+    Default = "",
+    Values = playerList,
+    Callback = function(value)
+        selectedPlayer = value
+    end
+})
+
+TPSection:AddSlider({
+    Name = "TP Distance",
+    Min = 0,
+    Max = 20,
+    Default = 5,
+    Round = 0,
+    Callback = function(value)
+        tpDistance = value
+    end
+})
+
+TPSection:AddButton({
+    Name = "Teleport To Player",
+    Callback = function()
+        if selectedPlayer == "" then
+            notify("Teleport", "Select a player first!")
+            return
+        end
+        
+        local target = Players:FindFirstChild(selectedPlayer)
+        if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+            notify("Teleport", "Target player not found!")
+            return
+        end
+        
+        local char = speaker.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then
+            notify("Teleport", "Your character not found!")
+            return
+        end
+        
+        char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -tpDistance)
+        notify("Teleport", "Teleported to "..selectedPlayer)
+    end
+})
+
+TPSection:AddButton({
+    Name = "Refresh Player List",
+    Callback = function()
+        updatePlayerList()
+        notify("Player List", "Refreshed")
+    end
+})
+
+-- Update player list automatically
+Players.PlayerAdded:Connect(function(player)
+    table.insert(playerList, player.Name)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    for i, name in ipairs(playerList) do
+        if name == player.Name then
+            table.remove(playerList, i)
+            break
+        end
+    end
+end)
+
+PlayerScriptsSection:AddToggle({
+    Name = "Anti-Lag",
+    Flag = "AntiLag",
+    Default = false,
+    Callback = function(state)
+        antiLagEnabled = state
+        if state then
+            local Terrain = workspace:FindFirstChildOfClass('Terrain')
+            Terrain.WaterWaveSize = 0
+            Terrain.WaterWaveSpeed = 0
+            Terrain.WaterReflectance = 0
+            Terrain.WaterTransparency = 1
+            
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9e9
+            Lighting.FogStart = 9e9
+            settings().Rendering.QualityLevel = 1
+            
+            for _,v in pairs(game:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Material = "Plastic"
+                    v.Reflectance = 0
+                    for _, surface in pairs({"Back", "Bottom", "Front", "Left", "Right", "Top"}) do
+                        v[surface.."Surface"] = "SmoothNoOutlines"
+                    end
+                elseif v:IsA("Decal") then
+                    v.Transparency = 1
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                    v.Lifetime = NumberRange.new(0)
+                end
+            end
+            
+            for _,v in pairs(Lighting:GetDescendants()) do
+                if v:IsA("PostEffect") then
+                    v.Enabled = false
+                end
+            end
+            
+            workspace.DescendantAdded:Connect(function(child)
+                if child:IsA('ForceField') or child:IsA('Sparkles') or child:IsA('Smoke') or child:IsA('Fire') or child:IsA('Beam') then
+                    task.wait()
+                    child:Destroy()
+                end
+            end)
+            
+            notify("Anti-Lag", "Enabled")
+        else
+            notify("Anti-Lag", "Restart game to disable")
+        end
+    end
+})
+
+PlayerScriptsSection:AddToggle({
+    Name = "Noclip",
+    Flag = "NoclipToggle",
+    Default = false,
+    Callback = function(state)
+        if state then
+            Clip = false
+            local function NoclipLoop()
+                if Clip == false and speaker.Character ~= nil then
+                    for _, child in pairs(speaker.Character:GetDescendants()) do
+                        if child:IsA("BasePart") and child.CanCollide == true then
+                            child.CanCollide = false
+                        end
+                    end
+                end
+            end
+            Noclipping = RunService.Stepped:Connect(NoclipLoop)
+            notify('Noclip', 'Enabled')
+        else
+            if Noclipping then
+                Noclipping:Disconnect()
+                Noclipping = nil
+            end
+            Clip = true
+            notify('Noclip', 'Disabled')
+        end
+    end
+})
+
+
+
 PlayerScriptsSection:AddButton({
     Name = "Infinite Yield",
     Description = "Мощные админ-команды для управления игрой",
