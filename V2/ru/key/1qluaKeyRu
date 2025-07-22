@@ -149,7 +149,7 @@ local Players = game:GetService("Players")
 local COREGUI = game:GetService("CoreGui")
 
 -- ======== ИНИЦИАЛИЗАЦИЯ БИБЛИОТЕКИ ======== --
-local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))()
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/source"))()
 local Notifier = Compkiller.newNotify()
 local ConfigManager = Compkiller:ConfigManager({
     Directory = "1Qlua-Config",
@@ -1022,7 +1022,13 @@ PlayerScriptsSection:AddToggle({
     end
 })
 
-
+PlayerScriptsSection:AddButton({
+    Name = "Запускает нужные скрипты",
+    Description = "Запускает парочку нужных скриптов для игры",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/ALLSCRIPTRUN")
+    end
+})
 
 PlayerScriptsSection:AddButton({
     Name = "Infinite Yield",
