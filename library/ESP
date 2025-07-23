@@ -180,10 +180,3 @@ getgenv().ESP_SETTINGS = function(settings)
     
     print("✅ Настройки ESP обновлены")
 end
-
-print("🎯 Улучшенный ESP готов!")
-print("ESP(\"workspace.Car\") - подсветить объект")
-print("ESP(\"workspace:GetChildren()[58]\") - подсветить по индексу")
-print("ESP(\"workspace['Around Lightning']\") - подсветить со спецсимволами")
-print("UNESP(\"путь\") - убрать подсветку")
-print("ESP_SETTINGS({Color=Color3.new(1,0,0)}) - изменить цвет на красный")
