@@ -1,0 +1,92 @@
+local espColor = Color3.fromRGB(0, 255, 0) -- Зелёный
+local espTransparency = 0.5 -- Полупрозрачность
+
+-- Очистка всей подсветки
+local function clearESP()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj:FindFirstChild("ESP_Adornment") then
+            obj.ESP_Adornment:Destroy()
+        end
+    end
+end
+
+-- Подсветка объекта и его потомков
+local function highlightObject(target)
+    if not target then return end
+
+    for _, descendant in pairs(target:GetDescendants()) do
+        if descendant:IsA("BasePart") then
+            local esp = Instance.new("BoxHandleAdornment")
+            esp.Name = "ESP_Adornment"
+            esp.Adornee = descendant
+            esp.AlwaysOnTop = true
+            esp.ZIndex = 1
+            esp.Size = descendant.Size + Vector3.new(0.1, 0.1, 0.1)
+            esp.Transparency = espTransparency
+            esp.Color3 = espColor
+            esp.Parent = descendant
+        end
+    end
+
+    target.DescendantAdded:Connect(function(descendant)
+        if descendant:IsA("BasePart") then
+            task.wait(0.1)
+            local esp = Instance.new("BoxHandleAdornment")
+            esp.Name = "ESP_Adornment"
+            esp.Adornee = descendant
+            esp.AlwaysOnTop = true
+            esp.ZIndex = 1
+            esp.Size = descendant.Size + Vector3.new(0.1, 0.1, 0.1)
+            esp.Transparency = espTransparency
+            esp.Color3 = espColor
+            esp.Parent = descendant
+        end
+    end)
+end
+
+-- Удаление подсветки с конкретного объекта
+local function unhighlightObject(target)
+    if not target then return end
+
+    for _, descendant in pairs(target:GetDescendants()) do
+        if descendant:IsA("BasePart") and descendant:FindFirstChild("ESP_Adornment") then
+            descendant.ESP_Adornment:Destroy()
+        end
+    end
+end
+
+-- Глобальные функции для вызова из инжектора
+getgenv().ESP = function(objectPath)
+    local success, target = pcall(function()
+        return loadstring("return " .. objectPath)()
+    end)
+
+    if not success or not target then
+        warn("❌ Объект не найден: " .. objectPath)
+        return false
+    end
+
+    clearESP() -- Очищаем старую подсветку
+    highlightObject(target) -- Включаем новую
+    print("✅ Подсветка активирована для: " .. objectPath)
+    return true
+end
+
+getgenv().UNESP = function(objectPath)
+    local success, target = pcall(function()
+        return loadstring("return " .. objectPath)()
+    end)
+
+    if not success or not target then
+        warn("❌ Объект не найден: " .. objectPath)
+        return false
+    end
+
+    unhighlightObject(target) -- Убираем подсветку
+    print("🚫 Подсветка отключена для: " .. objectPath)
+    return true
+end
+
+-- Примеры использования:
+-- ESP("workspace.Base") -- Включить подсветку
+-- UNESP("workspace.Base") -- Выключить подсветку
