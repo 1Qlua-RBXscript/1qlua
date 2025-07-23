@@ -1,6 +1,6 @@
 local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/DEL",
-    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/ESP%20%2B%20TP",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/ESP",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/FLYTO",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/SCRIPT",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPCOME"
