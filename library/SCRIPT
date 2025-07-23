@@ -1,0 +1,24 @@
+local function LoadScript(url)
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(url))()
+    end)
+    if not success then
+        warn("❌ Ошибка загрузки скрипта: " .. err)
+    end
+end
+
+getgenv().DEX = function()
+    print("🔄 Загрузка Dex Explorer...")
+    LoadScript("https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/refs/heads/main/DexPlusBackup.luau")
+end
+
+getgenv().QLUA = function()
+    print("🔄 Загрузка 1QLua...")
+    LoadScript("https://pastebin.com/raw/EdUyxN7Z")
+end
+
+getgenv().IY = function()
+    print("🔄 Загрузка Infinite Yield...")
+    LoadScript("https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua")
+end
+
