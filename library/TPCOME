@@ -1,0 +1,46 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- Функция для безопасного получения объекта
+local function findObject(objectPath)
+    local success, target = pcall(function()
+        -- Заменяем кавычки для корректной работы
+        local fixedPath = objectPath:gsub('game:GetService%("', 'game:GetService(\'')
+                          :gsub('")', '\')')
+        return loadstring("return " .. fixedPath)()
+    end)
+    return if success then target else nil
+end
+
+-- Основная функция телепортации объекта к игроку
+getgenv().TPCOME = function(objectPath)
+    -- Получаем целевой объект
+    local target = findObject(objectPath)
+    if not target then
+        warn("❌ Объект не найден: " .. objectPath)
+        return false
+    end
+
+    -- Проверяем тип объекта
+    if target:IsA("BasePart") then
+        -- Для частей - просто перемещаем
+        target.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+    elseif target:IsA("Model") then
+        -- Для моделей - перемещаем PrimaryPart или первую часть
+        local primary = target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart")
+        if primary then
+            target:SetPrimaryPartCFrame(HumanoidRootPart.CFrame * CFrame.new(0, 0, -5))
+        else
+            warn("❌ У модели нет частей для телепортации")
+            return false
+        end
+    else
+        warn("❌ Можно телепортировать только BasePart или Model")
+        return false
+    end
+
+    print("✅ Объект "..target.Name.." телепортирован к вам")
+    return true
+end
