@@ -26,12 +26,12 @@ getgenv().TPCOME = function(objectPath)
     -- Проверяем тип объекта
     if target:IsA("BasePart") then
         -- Для частей - просто перемещаем
-        target.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+        target.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, 0)
     elseif target:IsA("Model") then
         -- Для моделей - перемещаем PrimaryPart или первую часть
         local primary = target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart")
         if primary then
-            target:SetPrimaryPartCFrame(HumanoidRootPart.CFrame * CFrame.new(0, 0, -5))
+            target:SetPrimaryPartCFrame(HumanoidRootPart.CFrame * CFrame.new(0, 0, 0))
         else
             warn("❌ У модели нет частей для телепортации")
             return false
