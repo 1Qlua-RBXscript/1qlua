@@ -66,7 +66,3 @@ getgenv().SERVERHOP = SHOP
 getgenv().REJOIN = function()
     TeleportService:Teleport(game.PlaceId, LocalPlayer)
 end
-
-print("✅ SHOP system ready!")
-print("SHOP() - join random server")
-print("REJOIN() - rejoin current game")
