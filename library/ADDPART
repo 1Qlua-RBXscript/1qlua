@@ -83,12 +83,3 @@ getgenv().ADDPART = function()
     
     return part
 end
-
-print("🛠️ Система создания частей готова!")
-print("ADDPART() - создать часть перед игроком")
-print([[PART_SETTINGS({
-    Size = Vector3.new(5, 2, 5),
-    Color = Color3.fromRGB(255, 0, 0),
-    ForwardOffset = 3,
-    Material = Enum.Material.Neon
-})]])
