@@ -7,6 +7,11 @@ local function LoadScript(url)
     end
 end
 
+getgenv().RSPY = function()
+    print("🔄 Загрузка remotespy...")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/SimpleSpyV3/main.lua"))()
+end
+
 getgenv().DEX = function()
     print("🔄 Загрузка Dex Explorer...")
     LoadScript("https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/refs/heads/main/DexPlusBackup.luau")
