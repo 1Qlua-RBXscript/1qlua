@@ -1,0 +1,94 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+-- Настройки по умолчанию
+local PART_SETTINGS = {
+    Size = Vector3.new(4, 1, 4),
+    Color = Color3.fromRGB(0, 255, 0),
+    Material = Enum.Material.Plastic,
+    Anchored = true,
+    CanCollide = true,
+    ForwardOffset = 5,
+    UpOffset = 0,
+    RightOffset = 0
+}
+
+-- Обновляемые ссылки на персонажа
+local Character
+local HumanoidRootPart
+
+-- Функция обновления ссылок
+local function UpdateCharacter()
+    Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    
+    LocalPlayer.CharacterAdded:Connect(function(newChar)
+        Character = newChar
+        HumanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
+    end)
+end
+
+UpdateCharacter()
+
+-- Настройка параметров части
+getgenv().PART_SETTINGS = function(settings)
+    if settings.Size then PART_SETTINGS.Size = settings.Size end
+    if settings.Color then PART_SETTINGS.Color = settings.Color end
+    if settings.Material then PART_SETTINGS.Material = settings.Material end
+    if settings.Anchored ~= nil then PART_SETTINGS.Anchored = settings.Anchored end
+    if settings.CanCollide ~= nil then PART_SETTINGS.CanCollide = settings.CanCollide end
+    if settings.ForwardOffset then PART_SETTINGS.ForwardOffset = settings.ForwardOffset end
+    if settings.UpOffset then PART_SETTINGS.UpOffset = settings.UpOffset end
+    if settings.RightOffset then PART_SETTINGS.RightOffset = settings.RightOffset end
+    
+    print("✅ Настройки части обновлены")
+end
+
+-- Основная функция создания части
+getgenv().ADDPART = function()
+    -- Обновляем ссылки
+    if not Character or not HumanoidRootPart or not Character.Parent then
+        UpdateCharacter()
+    end
+
+    -- Создаем новую часть
+    local part = Instance.new("Part")
+    part.Name = "PlayerMadePart_" .. os.time()
+    part.Size = PART_SETTINGS.Size
+    part.Color = PART_SETTINGS.Color
+    part.Material = PART_SETTINGS.Material
+    part.Anchored = PART_SETTINGS.Anchored
+    part.CanCollide = PART_SETTINGS.CanCollide
+    
+    -- Позиционируем перед игроком
+    local offset = Vector3.new(
+        PART_SETTINGS.RightOffset,
+        PART_SETTINGS.UpOffset,
+        -PART_SETTINGS.ForwardOffset
+    )
+    part.CFrame = HumanoidRootPart.CFrame * CFrame.new(offset)
+    
+    -- Добавляем в мир
+    part.Parent = Workspace
+    
+    print(string.format(
+        "✅ Создана часть %s (Размер: %s, Цвет: RGB(%d,%d,%d))",
+        part.Name,
+        tostring(PART_SETTINGS.Size),
+        PART_SETTINGS.Color.r * 255,
+        PART_SETTINGS.Color.g * 255,
+        PART_SETTINGS.Color.b * 255
+    ))
+    
+    return part
+end
+
+print("🛠️ Система создания частей готова!")
+print("ADDPART() - создать часть перед игроком")
+print([[PART_SETTINGS({
+    Size = Vector3.new(5, 2, 5),
+    Color = Color3.fromRGB(255, 0, 0),
+    ForwardOffset = 3,
+    Material = Enum.Material.Neon
+})]])
