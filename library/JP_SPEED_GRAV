@@ -99,10 +99,3 @@ if LocalPlayer.Character then
     updateCharacter(LocalPlayer.Character)
 end
 Workspace.Gravity = currentSettings.Gravity
-
--- Выводим подсказки
-print("Команды готовы к использованию:")
-print("SPEED(число) - установить скорость передвижения")
-print("JP(число) - установить силу прыжка")
-print("GRAV(число) - установить гравитацию")
-print("Текущие значения: Speed="..currentSettings.Speed..", Jump="..currentSettings.Jump..", Gravity="..currentSettings.Gravity)
