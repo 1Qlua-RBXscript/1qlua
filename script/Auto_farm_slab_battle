@@ -1,4 +1,4 @@
-wait(7)
+wait(10)
 loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/LIBRARY_1QLUA"))()
 
 TPCOME("workspace.Lobby.Teleport1")
