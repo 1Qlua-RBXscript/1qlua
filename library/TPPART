@@ -157,26 +157,3 @@ getgenv().TPPART = function(objectPath, customPos, customRot, customOffset)
     print("Поворот:", rotation, "(в градусах)")
     return true
 end
-
-print([[
-
-=== TPPART - Инструкция по использованию ===
-
-1. Базовое использование:
-   - TPPART("путь.к.объекту") - телепортировать объект с настройками по умолчанию
-   - TPPART("путь.к.объекту", "1,2,3") - телепортировать в указанные координаты
-   - TPPART("путь.к.объекту", "1,2,3", "0,90,0") - с координатами и поворотом
-   - TPPART("путь.к.объекту", "1,2,3", "0,90,0", "0,1,0") - с дополнительным смещением
-
-2. Настройки по умолчанию (TPPART_SETTINGS):
-   - TPPART_SETTINGS({
-       Position = Vector3.new(0,0,0) или "0,0,0",  -- Координаты
-       Rotation = Vector3.new(0,0,0) или "0,0,0",  -- Поворот в градусах
-       Offset = Vector3.new(0,0,0) или "0,0,0"     -- Смещение
-     })
-
-3. Примеры:
-   - TPPART_SETTINGS({Position = "10,5,0"})
-   - TPPART("workspace.Part", "20,3,10", "45,0,0")
-   - TPPART("game.Workspace.Model", nil, "0,180,0") - только изменить поворот
-]])
