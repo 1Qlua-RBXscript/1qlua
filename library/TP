@@ -1,8 +1,25 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- Глобальные переменные для хранения ссылок
+local Character
+local HumanoidRootPart
+
+-- Функция для обновления ссылок на персонажа
+local function UpdateCharacterReferences()
+    Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    
+    -- Автоматическое обновление при смерти
+    LocalPlayer.CharacterAdded:Connect(function(newChar)
+        Character = newChar
+        HumanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
+    end)
+end
+
+-- Инициализация при запуске
+UpdateCharacterReferences()
 
 -- Функция для безопасного получения объекта
 local function findObject(objectPath)
@@ -15,8 +32,13 @@ local function findObject(objectPath)
     return if success then target else nil
 end
 
---// ======== ИСПРАВЛЕННАЯ ТЕЛЕПОРТАЦИЯ ======== //--
+-- Основная функция телепортации
 getgenv().TP = function(...)
+    -- Обновляем ссылки на случай смерти
+    if not Character or not HumanoidRootPart or not Character.Parent then
+        UpdateCharacterReferences()
+    end
+
     local args = {...}
     
     -- Обработка телепортации к объекту
