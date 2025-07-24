@@ -6,7 +6,8 @@ local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/SCRIPT",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TP",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/SHOP",
-	"https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/ADDPART",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/ADDPART",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/AUTOSCRIPT",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPCOME"
 }
 
