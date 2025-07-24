@@ -1,0 +1,35 @@
+-- Основная функция сохранения и запуска скрипта
+getgenv().AUTOSCRIPT = function(your_script)
+    -- Сохраняем скрипт в глобальную переменную
+    getgenv().Script = your_script
+    
+    -- Формируем загрузчик с автоперезапуском
+    local loader = "getgenv().Script = [[" .. your_script .. "]]\n" ..
+                   "queue_on_teleport(getgenv().Script)\n" ..
+                   "loadstring(getgenv().Script)()"
+    
+    -- Запускаем скрипт
+    local success, err = pcall(loadstring(loader))
+    if not success then
+        warn("❌ Ошибка:", err)
+    else
+        print("✅ Скрипт сохранен и запущен!")
+    end
+end
+
+-- Пример использования:
+AUTOSCRIPT([[
+    print("Этот скрипт будет работать после перезахода!")
+    
+    -- Ваш код здесь
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    
+    LocalPlayer.CharacterAdded:Connect(function(character)
+        print("Персонаж загружен!")
+        -- Ваши действия с персонажем
+    end)
+]])
+
+print("✨ Система готова к использованию!")
+print("AUTOSCRIPT([[ваш_код]]) - сохранить и запустить скрипт")
