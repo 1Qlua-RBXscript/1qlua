@@ -11,6 +11,7 @@ local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/SHOP",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/ADDPART",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPPART",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/BUILD",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPCOME"
 }
 
@@ -121,4 +122,16 @@ print([[
    - TPPART_SETTINGS({Position = "10,5,0"})
    - TPPART("workspace.Part", "20,3,10", "45,0,0")
    - TPPART("game.Workspace.Model", nil, "0,180,0") - только изменить поворот
+
+=== BUILD  ===
+1. BUILD("F") - нажать клавишу F
+2. BUILD("G", {Spam=true}) - спамить G
+3. UNBUILD("F") - остановить F
+4. BUILD_SETTINGS({Retention=2}) - настройки
+
+     BUILD_SETTINGS({
+       Spam = false,  -- вклучения выклучения спама
+       Retention = 8  -- на сколько удерживаеться кнопка
+     })
+
 ]])
