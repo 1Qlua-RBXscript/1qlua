@@ -12,6 +12,7 @@ local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/ADDPART",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPPART",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/BUILD",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/CLICK",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPCOME"
 }
 
@@ -133,5 +134,37 @@ print([[
        Spam = false,  -- вклучения выклучения спама
        Retention = 8  -- на сколько удерживаеться кнопка
      })
+
+=== COPYCLICK() + CLICK() ===
+
+1. COPYCLICK() - копирует текущую позицию мыши
+2. CLICK() - клик в текущей позиции
+3. CLICK({Position = "100,200"}) - клик в указанные координаты
+4. CLICK({Spam = true}) - спам кликами
+5. CLICK_SETTINGS({...}) - настройки:
+   - Position (Vector2 или "x,y")
+   - Spam (true/false)
+   - Retention (секунды удержания)
+   - Delay (задержка между кликами)
+   - Button (1 - левая, 2 - правая)
+6. UNCLICK() - остановить все клики
+7. UNCLICK("100,200") - остановить клики в позиции
+
+Примеры:
+COPYCLICK() -- скопировать позицию
+CLICK({Position = "500,300", Retention = 0.5}) -- клик с удержанием
+CLICK({Spam = true, Delay = 0.1}) -- спам с задержкой 0.1 сек
+
+
+     CLICK_SETTINGS({
+    Position = nil,       -- Vector2 (если nil - текущая позиция мыши)
+    Spam = false,        -- Спам кликами
+    Retention = 0.1,     -- Время удержания (сек)
+    Delay = 0.05,        -- Задержка между кликами (при спаме)
+    Button = 1         -- 1 - левая кнопка, 2 - правая
+     })
+
+
+
 
 ]])
