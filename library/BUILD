@@ -134,11 +134,3 @@ getgenv().UNBUILD = function(key)
     warn("⚠️ Нет активного процесса для клавиши: "..tostring(keyCode))
     return false
 end
-
-print([[
-=== BUILD v4.0 - Рабочая версия ===
-1. BUILD("F") - нажать клавишу F
-2. BUILD("G", {Spam=true}) - спамить G
-3. UNBUILD("F") - остановить F
-4. BUILD_SETTINGS({Retention=2}) - настройки
-]])
