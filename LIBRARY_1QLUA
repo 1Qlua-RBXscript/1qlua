@@ -166,5 +166,27 @@ CLICK({Spam = true, Delay = 0.1}) -- спам с задержкой 0.1 сек
 
 
 
+                                     TPPLAYER 
+
+
+TPPLAYER(\"ник\") - телепорт к игроку
+TPPLAYER(\"ник1\", \"ник2\") - телепорт с задержкой
+TPPLAYER(\"ALL\") - телепорт по очереди ко всем
+TPPLAYER_STOP() - остановить телепортацию
+
+TPPLAYER_SETTINGS({
+    Position = {
+        ForwardOffset = 3,  -- Дистанция спереди/сзади
+        RightOffset = 0,     -- Смещение вправо/влево
+        UpOffset = 0         -- Высота
+    },
+
+    Delay = 0.5,              -- Задержка между телепортациями
+    LookAtPlayer = true,     -- Смотреть на игрока
+    AutoStop = true,         -- Автостоп при ошибке
+    TeleportToDead = false   -- Телепорт к мертвым игрокам
+})
+
+
 
 ]])
