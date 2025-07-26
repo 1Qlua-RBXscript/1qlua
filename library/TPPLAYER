@@ -178,10 +178,3 @@ LocalPlayer.CharacterAdded:Connect(function()
         UNTPPLAYER()
     end
 end)
-
-print("✨ TPPLAYER скрипт готов к использованию!")
-print("TPPLAYER(\"ник\") - телепорт к игроку")
-print("TPPLAYER(\"ник1\", \"ник2\") - телепорт по очереди")
-print("TPPLAYER(\"ALL\") - телепорт ко всем игрокам")
-print("UNTPPLAYER() - остановить телепортацию")
-print("TPPLAYER_SETTINGS({LoopMode=true}) - включить бесконечный режим")
