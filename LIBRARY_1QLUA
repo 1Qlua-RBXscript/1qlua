@@ -173,7 +173,7 @@ CLICK({Spam = true, Delay = 0.1}) -- спам с задержкой 0.1 сек
 TPPLAYER(\"ник\") - телепорт к игроку
 TPPLAYER(\"ник1\", \"ник2\") - телепорт с задержкой
 TPPLAYER(\"ALL\") - телепорт по очереди ко всем
-TPPLAYER_STOP() - остановить телепортацию
+UNTPPLAYER() - остановить телепортацию
 
 TPPLAYER_SETTINGS({
     Position = {
