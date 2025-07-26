@@ -14,6 +14,7 @@ local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/BUILD",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/CLICK",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPPLAYER",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/SETCAM",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/library/TPCOME"
 }
 
