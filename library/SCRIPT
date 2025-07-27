@@ -22,8 +22,12 @@ getgenv().QLUA = function()
     LoadScript("https://pastebin.com/raw/EdUyxN7Z")
 end
 
+getgenv().HELP = function()
+    print("🔄 Загрузка Помошьника...")
+    LoadScript("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/HELP_LIB")
+end
+
 getgenv().IY = function()
     print("🔄 Загрузка Infinite Yield...")
     LoadScript("https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua")
 end
-
