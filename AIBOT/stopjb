@@ -1,0 +1,10 @@
+local player = game.Players.LocalPlayer
+
+if player:FindFirstChild("AutoJumpControl") then
+    player.AutoJumpControl.Value = false
+    player.AutoJumpControl:Destroy()
+end
+
+_G.AutoJumpGlobalDisable = true
+
+print("🔴 Автопрыжки отключены навсегда")
