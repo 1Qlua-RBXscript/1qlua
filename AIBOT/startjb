@@ -1,0 +1,70 @@
+local player = game.Players.LocalPlayer
+local autoJumpEnabled = true
+local isJumping = false 
+
+
+local controlFlag = Instance.new("BoolValue")
+controlFlag.Name = "AutoJumpControl"
+controlFlag.Value = true
+controlFlag.Parent = player
+
+local function canJump(humanoid)
+    return humanoid.FloorMaterial ~= Enum.Material.Air and not isJumping
+end
+
+local function autoJump()
+    while autoJumpEnabled and controlFlag.Value do
+        task.wait(0.1)
+        
+        if not player.Character then continue end
+        
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        
+        if not humanoid or not rootPart or humanoid.Health <= 0 then continue end
+
+
+        if humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+            isJumping = true
+        else
+            isJumping = false
+        end
+
+        for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if otherRoot and (otherRoot.Position - rootPart.Position).Magnitude <= 6 then
+                    if canJump(humanoid) then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                        isJumping = true
+                        task.delay(0.5, function()
+                            isJumping = false
+                        end)
+                    end
+                    break
+                end
+            end
+        end
+    end
+end
+
+if player.Character then
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.StateChanged:Connect(function(_, newState)
+            isJumping = (newState == Enum.HumanoidStateType.Jumping)
+        end)
+    end
+end
+
+player.CharacterAdded:Connect(function(character)
+    task.wait(1)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.StateChanged:Connect(function(_, newState)
+            isJumping = (newState == Enum.HumanoidStateType.Jumping)
+        end)
+    end
+end)
+
+coroutine.wrap(autoJump)()
