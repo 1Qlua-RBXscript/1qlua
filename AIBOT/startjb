@@ -1,6 +1,5 @@
 local player = game:GetService("Players").LocalPlayer
 
--- Настройки
 local SETTINGS = {
     Distance = 8,
     Cooldown = 0.8,
@@ -8,7 +7,6 @@ local SETTINGS = {
     RayLength = 3.5
 }
 
--- Создаем контрольный объект с защитой
 if not player:FindFirstChild("AutoJumpConfig") then
     local controller = Instance.new("BoolValue")
     controller.Name = "AutoJumpConfig"
@@ -16,18 +14,15 @@ if not player:FindFirstChild("AutoJumpConfig") then
     controller.Parent = player
 end
 
--- Основная функция
 local function jumpSystem()
     while player:FindFirstChild("AutoJumpConfig") and player:FindFirstChild("AutoJumpConfig").Value do
         task.wait(0.1)
         
-        -- Проверки персонажа
         if not player.Character then continue end
         local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
         local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
         if not humanoid or not rootPart then continue end
         
-        -- Проверка земли
         local rayParams = RaycastParams.new()
         rayParams.FilterDescendantsInstances = {player.Character}
         
@@ -37,7 +32,6 @@ local function jumpSystem()
             rayParams
         ) then continue end
         
-        -- Поиск игроков
         for _, other in ipairs(game:GetService("Players"):GetPlayers()) do
             if other ~= player and other.Character then
                 local otherRoot = other.Character:FindFirstChild("HumanoidRootPart")
@@ -51,5 +45,4 @@ local function jumpSystem()
     end
 end
 
--- Запуск
 coroutine.wrap(jumpSystem)()
