@@ -1,6 +1,7 @@
 
 local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/stopbot",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/stopjb"
 }
 
 for i, url in ipairs(scripts) do
