@@ -1,6 +1,7 @@
 
 local scripts = {
     "https://raw.githubusercontent.com/Bilmemi/hitbox2/main/op",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/startjb",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Startbot"
 }
 
