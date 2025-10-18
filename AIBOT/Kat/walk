@@ -1,0 +1,327 @@
+-- Pathfinding Bot for Roblox - FIXED VERSION
+-- Всегда следует за ближайшим игроком с постоянным обновлением пути
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local PathfindingService = game:GetService("PathfindingService")
+
+-- КОНФИГУРАЦИЯ
+local SEARCH_RADIUS = 10000
+local UPDATE_INTERVAL = 1.0  -- Обновление пути каждую секунду
+local WALK_SPEED = 16
+
+-- Основной класс бота
+local PathfindingBot = {}
+PathfindingBot.__index = PathfindingBot
+
+function PathfindingBot.new(character)
+    local self = setmetatable({}, PathfindingBot)
+    
+    self.character = character
+    self.humanoid = character:WaitForChild("Humanoid")
+    self.rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    self.targetPlayer = nil
+    self.targetPosition = nil
+    self.waypoints = {}
+    self.currentWaypointIndex = 0
+    
+    self.isRunning = false
+    self.lastPathUpdate = 0
+    self.connection = nil
+    
+    self.humanoid.WalkSpeed = WALK_SPEED
+    
+    return self
+end
+
+-- Поиск ближайшего игрока
+function PathfindingBot:findNearestPlayer()
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    local myPosition = self.rootPart.Position
+    
+    local players = Players:GetPlayers()
+    local localPlayer = Players.LocalPlayer
+    
+    for i = 1, #players do
+        local player = players[i]
+        if player ~= localPlayer and player.Character then
+            local character = player.Character
+            local humanoid = character:FindFirstChild("Humanoid")
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and humanoid.Health > 0 and rootPart then
+                local distance = (rootPart.Position - myPosition).Magnitude
+                if distance < closestDistance and distance <= SEARCH_RADIUS then
+                    closestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+-- Создание пути к цели
+function PathfindingBot:createPath(targetPosition)
+    local success, waypoints = pcall(function()
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 1,
+            AgentHeight = 3,
+            AgentCanJump = true,
+            WaypointSpacing = 4
+        })
+        
+        local startPos = self.rootPart.Position
+        path:ComputeAsync(startPos, targetPosition)
+        
+        if path.Status == Enum.PathStatus.Success then
+            return path:GetWaypoints()
+        else
+            -- Прямой путь если Pathfinding не работает
+            return {
+                {
+                    Position = targetPosition,
+                    Action = Enum.PathWaypointAction.Walk
+                }
+            }
+        end
+    end)
+    
+    if success and waypoints then
+        return waypoints
+    else
+        -- Fallback: прямой путь
+        return {
+            {
+                Position = targetPosition,
+                Action = Enum.PathWaypointAction.Walk
+            }
+        }
+    end
+end
+
+-- ОБНОВЛЕННАЯ ФУНКЦИЯ: Всегда обновляет путь к текущей цели
+function PathfindingBot:updatePath()
+    if not self.isRunning then return end
+    
+    local currentTime = tick()
+    
+    -- Обновляем путь согласно интервалу
+    if currentTime - self.lastPathUpdate < UPDATE_INTERVAL then
+        return
+    end
+    
+    self.lastPathUpdate = currentTime
+    
+    -- Всегда ищем ближайшего игрока (на случай если кто-то стал ближе)
+    local nearestPlayer = self:findNearestPlayer()
+    
+    if nearestPlayer and nearestPlayer.Character then
+        local targetRoot = nearestPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if targetRoot then
+            local newTargetPosition = targetRoot.Position
+            
+            -- ВСЕГДА обновляем путь если:
+            -- 1. Сменился игрок
+            -- 2. Игрок переместился достаточно далеко
+            -- 3. У нас нет текущего пути
+            -- 4. Мы достигли конца текущего пути
+            
+            local shouldUpdate = false
+            
+            if self.targetPlayer ~= nearestPlayer then
+                -- Сменилась цель
+                shouldUpdate = true
+                print("Target changed to: " .. nearestPlayer.Name)
+            elseif not self.targetPosition then
+                -- Нет текущей позиции цели
+                shouldUpdate = true
+            else
+                -- Проверяем расстояние перемещения цели
+                local distanceMoved = (newTargetPosition - self.targetPosition).Magnitude
+                if distanceMoved > 5 then  -- Если цель переместилась более чем на 5 studs
+                    shouldUpdate = true
+                end
+            end
+            
+            -- Также обновляем если мы близко к концу пути
+            if #self.waypoints > 0 and self.currentWaypointIndex >= #self.waypoints - 1 then
+                shouldUpdate = true
+            end
+            
+            -- Или если у нас вообще нет пути
+            if #self.waypoints == 0 then
+                shouldUpdate = true
+            end
+            
+            if shouldUpdate then
+                self.targetPlayer = nearestPlayer
+                self.targetPosition = newTargetPosition
+                
+                -- Создаем новый путь
+                local waypoints = self:createPath(newTargetPosition)
+                if waypoints and #waypoints > 0 then
+                    self.waypoints = waypoints
+                    self.currentWaypointIndex = 1
+                    print("Path updated to " .. nearestPlayer.Name .. " with " .. #waypoints .. " waypoints")
+                end
+            end
+        end
+    else
+        -- Нет игроков в радиусе - очищаем путь
+        self.targetPlayer = nil
+        self.targetPosition = nil
+        self.waypoints = {}
+        self.currentWaypointIndex = 0
+        self.humanoid:MoveTo(self.rootPart.Position)
+    end
+end
+
+-- Движение по пути
+function PathfindingBot:followPath()
+    if not self.isRunning then return end
+    
+    -- Если нет пути, ждем обновления
+    if #self.waypoints == 0 or self.currentWaypointIndex == 0 then
+        return
+    end
+    
+    -- Проверяем валидность индекса
+    if self.currentWaypointIndex > #self.waypoints then
+        self.currentWaypointIndex = #self.waypoints
+    end
+    
+    local currentWaypoint = self.waypoints[self.currentWaypointIndex]
+    local myPosition = self.rootPart.Position
+    
+    -- Проверка достижения точки пути
+    local distanceToWaypoint = (currentWaypoint.Position - myPosition).Magnitude
+    if distanceToWaypoint < 4 then
+        self.currentWaypointIndex = self.currentWaypointIndex + 1
+        
+        -- Если достигли конца пути, обновляем путь в следующем кадре
+        if self.currentWaypointIndex > #self.waypoints then
+            self.lastPathUpdate = 0  -- Форсируем обновление пути
+            return
+        end
+        
+        currentWaypoint = self.waypoints[self.currentWaypointIndex]
+    end
+    
+    -- Движение к текущей точке пути
+    self.humanoid:MoveTo(currentWaypoint.Position)
+    
+    -- Прыжок если необходимо
+    if currentWaypoint.Action == Enum.PathWaypointAction.Jump then
+        self.humanoid.Jump = true
+    end
+end
+
+-- Основной цикл
+function PathfindingBot:start()
+    if self.isRunning then return end
+    
+    self.isRunning = true
+    print("Pathfinding bot started - always following players")
+    
+    self.connection = RunService.Heartbeat:Connect(function(deltaTime)
+        if not self.isRunning then
+            return
+        end
+        
+        -- Проверка здоровья
+        if self.humanoid.Health <= 0 then
+            return
+        end
+        
+        -- Всегда обновляем путь и двигаемся
+        self:updatePath()
+        self:followPath()
+    end)
+end
+
+-- Остановка бота
+function PathfindingBot:stop()
+    self.isRunning = false
+    if self.connection then
+        self.connection:Disconnect()
+        self.connection = nil
+    end
+    self.humanoid:MoveTo(self.rootPart.Position)
+    self.waypoints = {}
+    self.currentWaypointIndex = 0
+    print("Pathfinding bot stopped")
+end
+
+-- Автоматическая инициализация с постоянным отслеживанием
+local function autoInitialize()
+    local player = Players.LocalPlayer
+    if not player then 
+        warn("Player not found!")
+        return nil 
+    end
+    
+    local bot = nil
+    
+    -- Функция инициализации бота
+    local function initializeBot()
+        -- Ожидание персонажа
+        if not player.Character then
+            player.CharacterAdded:Wait()
+        end
+        
+        wait(2) -- Задержка для стабилизации
+        
+        -- Создание и запуск бота
+        if bot then
+            bot:stop()
+        end
+        
+        bot = PathfindingBot.new(player.Character)
+        bot:start()
+        print("Bot initialized and following players")
+    end
+    
+    -- Начальная инициализация
+    initializeBot()
+    
+    -- Автоматическое восстановление после смерти
+    player.CharacterAdded:Connect(function(character)
+        print("Player respawned, reinitializing bot...")
+        wait(3) -- Ждем полной загрузки
+        initializeBot()
+    end)
+    
+    return bot
+end
+
+-- Запуск
+spawn(function()
+    local success, err = pcall(function()
+        wait(3) -- Задержка для загрузки игры
+        autoInitialize()
+    end)
+    
+    if not success then
+        warn("Error initializing bot: " .. tostring(err))
+        -- Перезапуск через 5 секунд
+        wait(5)
+        autoInitialize()
+    end
+end)
+
+-- Мониторинг работы
+spawn(function()
+    while true do
+        wait(30)
+        print("Bot is actively following players...")
+    end
+end)
+
+return {
+    PathfindingBot = PathfindingBot,
+    autoInitialize = autoInitialize
+}
