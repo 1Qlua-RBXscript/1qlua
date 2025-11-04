@@ -89,6 +89,14 @@ NormalleftSection:AddButton({
 	end,
 })
 
+NormalleftSection:AddButton({
+	Name = "Айм!",
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/A'))()
+	end,
+})
+
+
 
 
 DrawElements(NormalTab,'right') 
