@@ -1,3 +1,7 @@
+-- Ваши координаты для телепортации (измените на нужные)
+local TARGET_POSITION = Vector3.new(100, 50, 200) -- Замените на ваши координаты
+
+local TARGET2_POSITION = Vector3.new(100, 50, 180) -- Замените на ваши координаты
 
 
 local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/source"))();
@@ -11,13 +15,12 @@ local ConfigManager = Compkiller:ConfigManager({
 	Config = "Example-Configs"
 });
 
-
 -- Creating Window --
 local Window = Compkiller.new({
 	Name = "1Qlua",
 	Keybind = "LeftAlt",
 	Logo = "rbxassetid://80494437171393",
-	Scale = Compkiller.Scale.Window, -- Leave blank if you want automatic scale [PC, Mobile].
+	Scale = Compkiller.Scale.Window,
 	TextSize = 15,
 });
 
@@ -36,13 +39,6 @@ Watermark:AddText({
 	Icon = "user",
 	Text = "1qlua",
 });
-
-task.spawn(function()
-	while true do task.wait()
-		Time:SetText(Compkiller:GetTimeNow());
-	end
-end)
-
 
 -- Creating Tab Category --
 Window:DrawCategory({
@@ -92,7 +88,6 @@ NormalSection:AddButton({
 	end,
 })
 
-
 NormalleftSection:AddParagraph({
 	Title = "Ай бот!",
 	Content = "ай бот, что бы выключить нажмите E!)"
@@ -117,9 +112,157 @@ NormalleftSection:AddButton({
 	end,
 })
 
+-- Creating Tab --
+local NormalFarmalt = Window:DrawTab({
+	Name = "Farm alt❤️",
+	Icon = "server",
+	EnableScrolling = true
+});
 
+-- Creating Section --
+local NormalwwwSection = NormalFarmalt:DrawSection({
+	Name = "для фарм аккаунтов",
+	Position = 'left'	
+});
 
+-- Creating Section --
+local NormalwwwrightSection = NormalFarmalt:DrawSection({
+	Name = "для не фарм аккаунтов",
+	Position = 'right'	
+});
 
-DrawElements(NormalTab,'right') 
+-- Переменная для контроля телепортации
+local teleportEnabled = false
+local teleportConnection
 
-ConfigUI:Init();
+-- Функция телепортации
+local function teleport2ToPosition()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    humanoidRootPart.CFrame = CFrame.new(TARGET2_POSITION)
+end
+
+-- Функция телепортации
+local function teleportToPosition()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    humanoidRootPart.CFrame = CFrame.new(TARGET_POSITION)
+end
+
+-- Toggle для бесконечной телепортации
+local Toggle = NormalwwwSection:AddToggle({
+	Name = "Бесконечная телепортация",
+	Default = false,
+	Callback = function(value)
+        teleportEnabled = value
+        
+        if value then
+            -- Включаем телепортацию
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Бесконечная телепортация включена!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Запускаем цикл телепортации
+            teleportConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if teleportEnabled then
+                    pcall(teleportToPosition)
+                end
+            end)
+        else
+            -- Выключаем телепортацию
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Бесконечная телепортация выключена!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Отключаем соединение
+            if teleportConnection then
+                teleportConnection:Disconnect()
+                teleportConnection = nil
+            end
+        end
+	end,
+});
+
+NormalwwwSection:AddParagraph({
+	Title = "авто убийсто с пистолета!",
+	Content = "Что бы выклучить нажмите Q"
+})
+
+NormalwwwSection:AddButton({
+	Name = "авто убийсто с пистолета!",
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/Kat/aimd'))()
+	end,
+})
+
+NormalwwwSection:AddParagraph({
+	Title = "авто доставания пистолета!",
+	Content = ""
+})
+
+NormalwwwSection:AddButton({
+	Name = "авто доставания пистолета!",
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/Revolver'))()
+	end,
+})
+
+NormalwwwSection:AddButton({
+	Name = "анти афк (вклучите со всех аккаунтов)",
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/farm/antiafk'))()
+	end,
+})
+
+-- Toggle для бесконечной телепортации
+local Toggle = NormalwwwrightSection:AddToggle({
+	Name = "Бесконечная телепортация",
+	Default = false,
+	Callback = function(value)
+        teleportEnabled = value
+        
+        if value then
+            -- Включаем телепортацию
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Бесконечная телепортация включена!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Запускаем цикл телепортации
+            teleportConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if teleportEnabled then
+                    pcall(teleport2ToPosition)
+                end
+            end)
+        else
+            -- Выключаем телепортацию
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Бесконечная телепортация выключена!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Отключаем соединение
+            if teleportConnection then
+                teleportConnection:Disconnect()
+                teleportConnection = nil
+            end
+        end
+	end,
+});
+
+-- Инициализация конфигурации
+ConfigManager:Init();
