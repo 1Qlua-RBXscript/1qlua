@@ -1,0 +1,348 @@
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+-- Настройки
+local AIM_SETTINGS = {
+    Hotkey = Enum.KeyCode.Q,
+    TeamCheck = true,
+    MaxDistance = 1000,
+    ClickButton = 1,
+    FOV = 100,
+    AutoShoot = true, -- Автоматическая стрельба
+    Headshot = true, -- Прицеливание в голову
+    AutoShootDelay = 0.1, -- Задержка между выстрелами
+    SmoothAim = false, -- Плавное прицеливание
+    SmoothFactor = 0.5, -- Коэффициент плавности
+    WallCheck = true -- Проверка на стены
+}
+
+local isAutoShooting = false
+local lastShootTime = 0
+
+-- Функция для получения точной позиции мыши
+local function getMousePosition()
+    return UserInputService:GetMouseLocation()
+end
+
+-- Функция для получения позиции головы игрока на экране
+local function getPlayerHeadScreenPosition(player)
+    if not player or not player.Character then
+        return nil
+    end
+    
+    local camera = Workspace.CurrentCamera
+    
+    -- Ищем голову игрока
+    local head = player.Character:FindFirstChild("Head")
+    if not head then
+        -- Если головы нет, используем HumanoidRootPart
+        head = player.Character:FindFirstChild("HumanoidRootPart")
+        if not head then
+            return nil
+        end
+    end
+    
+    local screenPosition, visible = camera:WorldToViewportPoint(head.Position)
+    
+    if visible then
+        return Vector2.new(screenPosition.X, screenPosition.Y)
+    end
+    
+    return nil
+end
+
+-- Функция для получения позиции игрока на экране
+local function getPlayerScreenPosition(player)
+    if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
+    local camera = Workspace.CurrentCamera
+    local rootPart = player.Character.HumanoidRootPart
+    
+    local screenPosition, visible = camera:WorldToViewportPoint(rootPart.Position)
+    
+    if visible then
+        return Vector2.new(screenPosition.X, screenPosition.Y)
+    end
+    
+    return nil
+end
+
+-- Функция для проверки видимости через стены
+local function isVisible(targetPlayer)
+    if not AIM_SETTINGS.WallCheck then
+        return true
+    end
+    
+    local localPlayer = Players.LocalPlayer
+    if not localPlayer or not localPlayer.Character then
+        return false
+    end
+    
+    local camera = Workspace.CurrentCamera
+    local localHead = localPlayer.Character:FindFirstChild("Head")
+    if not localHead then
+        localHead = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not localHead then
+            return false
+        end
+    end
+    
+    local targetHead = targetPlayer.Character:FindFirstChild("Head")
+    if not targetHead then
+        targetHead = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not targetHead then
+            return false
+        end
+    end
+    
+    -- Проверяем лучом от камеры до цели
+    local origin = camera.CFrame.Position
+    local target = targetHead.Position
+    local direction = (target - origin).Unit
+    local distance = (target - origin).Magnitude
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {localPlayer.Character, targetPlayer.Character}
+    raycastParams.IgnoreWater = true
+    
+    local raycastResult = Workspace:Raycast(origin, direction * distance, raycastParams)
+    
+    if raycastResult then
+        -- Если есть попадание, проверяем что это не целевой игрок
+        local hitParent = raycastResult.Instance:FindFirstAncestorOfClass("Model")
+        if hitParent and hitParent == targetPlayer.Character then
+            return true
+        end
+        return false
+    end
+    
+    return true
+end
+
+-- Функция для проверки, находится ли игрок в FOV
+local function isInFOV(screenPosition)
+    if not screenPosition then return false end
+    
+    local mousePos = getMousePosition()
+    local distance = (screenPosition - mousePos).Magnitude
+    
+    return distance <= AIM_SETTINGS.FOV
+end
+
+-- Функция для получения ближайшего игрока в FOV
+local function getNearestPlayerInFOV()
+    local localPlayer = Players.LocalPlayer
+    if not localPlayer or not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
+    local mousePos = getMousePosition()
+    local localPosition = localPlayer.Character.HumanoidRootPart.Position
+    local nearestPlayer = nil
+    local nearestDistance = AIM_SETTINGS.MaxDistance
+    local nearestFOVDistance = math.huge
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Проверка команды
+            if AIM_SETTINGS.TeamCheck and player.Team and localPlayer.Team and player.Team == localPlayer.Team then
+                continue
+            end
+            
+            -- Проверка на живого игрока
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health <= 0 then
+                continue
+            end
+            
+            local distance = (player.Character.HumanoidRootPart.Position - localPosition).Magnitude
+            if distance > AIM_SETTINGS.MaxDistance then
+                continue
+            end
+            
+            -- Проверка на стены
+            if not isVisible(player) then
+                continue
+            end
+            
+            local screenPosition = AIM_SETTINGS.Headshot and getPlayerHeadScreenPosition(player) or getPlayerScreenPosition(player)
+            if screenPosition and isInFOV(screenPosition) then
+                local fovDistance = (mousePos - screenPosition).Magnitude
+                if fovDistance < nearestFOVDistance then
+                    nearestFOVDistance = fovDistance
+                    nearestPlayer = player
+                    nearestDistance = distance
+                end
+            end
+        end
+    end
+    
+    return nearestPlayer, nearestDistance
+end
+
+-- Функция для плавного перемещения мыши
+local function smoothMoveToPosition(targetPosition)
+    if not targetPosition then return false end
+    
+    local currentPos = getMousePosition()
+    
+    if AIM_SETTINGS.SmoothAim then
+        local smoothFactor = AIM_SETTINGS.SmoothFactor
+        local newX = currentPos.X + (targetPosition.X - currentPos.X) * smoothFactor
+        local newY = currentPos.Y + (targetPosition.Y - currentPos.Y) * smoothFactor
+        
+        VirtualInputManager:SendMouseMoveEvent(
+            newX,
+            newY,
+            game:GetService("CoreGui")
+        )
+    else
+        VirtualInputManager:SendMouseMoveEvent(
+            targetPosition.X,
+            targetPosition.Y,
+            game:GetService("CoreGui")
+        )
+    end
+    
+    return true
+end
+
+-- Функция для клика по позиции
+local function clickAtPosition(position)
+    if not position then return false end
+    
+    -- Сначала перемещаем мышь
+    smoothMoveToPosition(position)
+    
+    task.wait(0.01) -- Небольшая задержка для стабильности
+    
+    if AIM_SETTINGS.ClickButton == 1 then
+        VirtualInputManager:SendMouseButtonEvent(
+            position.X, position.Y, 0, true, nil, 0
+        )
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(
+            position.X, position.Y, 0, false, nil, 0
+        )
+    else
+        VirtualInputManager:SendMouseButtonEvent(
+            position.X, position.Y, 1, true, nil, 0
+        )
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(
+            position.X, position.Y, 1, false, nil, 0
+        )
+    end
+    
+    return true
+end
+
+-- Основная функция для автоматической стрельбы
+local function autoShootLoop()
+    if not isAutoShooting then return end
+    
+    local currentTime = tick()
+    if currentTime - lastShootTime < AIM_SETTINGS.AutoShootDelay then
+        return
+    end
+    
+    local nearestPlayer = getNearestPlayerInFOV()
+    if not nearestPlayer then
+        return
+    end
+    
+    local screenPosition = AIM_SETTINGS.Headshot and getPlayerHeadScreenPosition(nearestPlayer) or getPlayerScreenPosition(nearestPlayer)
+    if not screenPosition then
+        return
+    end
+    
+    -- Прицеливаемся и стреляем
+    if smoothMoveToPosition(screenPosition) then
+        task.wait(0.02) -- Задержка перед выстрелом для точности
+        clickAtPosition(screenPosition)
+        lastShootTime = currentTime
+    end
+end
+
+-- Функция для ручного вызова
+local function clickNearestPlayerInFOV()
+    local nearestPlayer = getNearestPlayerInFOV()
+    if not nearestPlayer then
+        return false
+    end
+    
+    local screenPosition = AIM_SETTINGS.Headshot and getPlayerHeadScreenPosition(nearestPlayer) or getPlayerScreenPosition(nearestPlayer)
+    if not screenPosition then
+        return false
+    end
+    
+    return clickAtPosition(screenPosition)
+end
+
+-- Функция для включения/выключения автоматической стрельбы
+local function toggleAutoShoot()
+    isAutoShooting = not isAutoShooting
+    print("Автострельба: " .. (isAutoShooting and "ВКЛ" or "ВЫКЛ"))
+end
+
+-- Обработчик нажатия клавиш
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == AIM_SETTINGS.Hotkey and input.UserInputType == Enum.UserInputType.Keyboard then
+        if AIM_SETTINGS.AutoShoot then
+            toggleAutoShoot()
+        else
+            clickNearestPlayerInFOV()
+        end
+    end
+end)
+
+-- Запуск цикла автоматической стрельбы
+if AIM_SETTINGS.AutoShoot then
+    RunService.Heartbeat:Connect(autoShootLoop)
+end
+
+-- Функции для глобального доступа
+getgenv().CLICK_NEAREST_FOV = clickNearestPlayerInFOV
+getgenv().TOGGLE_AUTO_SHOOT = toggleAutoShoot
+getgenv().SET_AUTO_SHOOT = function(state)
+    isAutoShooting = state
+    print("Автострельба: " .. (state and "ВКЛ" or "ВЫКЛ"))
+end
+
+-- Функция для настройки
+getgenv().SETUP_AIM_CLICK = function(settings)
+    if settings.Hotkey then AIM_SETTINGS.Hotkey = settings.Hotkey end
+    if settings.TeamCheck ~= nil then AIM_SETTINGS.TeamCheck = settings.TeamCheck end
+    if settings.MaxDistance then AIM_SETTINGS.MaxDistance = settings.MaxDistance end
+    if settings.ClickButton then AIM_SETTINGS.ClickButton = settings.ClickButton end
+    if settings.FOV then AIM_SETTINGS.FOV = settings.FOV end
+    if settings.AutoShoot ~= nil then 
+        AIM_SETTINGS.AutoShoot = settings.AutoShoot 
+        if settings.AutoShoot then
+            isAutoShooting = false
+        end
+    end
+    if settings.Headshot ~= nil then AIM_SETTINGS.Headshot = settings.Headshot end
+    if settings.AutoShootDelay then AIM_SETTINGS.AutoShootDelay = settings.AutoShootDelay end
+    if settings.SmoothAim ~= nil then AIM_SETTINGS.SmoothAim = settings.SmoothAim end
+    if settings.SmoothFactor then AIM_SETTINGS.SmoothFactor = settings.SmoothFactor end
+    if settings.WallCheck ~= nil then AIM_SETTINGS.WallCheck = settings.WallCheck end
+end
+
+print("Aim Assist загружен!")
+print("Настройки:")
+print("- Hotkey: " .. tostring(AIM_SETTINGS.Hotkey))
+print("- AutoShoot: " .. tostring(AIM_SETTINGS.AutoShoot))
+print("- Headshot: " .. tostring(AIM_SETTINGS.Headshot))
+print("- WallCheck: " .. tostring(AIM_SETTINGS.WallCheck))
+print("- FOV: " .. AIM_SETTINGS.FOV)
+print("- MaxDistance: " .. AIM_SETTINGS.MaxDistance)
+print("Используйте " .. tostring(AIM_SETTINGS.Hotkey) .. " для " .. (AIM_SETTINGS.AutoShoot and "включения/выключения автострельбы" or "ручного выстрела"))
