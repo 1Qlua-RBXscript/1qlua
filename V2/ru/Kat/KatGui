@@ -1,6 +1,6 @@
 
 
-local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))();
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/source"))();
 
 -- Create Notification --
 local Notifier = Compkiller.newNotify();
@@ -68,11 +68,21 @@ local NormalleftSection = NormalTab:DrawSection({
 	Position = 'right'	
 });
 
+NormalSection:AddParagraph({
+	Title = "Фарм бокс",
+	Content = "Фарм боксов, запускаеться и оно само фармит!)"
+})
+
 NormalSection:AddButton({
 	Name = "Фарм боксов!",
 	Callback = function()
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/FARM/farmbox"))()
 	end,
+})
+
+NormalSection:AddParagraph({
+	Title = "Килл алл",
+	Content = "Килл алл, что бы выклучить нажмите R!)"
 })
 
 NormalSection:AddButton({
@@ -82,11 +92,22 @@ NormalSection:AddButton({
 	end,
 })
 
+
+NormalleftSection:AddParagraph({
+	Title = "Ай бот!",
+	Content = "ай бот, что бы выключить нажмите E!)"
+})
+
 NormalleftSection:AddButton({
 	Name = "Ай бот!",
 	Callback = function()
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/AIBOT"))()
 	end,
+})
+
+NormalleftSection:AddParagraph({
+	Title = "Aйм!",
+	Content = "айм, что бы убить надо минимально прицелица на противника, и нажать на E)"
 })
 
 NormalleftSection:AddButton({
