@@ -1,6 +1,7 @@
 -- Ваши координаты для телепортации (измените на нужные)
 local TARGET_POSITION = Vector3.new(100, 1000, 200) -- Замените на ваши координаты
 local TARGET2_POSITION = Vector3.new(100, 1000, 180) -- Замените на ваши координаты
+local TARGET3_POSITION = Vector3.new(100, 1000, 183) -- Замените на ваши координаты
 
 local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/source"))();
 
@@ -166,6 +167,15 @@ local function lockCameraToPlayer()
     
     local camera = game.Workspace.CurrentCamera
     camera.CFrame = CFrame.new(camera.CFrame.Position, humanoidRootPart.Position)
+end
+
+-- Функция телепортации
+local function teleport3ToPosition()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    humanoidRootPart.CFrame = CFrame.new(TARGET3_POSITION)
 end
 
 -- Функция телепортации
@@ -372,6 +382,46 @@ local Toggle2 = NormalwwwrightSection:AddToggle({
 	end,
 });
 
+-- Toggle для бесконечной телепортации (вторая позиция)
+local Toggle2 = NormalwwwrightSection:AddToggle({
+	Name = "Бесконечная телепортация 2",
+	Default = false,
+	Callback = function(value)
+        teleport2Enabled = value
+        
+        if value then
+            -- Включаем телепортацию
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Бесконечная телепортация 2 включена!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Запускаем цикл телепортации
+            teleport2Connection = game:GetService("RunService").Heartbeat:Connect(function()
+                if teleport2Enabled then
+                    pcall(teleport3ToPosition)
+                end
+            end)
+        else
+            -- Выключаем телепортацию
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Бесконечная телепортация 2 выключена!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Отключаем соединение
+            if teleport2Connection then
+                teleport2Connection:Disconnect()
+                teleport2Connection = nil
+            end
+        end
+	end,
+});
+
 -- Добавляем информацию о координатах
 NormalwwwSection:AddParagraph({
 	Title = "Координаты телепортации 1",
@@ -387,6 +437,36 @@ NormalwwwSection:AddParagraph({
 	Title = "Управление камерой",
 	Content = "Выберите игрока и включите тоггл для направления камеры"
 })
+
+NormalwwwSection:AddParagraph({
+	Title = "Убийство с ножа!",
+	Content = "Тут настройка для убийства \nс ножа!"
+})
+
+NormalwwwSection:AddParagraph({
+	Title = "авто доставания ножа!",
+	Content = ""
+})
+
+NormalwwwSection:AddButton({
+	Name = "авто доставания ножа!",
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/FARM/item'))()
+	end,
+})
+
+NormalwwwSection:AddParagraph({
+	Title = "авто кликер !",
+	Content = "что бы выкулючить или вклучить нажмите L"
+})
+
+NormalwwwSection:AddButton({
+	Name = "авто Кликер!",
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/Kat/spamklick'))()
+	end,
+})
+
 
 -- Инициализация конфигурации
 ConfigManager:Init();
