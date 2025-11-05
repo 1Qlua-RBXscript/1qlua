@@ -1,8 +1,6 @@
 -- Ваши координаты для телепортации (измените на нужные)
-local TARGET_POSITION = Vector3.new(100, 50, 200) -- Замените на ваши координаты
-
-local TARGET2_POSITION = Vector3.new(100, 50, 180) -- Замените на ваши координаты
-
+local TARGET_POSITION = Vector3.new(100, 1000, 200) -- Замените на ваши координаты
+local TARGET2_POSITION = Vector3.new(100, 1000, 180) -- Замените на ваши координаты
 
 local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/source"))();
 
@@ -131,9 +129,44 @@ local NormalwwwrightSection = NormalFarmalt:DrawSection({
 	Position = 'right'	
 });
 
--- Переменная для контроля телепортации
+-- Переменные для контроля телепортации
 local teleportEnabled = false
+local teleport2Enabled = false
 local teleportConnection
+local teleport2Connection
+
+-- Переменные для контроля камеры
+local cameraLockEnabled = false
+local cameraConnection
+local selectedPlayer = nil
+
+-- Функция для получения списка игроков
+local function getPlayers()
+    local players = {}
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            table.insert(players, player.Name)
+        end
+    end
+    return players
+end
+
+-- Функция направления камеры на игрока
+local function lockCameraToPlayer()
+    if not cameraLockEnabled or not selectedPlayer then return end
+    
+    local targetPlayer = game.Players:FindFirstChild(selectedPlayer)
+    if not targetPlayer then return end
+    
+    local character = targetPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    local camera = game.Workspace.CurrentCamera
+    camera.CFrame = CFrame.new(camera.CFrame.Position, humanoidRootPart.Position)
+end
 
 -- Функция телепортации
 local function teleport2ToPosition()
@@ -224,25 +257,100 @@ NormalwwwSection:AddButton({
 	end,
 })
 
--- Toggle для бесконечной телепортации
-local Toggle = NormalwwwrightSection:AddToggle({
-	Name = "Бесконечная телепортация",
+-- Функция направления камеры на игрока
+local playerDropdown = NormalwwwSection:AddDropdown({
+	Name = "Выберите игрока",
+	Default = "Выберите игрока",
+	Values = getPlayers(),
+	Callback = function(value)
+        selectedPlayer = value
+        Notifier.new({
+            Title = "Камера",
+            Content = "Выбран игрок: " .. value,
+            Duration = 3,
+            Icon = "rbxassetid://120245531583106"
+        })
+	end
+})
+
+-- Обновление списка игроков при подключении/отключении
+game.Players.PlayerAdded:Connect(function()
+    playerDropdown:Refresh(getPlayers())
+end)
+
+game.Players.PlayerRemoving:Connect(function()
+    playerDropdown:Refresh(getPlayers())
+end)
+
+-- Toggle для направления камеры
+local CameraToggle = NormalwwwSection:AddToggle({
+	Name = "Направлять камеру на игрока",
 	Default = false,
 	Callback = function(value)
-        teleportEnabled = value
+        cameraLockEnabled = value
+        
+        if value then
+            if not selectedPlayer or selectedPlayer == "Выберите игрока" then
+                Notifier.new({
+                    Title = "Ошибка",
+                    Content = "Сначала выберите игрока!",
+                    Duration = 3,
+                    Icon = "rbxassetid://120245531583106"
+                })
+                return
+            end
+            
+            -- Включаем направление камеры
+            Notifier.new({
+                Title = "Камера",
+                Content = "Камера направлена на: " .. selectedPlayer,
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Запускаем цикл направления камеры
+            cameraConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                if cameraLockEnabled then
+                    pcall(lockCameraToPlayer)
+                end
+            end)
+        else
+            -- Выключаем направление камеры
+            Notifier.new({
+                Title = "Камера",
+                Content = "Направление камеры выключено",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+            
+            -- Отключаем соединение
+            if cameraConnection then
+                cameraConnection:Disconnect()
+                cameraConnection = nil
+            end
+        end
+	end,
+});
+
+-- Toggle для бесконечной телепортации (вторая позиция)
+local Toggle2 = NormalwwwrightSection:AddToggle({
+	Name = "Бесконечная телепортация 2",
+	Default = false,
+	Callback = function(value)
+        teleport2Enabled = value
         
         if value then
             -- Включаем телепортацию
             Notifier.new({
                 Title = "Телепортация",
-                Content = "Бесконечная телепортация включена!",
+                Content = "Бесконечная телепортация 2 включена!",
                 Duration = 3,
                 Icon = "rbxassetid://120245531583106"
             })
             
             -- Запускаем цикл телепортации
-            teleportConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                if teleportEnabled then
+            teleport2Connection = game:GetService("RunService").Heartbeat:Connect(function()
+                if teleport2Enabled then
                     pcall(teleport2ToPosition)
                 end
             end)
@@ -250,19 +358,35 @@ local Toggle = NormalwwwrightSection:AddToggle({
             -- Выключаем телепортацию
             Notifier.new({
                 Title = "Телепортация",
-                Content = "Бесконечная телепортация выключена!",
+                Content = "Бесконечная телепортация 2 выключена!",
                 Duration = 3,
                 Icon = "rbxassetid://120245531583106"
             })
             
             -- Отключаем соединение
-            if teleportConnection then
-                teleportConnection:Disconnect()
-                teleportConnection = nil
+            if teleport2Connection then
+                teleport2Connection:Disconnect()
+                teleport2Connection = nil
             end
         end
 	end,
 });
+
+-- Добавляем информацию о координатах
+NormalwwwSection:AddParagraph({
+	Title = "Координаты телепортации 1",
+	Content = "X="..TARGET_POSITION.X..", Y="..TARGET_POSITION.Y..", Z="..TARGET_POSITION.Z
+})
+
+NormalwwwrightSection:AddParagraph({
+	Title = "Координаты телепортации 2",
+	Content = "X="..TARGET2_POSITION.X..", Y="..TARGET2_POSITION.Y..", Z="..TARGET2_POSITION.Z
+})
+
+NormalwwwSection:AddParagraph({
+	Title = "Управление камерой",
+	Content = "Выберите игрока и включите тоггл для направления камеры"
+})
 
 -- Инициализация конфигурации
 ConfigManager:Init();
