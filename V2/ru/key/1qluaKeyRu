@@ -1396,6 +1396,292 @@ end
 -- Очистка при выходе из игры
 game:GetService("Players").LocalPlayer.OnTeleport:Connect(Cleanup)
 
+-- Секция копирователя путей объектов
+local MainSection = PlayerTab:DrawSection({
+    Name = "Копирователь путей объектов",
+    Position = 'left'
+})
+
+-- Переменные
+local pathCopierEnabled = false
+local currentPath = ""
+local pathCopierConnection = nil
+
+-- Функция получения пути через GetChildren
+local function getPathWithGetChildren(object)
+    if not object or not object.Parent then
+        return "Неверный объект"
+    end
+    
+    local pathParts = {}
+    local current = object
+    
+    while current and current ~= game do
+        local parent = current.Parent
+        if parent then
+            local children = parent:GetChildren()
+            for index, child in ipairs(children) do
+                if child == current then
+                    table.insert(pathParts, 1, {name = current.Name, index = index})
+                    break
+                end
+            end
+            current = parent
+        else
+            break
+        end
+    end
+    
+    local result = "game"
+    for i, part in ipairs(pathParts) do
+        if i == 1 then
+            result = result .. ":GetService(\"" .. part.name .. "\")"
+        else
+            result = result .. ":GetChildren()[" .. part.index .. "]"
+        end
+    end
+    
+    return result
+end
+
+-- Функция получения полного пути
+local function getFullPath(object)
+    if not object then 
+        return "Неверный объект" 
+    end
+    local success, result = pcall(function()
+        return object:GetFullName()
+    end)
+    if success then
+        return result
+    else
+        return "Ошибка получения пути"
+    end
+end
+
+-- Функция получения Debug пути
+local function getDebugPath(object)
+    if not object then 
+        return "Неверный объект" 
+    end
+    local fullName = getFullPath(object)
+    local objectId = tostring(object:GetDebugId())
+    local className = object.ClassName
+    return fullName .. " -- DebugId: " .. objectId .. " Class: " .. className
+end
+
+-- Основная функция получения пути
+local function getSmartPath(object)
+    local format = getgenv().PathCopierFormat or "GetChildren"
+    if format == "GetChildren" then
+        return getPathWithGetChildren(object)
+    elseif format == "FullPath" then
+        return getFullPath(object)
+    elseif format == "Debug" then
+        return getDebugPath(object)
+    else
+        return getPathWithGetChildren(object)
+    end
+end
+
+-- Функция подсветки объекта
+local function highlightObject(object)
+    if not object then 
+        return 
+    end
+    if not getgenv().PathCopierHighlight then 
+        return 
+    end
+    
+    local oldHighlight = object:FindFirstChild("PathCopierHighlight")
+    if oldHighlight then
+        oldHighlight:Destroy()
+    end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PathCopierHighlight"
+    highlight.Adornee = object
+    highlight.FillColor = getgenv().PathCopierHighlightColor or Color3.fromRGB(255, 255, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.OutlineTransparency = 0
+    highlight.Parent = object
+    
+    delay(3, function()
+        if highlight and highlight.Parent then
+            highlight:Destroy()
+        end
+    end)
+end
+
+-- Функция обработки клика по объекту
+local function onObjectClicked(object)
+    if not pathCopierEnabled or not object then 
+        return 
+    end
+    
+    local path = getSmartPath(object)
+    currentPath = path
+    highlightObject(object)
+    
+    pcall(function()
+        setclipboard(path)
+    end)
+    
+    if Window and Window.Notify then
+        Window.Notify.new({
+            Title = "Путь скопирован",
+            Content = "Объект: " .. object.Name .. "\nКласс: " .. object.ClassName .. "\nПуть скопирован!",
+            Duration = 4,
+            Icon = "copy"
+        })
+    end
+    
+    print("[Path Copier] Объект: " .. object.Name .. " | Путь: " .. path)
+end
+
+-- Функция настройки копирователя
+local function setupPathCopier()
+    if pathCopierConnection then
+        pathCopierConnection:Disconnect()
+    end
+    
+    local player = game:GetService("Players").LocalPlayer
+    local mouse = player:GetMouse()
+    
+    pathCopierConnection = mouse.Button1Down:Connect(function()
+        local target = mouse.Target
+        if target and pathCopierEnabled then
+            wait(0.01)
+            if target.Parent then
+                onObjectClicked(target)
+            end
+        end
+    end)
+end
+
+-- Функция отключения копирователя
+local function teardownPathCopier()
+    if pathCopierConnection then
+        pathCopierConnection:Disconnect()
+        pathCopierConnection = nil
+    end
+end
+
+-- Инициализация настроек
+if not getgenv().PathCopierFormat then
+    getgenv().PathCopierFormat = "GetChildren"
+end
+if getgenv().PathCopierHighlight == nil then
+    getgenv().PathCopierHighlight = true
+end
+if not getgenv().PathCopierHighlightColor then
+    getgenv().PathCopierHighlightColor = Color3.fromRGB(255, 255, 0)
+end
+
+-- Toggle для включения/выключения
+local PathCopierToggle = MainSection:AddToggle({
+    Name = "Включить \nкопирование ",
+    Flag = "PathCopier_Enabled",
+    Default = false,
+    Callback = function(enabled)
+        pathCopierEnabled = enabled
+        if enabled then
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Инструмент включен! Нажмите на любой объект чтобы скопировать его путь.",
+                    Duration = 3,
+                    Icon = "copy"
+                })
+            end
+            setupPathCopier()
+        else
+            teardownPathCopier()
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Инструмент выключен.",
+                    Duration = 2,
+                    Icon = "copy"
+                })
+            end
+        end
+    end
+})
+
+-- Настройка формата пути
+local PathFormatDropdown = MainSection:AddDropdown({
+    Name = "Формат пути",
+    Default = "GetChildren",
+    Flag = "PathCopier_Format",
+    Values = {"GetChildren", "FullPath", "Debug"},
+    Callback = function(format)
+        getgenv().PathCopierFormat = format
+    end
+})
+
+-- Настройка подсветки
+local HighlightToggle = MainSection:AddToggle({
+    Name = "Включить подсветку",
+    Flag = "PathCopier_Highlight",
+    Default = true,
+    Callback = function(enabled)
+        getgenv().PathCopierHighlight = enabled
+    end
+})
+
+-- Цвет подсветки
+local HighlightColor = MainSection:AddColorPicker({
+    Name = "Цвет подсветки",
+    Default = Color3.fromRGB(255, 255, 0),
+    Flag = "PathCopier_HighlightColor",
+    Callback = function(color)
+        getgenv().PathCopierHighlightColor = color
+    end
+})
+
+-- Кнопка копирования
+local CopyButton = MainSection:AddButton({
+    Name = "Скопировать последний путь",
+    Callback = function()
+        if currentPath ~= "" then
+            pcall(function()
+                setclipboard(currentPath)
+            end)
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Путь скопирован в буфер обмена!",
+                    Duration = 2,
+                    Icon = "check"
+                })
+            end
+        else
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Нет пути для копирования!",
+                    Duration = 2,
+                    Icon = "warning"
+                })
+            end
+        end
+    end
+})
+
+-- Инструкция
+MainSection:AddParagraph({
+    Title = "Форматы путей",
+    Content = "GetChildren - путь через индексы детей\nFullPath - обычный полный путь\nDebug - с ID объекта и классом"
+})
+
+-- Автоотключение при выходе
+game:GetService("Players").LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
+    if not game:GetService("Players").LocalPlayer.Parent then
+        teardownPathCopier()
+    end
+end)
 
 
 
