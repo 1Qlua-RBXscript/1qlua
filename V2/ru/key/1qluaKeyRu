@@ -750,6 +750,8 @@ local function clearAllHighlights()
     notify("Part ESP", "All highlights cleared")
 end
 
+
+
 -- Utility Section
 local UtilitySection = PlayerTab:DrawSection({
     Name = "Utility",
@@ -940,6 +942,462 @@ Players.PlayerRemoving:Connect(function(player)
         end
     end
 end)
+
+-- Переменные для управления телепортацией
+local Teleport = {
+    Enabled = false,
+    Speed = 3,
+    Mode = "По порядку",
+    CurrentIndex = 1,
+    FriendsOnly = false,
+    SkipDead = true,
+    HeightOffset = 5,
+    DistanceOffset = 5,
+    BodyPart = "HumanoidRootPart",
+    ShowInfo = true,
+    LastTeleportTime = 0,
+    Connection = nil
+}
+
+-- Создаем одну секцию
+local MainSection = PlayerTab:DrawSection({
+    Name = "Телепортация по игрокам",
+    Position = 'left'    
+})
+
+-- Основной переключатель телепортации
+local TeleportToggle = MainSection:AddToggle({
+    Name = "Включить Авто-Телепорт",
+    Flag = "Teleport_Enabled",
+    Default = false,
+    Callback = function(enabled)
+        if enabled then
+            StartAutoTeleport()
+        else
+            StopAutoTeleport()
+        end
+    end,
+})
+
+-- Слайдер для скорости телепортации (исправленный)
+MainSection:AddSlider({
+    Name = "Скорость Телепортации ",
+    Min = 0.1,
+    Max = 30,
+    Default = 3,
+    Round = 1,
+    Suffix = " сек",
+    Flag = "Teleport_Speed",
+    Callback = function(speed)
+        Teleport.Speed = speed
+        print("Скорость установлена: " .. speed .. " секунд")
+    end
+})
+
+-- Выбор режима телепортации
+MainSection:AddDropdown({
+    Name = "Режим Телепортации",
+    Default = "По порядку",
+    Flag = "Teleport_Mode",
+    Values = {"По порядку", "Случайно", "Ближайший", "Самый дальний"},
+    Callback = function(mode)
+        Teleport.Mode = mode
+        Teleport.CurrentIndex = 1
+        print("Режим установлен: " .. mode)
+    end
+})
+
+-- Слайдер для расстояния от игрока
+MainSection:AddSlider({
+    Name = "Дистанция от Игрока",
+    Min = 0,
+    Max = 20,
+    Default = 5,
+    Round = 1,
+    Suffix = " studs",
+    Flag = "Teleport_Distance",
+    Callback = function(distance)
+        Teleport.DistanceOffset = distance
+        print("Дистанция установлена: " .. distance)
+    end
+})
+
+-- Слайдер для высоты телепортации
+MainSection:AddSlider({
+    Name = "Высота Телепортации",
+    Min = 0,
+    Max = 50,
+    Default = 5,
+    Round = 1,
+    Suffix = " studs",
+    Flag = "Teleport_Height",
+    Callback = function(height)
+        Teleport.HeightOffset = height
+        print("Высота установлена: " .. height)
+    end
+})
+
+-- Дополнительные настройки
+MainSection:AddToggle({
+    Name = "Показывать Информацию",
+    Flag = "Show_Player_Info",
+    Default = true,
+    Callback = function(show)
+        Teleport.ShowInfo = show
+        print("Показ информации: " .. tostring(show))
+    end,
+})
+
+MainSection:AddToggle({
+    Name = "Только Друзья",
+    Flag = "Friends_Only",
+    Default = false,
+    Callback = function(friendsOnly)
+        Teleport.FriendsOnly = friendsOnly
+        print("Только друзья: " .. tostring(friendsOnly))
+    end,
+})
+
+MainSection:AddToggle({
+    Name = "Пропускать Мертвых",
+    Flag = "Skip_Dead_Players",
+    Default = true,
+    Callback = function(skip)
+        Teleport.SkipDead = skip
+        print("Пропускать мертвых: " .. tostring(skip))
+    end,
+})
+
+-- Кнопка ручной телепортации
+MainSection:AddButton({
+    Name = "Телепорт к Следующему Игроку",
+    Callback = function()
+        TeleportToNextPlayerManual()
+    end,
+})
+
+-- Кнопка обновления списка игроков
+MainSection:AddButton({
+    Name = "Обновить Список Игроков",
+    Callback = function()
+        RefreshPlayerList()
+    end,
+})
+
+-- Информационный параграф
+MainSection:AddParagraph({
+    Title = "Инструкция по Использованию",
+    Content = "1. Включите авто-телепортацию\n2. Настройте скорость (0.1-30 сек)\n3. Выберите режим и дистанцию\n4. Используйте кнопки для \nручного управления"
+})
+
+-- Функция получения списка игроков
+function GetPlayerNames()
+    local players = {}
+    local success, result = pcall(function()
+        for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game:GetService("Players").LocalPlayer then
+                table.insert(players, player.Name)
+            end
+        end
+    end)
+    return players
+end
+
+-- Функция получения валидных игроков
+function GetValidPlayers()
+    local validPlayers = {}
+    local localPlayer = game:GetService("Players").LocalPlayer
+    
+    for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+        if player ~= localPlayer and IsValidTarget(player) then
+            table.insert(validPlayers, player)
+        end
+    end
+    
+    return validPlayers
+end
+
+-- Функция проверки валидности цели
+function IsValidTarget(player)
+    if not player then return false end
+    
+    -- Проверка "только друзья"
+    if Teleport.FriendsOnly then
+        local success, isFriend = pcall(function()
+            return player:IsFriendsWith(game:GetService("Players").LocalPlayer.UserId)
+        end)
+        if not success or not isFriend then
+            return false
+        end
+    end
+    
+    -- Проверка на мертвых игроков
+    if Teleport.SkipDead then
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health <= 0 then
+                return false
+            end
+        end
+    end
+    
+    return true
+end
+
+-- Функция телепортации к игроку
+function TeleportToPlayer(player)
+    if not player then return false end
+    
+    local success, err = pcall(function()
+        local localPlayer = game:GetService("Players").LocalPlayer
+        local localCharacter = localPlayer.Character
+        local targetCharacter = player.Character
+        
+        if not localCharacter or not targetCharacter then 
+            return false
+        end
+        
+        local targetPart = targetCharacter:FindFirstChild(Teleport.BodyPart) or targetCharacter:FindFirstChild("HumanoidRootPart")
+        local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+        
+        if not targetPart or not localRoot then 
+            return false
+        end
+        
+        -- Вычисляем позицию с учетом расстояния
+        local lookVector = targetPart.CFrame.LookVector
+        local teleportPosition = targetPart.Position - (lookVector * Teleport.DistanceOffset)
+        local newCFrame = CFrame.new(teleportPosition + Vector3.new(0, Teleport.HeightOffset, 0))
+        
+        -- Телепортируемся
+        localRoot.CFrame = newCFrame
+        
+        -- Показываем информацию об игроке если включено
+        if Teleport.ShowInfo then
+            ShowPlayerInfo(player)
+        end
+        
+        return true
+    end)
+    
+    if not success then
+        warn("Ошибка телепортации: " .. tostring(err))
+        return false
+    end
+    
+    return true
+end
+
+-- Функция показа информации об игроке
+function ShowPlayerInfo(player)
+    local character = player.Character
+    local info = "Телепортирован к: " .. player.Name
+    
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            info = info .. "\nЗдоровье: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+        end
+    end
+    
+    Notifier.new({
+        Title = "Информация о телепортации",
+        Content = info,
+        Duration = 2,
+        Icon = "rbxassetid://120245531583106"
+    })
+end
+
+-- Функция получения следующей цели
+function GetNextTarget(players)
+    if #players == 0 then return nil end
+    
+    if Teleport.Mode == "По порядку" then
+        local target = players[Teleport.CurrentIndex]
+        Teleport.CurrentIndex = Teleport.CurrentIndex % #players + 1
+        return target
+    elseif Teleport.Mode == "Случайно" then
+        return players[math.random(1, #players)]
+    elseif Teleport.Mode == "Ближайший" then
+        return GetNearestPlayer(players)
+    elseif Teleport.Mode == "Самый дальний" then
+        return GetFurthestPlayer(players)
+    else
+        return players[1]
+    end
+end
+
+-- Функция получения ближайшего игрока
+function GetNearestPlayer(players)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local localCharacter = localPlayer.Character
+    if not localCharacter then return players[1] end
+    
+    local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return players[1] end
+    
+    local nearestPlayer = players[1]
+    local nearestDistance = math.huge
+    
+    for _, player in ipairs(players) do
+        local character = player.Character
+        if character then
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local distance = (localRoot.Position - root.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestPlayer = player
+                end
+            end
+        end
+    end
+    
+    return nearestPlayer
+end
+
+-- Функция получения самого дальнего игрока
+function GetFurthestPlayer(players)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local localCharacter = localPlayer.Character
+    if not localCharacter then return players[1] end
+    
+    local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return players[1] end
+    
+    local furthestPlayer = players[1]
+    local furthestDistance = 0
+    
+    for _, player in ipairs(players) do
+        local character = player.Character
+        if character then
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local distance = (localRoot.Position - root.Position).Magnitude
+                if distance > furthestDistance then
+                    furthestDistance = distance
+                    furthestPlayer = player
+                end
+            end
+        end
+    end
+    
+    return furthestPlayer
+end
+
+-- Функция старта автоматической телепортации (исправленная)
+function StartAutoTeleport()
+    if Teleport.Enabled then return end
+    
+    Teleport.Enabled = true
+    Teleport.CurrentIndex = 1
+    Teleport.LastTeleportTime = 0
+    
+    Notifier.new({
+        Title = "Телепортация",
+        Content = "Авто-телепортация запущена!",
+        Duration = 3,
+        Icon = "rbxassetid://120245531583106"
+    })
+    
+    -- Создаем отдельный поток для телепортации с правильным таймером
+    task.spawn(function()
+        while Teleport.Enabled do
+            local players = GetValidPlayers()
+            if #players > 0 then
+                local targetPlayer = GetNextTarget(players)
+                if targetPlayer then
+                    local success = TeleportToPlayer(targetPlayer)
+                    if success then
+                        print("Успешно телепортирован к: " .. targetPlayer.Name)
+                    end
+                end
+            else
+                print("Нет подходящих игроков для телепортации")
+            end
+            
+            -- Ждем указанное количество секунд
+            wait(Teleport.Speed)
+        end
+    end)
+end
+
+-- Функция остановки автоматической телепортации
+function StopAutoTeleport()
+    if not Teleport.Enabled then return end
+    
+    Teleport.Enabled = false
+    
+    Notifier.new({
+        Title = "Телепортация",
+        Content = "Авто-телепортация остановлена!",
+        Duration = 3,
+        Icon = "rbxassetid://120245531583106"
+    })
+end
+
+-- Функция ручной телепортации к следующему игроку
+function TeleportToNextPlayerManual()
+    if Teleport.Enabled then
+        Notifier.new({
+            Title = "Телепортация",
+            Content = "Сначала отключите авто-телепортацию!",
+            Duration = 3,
+            Icon = "rbxassetid://120245531583106"
+        })
+        return
+    end
+    
+    local players = GetValidPlayers()
+    if #players > 0 then
+        local targetPlayer = GetNextTarget(players)
+        if targetPlayer and TeleportToPlayer(targetPlayer) then
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Успешно телепортирован к: " .. targetPlayer.Name,
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        else
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Не удалось телепортироваться к игроку!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        end
+    else
+        Notifier.new({
+            Title = "Телепортация",
+            Content = "Не найдено подходящих игроков!",
+            Duration = 3,
+            Icon = "rbxassetid://120245531583106"
+        })
+    end
+end
+
+-- Функция обновления списка игроков
+function RefreshPlayerList()
+    local playerCount = #GetValidPlayers()
+    Notifier.new({
+        Title = "Список Игроков",
+        Content = "Список игроков обновлен! Доступно: " .. playerCount,
+        Duration = 3,
+        Icon = "rbxassetid://120245531583106"
+    })
+end
+
+-- Функция для безопасного завершения
+local function Cleanup()
+    Teleport.Enabled = false
+end
+
+-- Очистка при выходе из игры
+game:GetService("Players").LocalPlayer.OnTeleport:Connect(Cleanup)
+
+
+
 
 PlayerScriptsSection:AddToggle({
     Name = "Anti-Lag",
