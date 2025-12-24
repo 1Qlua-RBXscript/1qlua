@@ -5,6 +5,7 @@ local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/kamera",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/prizok",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/DELGUI",
+    "https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/Scriptkat/s",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/walk"
 }
 
