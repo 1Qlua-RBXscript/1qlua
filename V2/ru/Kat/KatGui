@@ -1,134 +1,13 @@
--- Ваши координаты для телепортации (измените на нужные)
-local TARGET_POSITION = Vector3.new(100, 1000, 200) -- Замените на ваши координаты
-local TARGET2_POSITION = Vector3.new(100, 1000, 180) -- Замените на ваши координаты
-local TARGET3_POSITION = Vector3.new(100, 1000, 183) -- Замените на ваши координаты
+-- Загрузка библиотеки Kavo UI
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
-local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/source"))();
+-- Создание окна
+local Window = Library.CreateLib("1Qlua", "DarkTheme")
 
--- Create Notification --
-local Notifier = Compkiller.newNotify();
-
--- Create Config Mamager --
-local ConfigManager = Compkiller:ConfigManager({
-	Directory = "Compkiller-UI",
-	Config = "Example-Configs"
-});
-
--- Creating Window --
-local Window = Compkiller.new({
-	Name = "1Qlua",
-	Keybind = "LeftAlt",
-	Logo = "rbxassetid://80494437171393",
-	Scale = Compkiller.Scale.Window,
-	TextSize = 15,
-});
-
--- Notification --
-Notifier.new({
-	Title = "Notification",
-	Content = "Спасибо что пользуетесь мойм скриптом!",
-	Duration = 10,
-	Icon = "rbxassetid://120245531583106"
-});
-
--- Watermark --
-local Watermark = Window:Watermark();
-
-Watermark:AddText({
-	Icon = "user",
-	Text = "1qlua",
-});
-
--- Creating Tab Category --
-Window:DrawCategory({
-	Name = "Example"
-});
-
--- Creating Tab --
-local NormalTab = Window:DrawTab({
-	Name = "Kat ❤️",
-	Icon = "server",
-	EnableScrolling = true
-});
-
--- Creating Section --
-local NormalSection = NormalTab:DrawSection({
-	Name = "Kat",
-	Position = 'left'	
-});
-
--- Creating Section --
-local NormalleftSection = NormalTab:DrawSection({
-	Name = "Kadt",
-	Position = 'right'	
-});
-
-NormalSection:AddParagraph({
-	Title = "Фарм бокс",
-	Content = "Фарм боксов, запускаеться и оно само фармит!)"
-})
-
-NormalSection:AddButton({
-	Name = "Фарм боксов!",
-	Callback = function()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/FARM/farmbox"))()
-	end,
-})
-
-NormalSection:AddParagraph({
-	Title = "Килл алл",
-	Content = "Килл алл, что бы выклучить нажмите R!)"
-})
-
-NormalSection:AddButton({
-	Name = "Килл алл!",
-	Callback = function()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/script/kill%20all"))()
-	end,
-})
-
-NormalleftSection:AddParagraph({
-	Title = "Ай бот!",
-	Content = "ай бот, что бы выключить нажмите E!)"
-})
-
-NormalleftSection:AddButton({
-	Name = "Ай бот!",
-	Callback = function()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/AIBOT"))()
-	end,
-})
-
-NormalleftSection:AddParagraph({
-	Title = "Aйм!",
-	Content = "айм, что бы убить надо минимально прицелица на противника, и нажать на E)"
-})
-
-NormalleftSection:AddButton({
-	Name = "Айм!",
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/A'))()
-	end,
-})
-
--- Creating Tab --
-local NormalFarmalt = Window:DrawTab({
-	Name = "Farm alt❤️",
-	Icon = "server",
-	EnableScrolling = true
-});
-
--- Creating Section --
-local NormalwwwSection = NormalFarmalt:DrawSection({
-	Name = "для фарм аккаунтов",
-	Position = 'left'	
-});
-
--- Creating Section --
-local NormalwwwrightSection = NormalFarmalt:DrawSection({
-	Name = "для не фарм аккаунтов",
-	Position = 'right'	
-});
+-- Координаты для телепортации
+local TARGET_POSITION = Vector3.new(100, 1000, 200)
+local TARGET2_POSITION = Vector3.new(100, 1000, 180)
+local TARGET3_POSITION = Vector3.new(100, 1000, 183)
 
 -- Переменные для контроля телепортации
 local teleportEnabled = false
@@ -169,304 +48,228 @@ local function lockCameraToPlayer()
     camera.CFrame = CFrame.new(camera.CFrame.Position, humanoidRootPart.Position)
 end
 
--- Функция телепортации
-local function teleport3ToPosition()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    
-    humanoidRootPart.CFrame = CFrame.new(TARGET3_POSITION)
-end
-
--- Функция телепортации
-local function teleport2ToPosition()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    
-    humanoidRootPart.CFrame = CFrame.new(TARGET2_POSITION)
-end
-
--- Функция телепортации
+-- Функции телепортации
 local function teleportToPosition()
     local player = game.Players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    
     humanoidRootPart.CFrame = CFrame.new(TARGET_POSITION)
 end
 
--- Toggle для бесконечной телепортации
-local Toggle = NormalwwwSection:AddToggle({
-	Name = "Бесконечная телепортация",
-	Default = false,
-	Callback = function(value)
-        teleportEnabled = value
+local function teleport2ToPosition()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoidRootPart.CFrame = CFrame.new(TARGET2_POSITION)
+end
+
+local function teleport3ToPosition()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoidRootPart.CFrame = CFrame.new(TARGET3_POSITION)
+end
+
+-- Создание вкладок
+local KatTab = Window:NewTab("Kat ❤️")
+local FarmAltTab = Window:NewTab("Farm alt❤️")
+
+-- Создание секций для вкладки Kat
+local KatSection = KatTab:NewSection("Kat")
+local KatRightSection = KatTab:NewSection("Kadt")
+
+-- Создание секций для вкладки Farm Alt
+local FarmLeftSection = FarmAltTab:NewSection("для фарм аккаунтов")
+local FarmRightSection = FarmAltTab:NewSection("для не фарм аккаунтов")
+
+-- Добавление элементов в секцию Kat
+KatSection:NewLabel("Фарм бокс")
+KatSection:NewLabel("Фарм боксов, запускается и оно само фармит!")
+
+KatSection:NewButton("Фарм боксов!", "Запускает фарм боксов", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/FARM/farmbox"))()
+end)
+
+KatSection:NewLabel("Килл алл")
+KatSection:NewLabel("Килл алл, чтобы выключить нажмите R!")
+
+KatSection:NewButton("Килл алл!", "Запускает kill all", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/script/kill%20all"))()
+end)
+
+-- Добавление элементов в правую секцию Kat
+KatRightSection:NewLabel("Ай бот!")
+KatRightSection:NewLabel("Ай бот, чтобы выключить нажмите E!")
+
+KatRightSection:NewButton("Ай бот!", "Запускает AI бота", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/AIBOT"))()
+end)
+
+KatRightSection:NewLabel("Айм!")
+KatRightSection:NewLabel("Айм, чтобы убить надо минимально прицелиться на противника, и нажать на E")
+
+KatRightSection:NewButton("Айм!", "Запускает аим", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/A'))()
+end)
+
+-- Добавление элементов в левую секцию Farm Alt
+FarmLeftSection:NewLabel("Координаты телепортации 1")
+FarmLeftSection:NewLabel(string.format("X=%d, Y=%d, Z=%d", TARGET_POSITION.X, TARGET_POSITION.Y, TARGET_POSITION.Z))
+
+-- Toggle для бесконечной телепортации 1
+FarmLeftSection:NewToggle("Бесконечная телепортация", "Включает бесконечную телепортацию", function(state)
+    teleportEnabled = state
+    
+    if state then
+        print("[Телепортация] Бесконечная телепортация включена!")
         
-        if value then
-            -- Включаем телепортацию
-            Notifier.new({
-                Title = "Телепортация",
-                Content = "Бесконечная телепортация включена!",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Запускаем цикл телепортации
-            teleportConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                if teleportEnabled then
-                    pcall(teleportToPosition)
-                end
-            end)
-        else
-            -- Выключаем телепортацию
-            Notifier.new({
-                Title = "Телепортация",
-                Content = "Бесконечная телепортация выключена!",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Отключаем соединение
-            if teleportConnection then
-                teleportConnection:Disconnect()
-                teleportConnection = nil
+        teleportConnection = game:GetService("RunService").Heartbeat:Connect(function()
+            if teleportEnabled then
+                pcall(teleportToPosition)
             end
+        end)
+    else
+        print("[Телепортация] Бесконечная телепортация выключена!")
+        
+        if teleportConnection then
+            teleportConnection:Disconnect()
+            teleportConnection = nil
         end
-	end,
-});
+    end
+end)
 
-NormalwwwSection:AddParagraph({
-	Title = "авто убийсто с пистолета!",
-	Content = "Что бы выклучить нажмите Q"
-})
+FarmLeftSection:NewLabel("авто убийство с пистолета!")
+FarmLeftSection:NewLabel("Чтобы выключить нажмите Q")
 
-NormalwwwSection:AddButton({
-	Name = "авто убийсто с пистолета!",
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/Kat/aimd'))()
-	end,
-})
+FarmLeftSection:NewButton("авто убийство с пистолета!", "Запускает авто убийство", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/Kat/aimd'))()
+end)
 
-NormalwwwSection:AddParagraph({
-	Title = "авто доставания пистолета!",
-	Content = ""
-})
+FarmLeftSection:NewLabel("авто доставания пистолета!")
+FarmLeftSection:NewButton("авто доставания пистолета!", "Автоматически достает пистолет", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/Revolver'))()
+end)
 
-NormalwwwSection:AddButton({
-	Name = "авто доставания пистолета!",
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIBOT/Kat/Revolver'))()
-	end,
-})
+FarmLeftSection:NewButton("анти афк", "Включите со всех аккаунтов", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/farm/antiafk'))()
+end)
 
-NormalwwwSection:AddButton({
-	Name = "анти афк (вклучите со всех аккаунтов)",
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/test1QLUA/QLUASCRIPT/refs/heads/main/farm/antiafk'))()
-	end,
-})
+-- Создание Dropdown для выбора игрока
+local playersList = getPlayers()
+local dropdown = FarmLeftSection:NewDropdown("Выберите игрока", "Для направления камеры", playersList, function(currentOption)
+    selectedPlayer = currentOption
+    print("[Камера] Выбран игрок: " .. currentOption)
+end)
 
--- Функция направления камеры на игрока
-local playerDropdown = NormalwwwSection:AddDropdown({
-	Name = "Выберите игрока",
-	Default = "Выберите игрока",
-	Values = getPlayers(),
-	Callback = function(value)
-        selectedPlayer = value
-        Notifier.new({
-            Title = "Камера",
-            Content = "Выбран игрок: " .. value,
-            Duration = 3,
-            Icon = "rbxassetid://120245531583106"
-        })
-	end
-})
-
--- Обновление списка игроков при подключении/отключении
+-- Обновление списка игроков
 game.Players.PlayerAdded:Connect(function()
-    playerDropdown:Refresh(getPlayers())
+    dropdown:Refresh(getPlayers())
 end)
 
 game.Players.PlayerRemoving:Connect(function()
-    playerDropdown:Refresh(getPlayers())
+    dropdown:Refresh(getPlayers())
 end)
 
 -- Toggle для направления камеры
-local CameraToggle = NormalwwwSection:AddToggle({
-	Name = "Направлять камеру на игрока",
-	Default = false,
-	Callback = function(value)
-        cameraLockEnabled = value
-        
-        if value then
-            if not selectedPlayer or selectedPlayer == "Выберите игрока" then
-                Notifier.new({
-                    Title = "Ошибка",
-                    Content = "Сначала выберите игрока!",
-                    Duration = 3,
-                    Icon = "rbxassetid://120245531583106"
-                })
-                return
-            end
-            
-            -- Включаем направление камеры
-            Notifier.new({
-                Title = "Камера",
-                Content = "Камера направлена на: " .. selectedPlayer,
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Запускаем цикл направления камеры
-            cameraConnection = game:GetService("RunService").RenderStepped:Connect(function()
-                if cameraLockEnabled then
-                    pcall(lockCameraToPlayer)
-                end
-            end)
-        else
-            -- Выключаем направление камеры
-            Notifier.new({
-                Title = "Камера",
-                Content = "Направление камеры выключено",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Отключаем соединение
-            if cameraConnection then
-                cameraConnection:Disconnect()
-                cameraConnection = nil
-            end
+FarmLeftSection:NewToggle("Направлять камеру на игрока", "Направляет камеру на выбранного игрока", function(state)
+    cameraLockEnabled = state
+    
+    if state then
+        if not selectedPlayer then
+            print("[Ошибка] Сначала выберите игрока!")
+            return
         end
-	end,
-});
-
--- Toggle для бесконечной телепортации (вторая позиция)
-local Toggle2 = NormalwwwrightSection:AddToggle({
-	Name = "Бесконечная телепортация 2",
-	Default = false,
-	Callback = function(value)
-        teleport2Enabled = value
         
-        if value then
-            -- Включаем телепортацию
-            Notifier.new({
-                Title = "Телепортация",
-                Content = "Бесконечная телепортация 2 включена!",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Запускаем цикл телепортации
-            teleport2Connection = game:GetService("RunService").Heartbeat:Connect(function()
-                if teleport2Enabled then
-                    pcall(teleport2ToPosition)
-                end
-            end)
-        else
-            -- Выключаем телепортацию
-            Notifier.new({
-                Title = "Телепортация",
-                Content = "Бесконечная телепортация 2 выключена!",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Отключаем соединение
-            if teleport2Connection then
-                teleport2Connection:Disconnect()
-                teleport2Connection = nil
-            end
-        end
-	end,
-});
-
--- Toggle для бесконечной телепортации (вторая позиция)
-local Toggle2 = NormalwwwrightSection:AddToggle({
-	Name = "Бесконечная телепортация 2",
-	Default = false,
-	Callback = function(value)
-        teleport2Enabled = value
+        print("[Камера] Камера направлена на: " .. selectedPlayer)
         
-        if value then
-            -- Включаем телепортацию
-            Notifier.new({
-                Title = "Телепортация",
-                Content = "Бесконечная телепортация 2 включена!",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Запускаем цикл телепортации
-            teleport2Connection = game:GetService("RunService").Heartbeat:Connect(function()
-                if teleport2Enabled then
-                    pcall(teleport3ToPosition)
-                end
-            end)
-        else
-            -- Выключаем телепортацию
-            Notifier.new({
-                Title = "Телепортация",
-                Content = "Бесконечная телепортация 2 выключена!",
-                Duration = 3,
-                Icon = "rbxassetid://120245531583106"
-            })
-            
-            -- Отключаем соединение
-            if teleport2Connection then
-                teleport2Connection:Disconnect()
-                teleport2Connection = nil
+        cameraConnection = game:GetService("RunService").RenderStepped:Connect(function()
+            if cameraLockEnabled then
+                pcall(lockCameraToPlayer)
             end
+        end)
+    else
+        print("[Камера] Направление камеры выключено")
+        
+        if cameraConnection then
+            cameraConnection:Disconnect()
+            cameraConnection = nil
         end
-	end,
-});
+    end
+end)
 
--- Добавляем информацию о координатах
-NormalwwwSection:AddParagraph({
-	Title = "Координаты телепортации 1",
-	Content = "X="..TARGET_POSITION.X..", Y="..TARGET_POSITION.Y..", Z="..TARGET_POSITION.Z
-})
+FarmLeftSection:NewLabel("Управление камерой")
+FarmLeftSection:NewLabel("Выберите игрока и включите тоггл для направления камеры")
 
-NormalwwwrightSection:AddParagraph({
-	Title = "Координаты телепортации 2",
-	Content = "X="..TARGET2_POSITION.X..", Y="..TARGET2_POSITION.Y..", Z="..TARGET2_POSITION.Z
-})
+FarmLeftSection:NewLabel("Убийство с ножа!")
+FarmLeftSection:NewLabel("Тут настройка для убийства с ножа!")
 
-NormalwwwSection:AddParagraph({
-	Title = "Управление камерой",
-	Content = "Выберите игрока и включите тоггл для направления камеры"
-})
+FarmLeftSection:NewLabel("авто доставания ножа!")
+FarmLeftSection:NewButton("авто доставания ножа!", "Автоматически достает нож", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/FARM/item'))()
+end)
 
-NormalwwwSection:AddParagraph({
-	Title = "Убийство с ножа!",
-	Content = "Тут настройка для убийства \nс ножа!"
-})
+FarmLeftSection:NewLabel("авто кликер!")
+FarmLeftSection:NewLabel("чтобы выключить или включить нажмите L")
 
-NormalwwwSection:AddParagraph({
-	Title = "авто доставания ножа!",
-	Content = ""
-})
+FarmLeftSection:NewButton("авто Кликер!", "Запускает авто кликер", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/Kat/spamklick'))()
+end)
 
-NormalwwwSection:AddButton({
-	Name = "авто доставания ножа!",
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/FARM/item'))()
-	end,
-})
+-- Добавление элементов в правую секцию Farm Alt
+FarmRightSection:NewLabel("Координаты телепортации 2")
+FarmRightSection:NewLabel(string.format("X=%d, Y=%d, Z=%d", TARGET2_POSITION.X, TARGET2_POSITION.Y, TARGET2_POSITION.Z))
 
-NormalwwwSection:AddParagraph({
-	Title = "авто кликер !",
-	Content = "что бы выкулючить или вклучить нажмите L"
-})
+-- Toggle для бесконечной телепортации 2
+FarmRightSection:NewToggle("Бесконечная телепортация 2", "Включает бесконечную телепортацию на позицию 2", function(state)
+    teleport2Enabled = state
+    
+    if state then
+        print("[Телепортация] Бесконечная телепортация 2 включена!")
+        
+        teleport2Connection = game:GetService("RunService").Heartbeat:Connect(function()
+            if teleport2Enabled then
+                pcall(teleport2ToPosition)
+            end
+        end)
+    else
+        print("[Телепортация] Бесконечная телепортация 2 выключена!")
+        
+        if teleport2Connection then
+            teleport2Connection:Disconnect()
+            teleport2Connection = nil
+        end
+    end
+end)
 
-NormalwwwSection:AddButton({
-	Name = "авто Кликер!",
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/Kat/spamklick'))()
-	end,
-})
+-- Дополнительная телепортация 3 (если нужно)
+FarmRightSection:NewToggle("Бесконечная телепортация 3", "Включает бесконечную телепортацию на позицию 3", function(state)
+    local teleport3Enabled = state
+    
+    if state then
+        print("[Телепортация] Бесконечная телепортация 3 включена!")
+        
+        local connection = game:GetService("RunService").Heartbeat:Connect(function()
+            if teleport3Enabled then
+                pcall(teleport3ToPosition)
+            end
+        end)
+        
+        -- Сохраняем соединение для отключения
+        getgenv().Teleport3Connection = connection
+    else
+        print("[Телепортация] Бесконечная телепортация 3 выключена!")
+        
+        if getgenv().Teleport3Connection then
+            getgenv().Teleport3Connection:Disconnect()
+            getgenv().Teleport3Connection = nil
+        end
+    end
+end)
 
+-- Кнопка для скрытия/показа UI (опционально)
+KatTab:NewSection("Настройки UI")
+KatTab:NewKeybind("Скрыть/Показать UI", "Показывает/скрывает интерфейс", Enum.KeyCode.LeftAlt, function()
+    Library:ToggleUI()
+end)
 
--- Инициализация конфигурации
-ConfigManager:Init();
+print("1Qlua UI загружен успешно! Нажмите LeftAlt чтобы скрыть/показать интерфейс.")
