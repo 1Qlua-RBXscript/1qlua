@@ -372,6 +372,15 @@ local Compkiller = {
 	ProtectGui = protect_gui or protectgui or (syn and syn.protect_gui) or function(s) return s; end,
 };
 
+Compkiller.PerformanceMode = true
+
+-- Отключить блюр полностью
+function Compkiller:_Blur(element, WindowRemote)
+    if Compkiller.PerformanceMode then
+        local fakeSignal = Instance.new("BindableEvent")
+        return fakeSignal.Event
+    end
+
 Compkiller.Colors = {
 	Highlight = Color3.fromRGB(17, 238, 253),
 	Toggle = Color3.fromRGB(14, 203, 213),
@@ -403,10 +412,10 @@ Compkiller.Elements = {
 
 Compkiller.DragBlacklist = {};
 Compkiller.IaDrag = false;
-Compkiller.LastDrag = tick();
+Compkiller.LastDrag = tick(); 
 Compkiller.Flags = {};
 
-Compkiller.Lucide = {
+Compkiller.Lucide = { 
 	['lucide-mouse-2'] = "rbxassetid://10088146939",
 	['lucide-internet'] = "rbxassetid://12785195438",
 	['lucide-earth'] = "rbxassetid://115986292591138",
@@ -1418,6 +1427,7 @@ Compkiller.FontAwesome = {
 	volleyball = "rbxassetid://73870192536894",
 	['magnifying-glass'] = "rbxassetid://74387839235930",
 };
+end
 
 function Compkiller:OptimizeMode(v)
 	Compkiller.PerformanceMode = v;
@@ -3451,7 +3461,7 @@ function Compkiller:_DrawKeybinds(Window: ScreenGui)
 			end;
 		end;
 	end);  
-
+ 
 	function Ref:AddFrame()
 		local Keyholder = Instance.new("Frame")
 		local UICorner = Instance.new("UICorner")
@@ -3609,8 +3619,8 @@ function Compkiller:_DrawKeybinds(Window: ScreenGui)
 
 	Compkiller.__KEYBINDS_CACHE = Ref;
 
-	return Ref;
-end;
+	return Ref; 
+end;  
 
 function Compkiller:_KeybindHandler(Parent: Frame , ObjectType: string , ElementAPI: Toggle & Slider , Signal , Zindex: number , ElementCFG: Slider)
 	local Window = Compkiller:_GetWindowFromElement(Parent);
@@ -3846,7 +3856,7 @@ function Compkiller:_KeybindHandler(Parent: Frame , ObjectType: string , Element
 	end;
 
 	APIRef.Thread = task.spawn(function()
-		while true do task.wait(0.01)
+		while true do task.wait(0.1)  
 			if APIRef.Mode ~= 1 then
 				if ElementAPI:GetValue() == APIRef.On then
 					KeybindFrame:SetVisible(true);
@@ -3971,7 +3981,7 @@ function Compkiller:_LoadOption(Value , TabSignal)
 		Args.Flag = Config.Flag;
 
 		function Args:SetValue(value)
-			Config.Default = value;
+			Config.Default = value;  
 
 			Keybind.SetValue(Config.Default);
 
@@ -10640,4 +10650,4 @@ end;
 
 Compkiller.NilFolder.Name = "Nil-Instances";
 
-return Compkiller;
+return Compkiller; 
