@@ -16,9 +16,9 @@
 --- Export Types ---
 
 export type cloneref = (target: Instance) -> Instance;
-
+ 
 export type Window = {
-	Name: string,
+	Name: string, 
 	Keybind: string | Enum.KeyCode,
 	Logo: string,
 	Scale: UDim2,
@@ -2072,7 +2072,7 @@ function Compkiller:_AddLinkValue(Name , Default , GlobalBlock , LinkValues , re
 			Six = '6',
 			Seven = '7',
 			Eight = '8',
-			Nine = '9',
+			Nine = '9',  
 			Zero = '0',
 			['Minus'] = "-",
 			['Plus'] = "+",
@@ -2470,7 +2470,7 @@ function Compkiller:_CreateBlock(Signal)
 	function rep:SetParent(parent: Frame)
 		GlobalBlock.Parent = parent;
 
-		local ZINDEX = parent.ZIndex;
+		local ZINDEX = parent.ZIndex;  
 
 		GlobalBlock.ZIndex = ZINDEX + 1;
 		BlockText.ZIndex = ZINDEX + 2;
@@ -2901,7 +2901,7 @@ function Compkiller:_AddColorPickerPanel(Button: ImageButton , Callback: (Color:
 		local IsSame = Args.IsVisible == bool;
 
 		Args.IsVisible = bool;
-
+  
 		local MainPosition = UDim2.new(0,Button.AbsolutePosition.X + 95,0,Button.AbsolutePosition.Y + 65);
 		local DropPosition = UDim2.new(0,MainPosition.X.Offset,0,MainPosition.Y.Offset + 15);
 
@@ -3050,7 +3050,7 @@ function Compkiller:_AddColorPickerPanel(Button: ImageButton , Callback: (Color:
 
 			Compkiller:_Animation(ColorPickBox,Tween,{
 				BackgroundTransparency = 1,
-				ImageTransparency = 1
+				ImageTransparency = 1  
 			});
 
 			Compkiller:_Animation(MouseMovement,Tween,{
@@ -3156,7 +3156,7 @@ function Compkiller:_AddColorPickerPanel(Button: ImageButton , Callback: (Color:
 					Callback(Color3.fromHSV(H , S , V),Transparency);
 				end;
 			end);
-		end;
+		end;  
 	end)
 
 	ColorPickerWindow.InputEnded:Connect(function(Input)
@@ -3381,7 +3381,7 @@ function Compkiller:_DrawKeybinds(Window: ScreenGui)
 	};
 
 	Ref.THREAD = task.spawn(function()
-		while true do task.wait()
+		while true do task.wait(0.1)
 			Compkiller:_Animation(MainFrame,TweenInfo.new(0.4),{
 				Size = UDim2.new(1, 30, 1, UIListLayout.AbsoluteContentSize.Y + 1)
 			});
@@ -3914,7 +3914,7 @@ end;
 function Compkiller:_LoadOption(Value , TabSignal)
 	local Args = {};
 	local Window = Compkiller:_GetWindowFromElement(Value.Root);
-	local Tween = TweenInfo.new(0.3,Enum.EasingStyle.Quint);
+	local Tween = TweenInfo.new(0.3,Enum.EasingStyle.Quint);  
 
 	function Args:AddKeybind(Config: MiniKeybind)
 		Config = Compkiller.__CONFIG(Config,{
@@ -3968,7 +3968,7 @@ function Compkiller:_LoadOption(Value , TabSignal)
 		end);
 
 		local Args = {};
-
+   
 		Args.Flag = Config.Flag;
 
 		function Args:SetValue(value)
@@ -4078,8 +4078,8 @@ function Compkiller:_LoadOption(Value , TabSignal)
 		end;
 
 		return Args;
-	end;
-
+	end; 
+  
 	function Args:AddColorPicker(Config: MiniColorPicker)
 		Config = Compkiller.__CONFIG(Config,{
 			Default = Color3.fromRGB(255,255,255),
@@ -4118,8 +4118,8 @@ function Compkiller:_LoadOption(Value , TabSignal)
 
 			Config.Callback(value,opc);
 		end;
-
-		function Args:GetValue()
+  
+		function Args:GetValue() 
 			return {
 				ColorPicker = {
 					Color = Config.Default,
@@ -4554,7 +4554,7 @@ function Compkiller:_LoadDropdown(BaseParent: TextButton , Callback: () -> any)
 
 					Compkiller:_Animation(bth.BlockLine,TweenInfo.new(0.2),{
 						BackgroundTransparency = 1
-					});
+					}); 
 				end;
 			end));
 
@@ -4749,7 +4749,7 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 			Args.AutoKeybind = AutoKeybind;
 		end;
 
-		return Args;
+		return Args;  
 	end;
 
 	function Args:AddKeybind(Config : Keybind)
@@ -4757,7 +4757,7 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 			Name = "Keybind",
 			Default = nil,
 			Flag = nil,
-			Callback = function() end;
+			Callback = function() end; 
 			Blacklist = {}
 		});
 
@@ -4893,7 +4893,7 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 		function Args:SetValue(value,opc)
 			Config.Default = value;
 			Config.Transparency = opc;
-
+   
 			ColorPicker:SetColor(value,opc);
 			ColorPicker:Update();
 
@@ -9942,7 +9942,7 @@ function Compkiller.new(Config : Window)
 			Property = "BackgroundColor3"
 		});
 
-		while true do task.wait(0.01);
+		while true do task.wait(0.1);
 			BlurElement.Size = UDim2.new(1, TabFrame.AbsoluteSize.X - 35, 1, 0);
 			MovementFrame.Size = UDim2.new(1, TabFrame.AbsoluteSize.X - 35, 1, 0);
 
@@ -10206,7 +10206,7 @@ function Compkiller:ConfigManager(ConfigManager: ConfigManager) : ConfigFunction
 				Info = Info,
 			});
 		end;
-
+ 
 		return names;
 	end;
 
@@ -10237,7 +10237,7 @@ function Compkiller:ConfigManager(ConfigManager: ConfigManager) : ConfigFunction
 			local info = readfile(_path);
 
 			local decoded = HttpService:JSONDecode(info);
-
+   
 			local Flags = Compkiller:GetConfig("KV");
 
 			if Args.EnableNotify then
@@ -10635,7 +10635,7 @@ function Compkiller.newNotify()
 			}
 		end,
 	};
-
+  
 	return Compkiller.NOTIFY_CACHE;
 end;
 
