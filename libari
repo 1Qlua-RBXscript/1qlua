@@ -1427,7 +1427,7 @@ Compkiller.FontAwesome = {
 	volleyball = "rbxassetid://73870192536894",
 	['magnifying-glass'] = "rbxassetid://74387839235930",
 };
-end
+
 
 function Compkiller:OptimizeMode(v)
 	Compkiller.PerformanceMode = v;
