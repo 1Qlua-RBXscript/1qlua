@@ -327,6 +327,8 @@ if game:GetService('RunService'):IsStudio() then
 	end;
 end;
 
+
+
 --- Local Variables ---
 local cloneref: cloneref = cloneref or function(f) return f end;
 local TweenService: TweenService = cloneref(game:GetService('TweenService'));
@@ -371,6 +373,8 @@ Compkiller.Colors = {
 	LineColor = Color3.fromRGB(65, 65, 65),
 	HighStrokeColor = Color3.fromRGB(55, 56, 63),
 };
+
+
 
 Compkiller.Elements = {
 	Highlight = {},
@@ -1405,6 +1409,59 @@ Compkiller.FontAwesome = {
 	['magnifying-glass'] = "rbxassetid://74387839235930",
 };
 
+-- Добавляем после локальных переменных в начале файла
+Compkiller._DebounceTimers = {}
+Compkiller._ActiveAnimations = {}
+
+function Compkiller:_Debounce(name, callback, delay)
+    delay = delay or 0.1
+    local timer = Compkiller._DebounceTimers[name]
+    
+    if timer then
+        timer()
+    end
+    
+    Compkiller._DebounceTimers[name] = task.delay(delay, function()
+        Compkiller._DebounceTimers[name] = nil
+        pcall(callback)
+    end)
+end
+
+function Compkiller:_Throttle(name, callback, interval)
+    interval = interval or 0.1
+    local lastCall = Compkiller._DebounceTimers[name]
+    local now = tick()
+    
+    if not lastCall or (now - lastCall) >= interval then
+        Compkiller._DebounceTimers[name] = now
+        pcall(callback)
+    end
+end
+
+-- Оптимизированная версия анимации
+function Compkiller:_Animation(Self: Instance, Info: TweenInfo, Property: {[K]: V})
+    local animationId = tostring(Self) .. "_" .. tostring(next(Property))
+    
+    -- Отменяем предыдущую анимацию для этого объекта и свойства
+    if Compkiller._ActiveAnimations[animationId] then
+        Compkiller._ActiveAnimations[animationId]:Cancel()
+    end
+    
+    local Tween = TweenService:Create(Self, Info or TweenInfo.new(0.25), Property)
+    Compkiller._ActiveAnimations[animationId] = Tween
+    Tween:Play()
+    
+    -- Очищаем ссылку после завершения
+    local connection
+    connection = Tween.Completed:Connect(function()
+        if connection then
+            connection:Disconnect()
+        end
+        Compkiller._ActiveAnimations[animationId] = nil
+    end)
+    
+    return Tween
+end
 
 function Compkiller:OptimizeMode(v)
 	Compkiller.PerformanceMode = v;
