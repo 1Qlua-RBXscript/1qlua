@@ -74,7 +74,7 @@ export type KeybindSettings = {
 
 export type SecurityConfig = {
 	BlurEnabled : boolean,
-	ImageScale: number,
+	ImageScale: number, 
 };
 
 export type Notify = {
@@ -145,21 +145,6 @@ export type TextBoxConfig = {
 	Flag: string | nil,
 	Numeric: boolean,
 	Callback: (Text: string) -> any?
-};
-
-export type ColorPicker = {
-	Name: string,
-	Default: Color3,
-	Flag: string | nil,
-	Transparency: number,
-	Callback: (Value: Color3 , Trans: number) -> any?
-};
-
-export type MiniColorPicker = {
-	Default: Color3,
-	Transparency: number,
-	Flag: string | nil,
-	Callback: (Value: Color3 , Trans: number) -> any?
 };
 
 export type Slider = {
