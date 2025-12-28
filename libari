@@ -10651,3 +10651,5 @@ end;
 Compkiller.NilFolder.Name = "Nil-Instances";
 
 return Compkiller; 
+
+end
