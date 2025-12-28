@@ -7,15 +7,15 @@
     Original: compkiller.net
 
         Version: 2.6
-    - Improved Performance Mode
-    	Compkiller:OptimizeMode(< boolean >)
+    - Improved Performance Mode 
+    	Compkiller:OptimizeMode(< boolean >) 
   	- Added Auto Color Logo
 		Compkiller:CustomIconHighlight()
 --]]
 
 --- Export Types ---
 
-export type cloneref = (target: Instance) -> Instance; 
+export type cloneref = (target: Instance) -> Instance;   
  
 export type Window = {
 	Name: string, 
@@ -1513,7 +1513,7 @@ function Compkiller:_Input(Frame : Frame , Callback : () -> ()) : TextButton
 	Button.Size = UDim2.fromScale(1,1);
 	Button.BackgroundTransparency = 1;
 	Button.TextTransparency = 1;
-
+  
 	if Callback then
 		Button.MouseButton1Click:Connect(Callback);
 	end;
@@ -1534,36 +1534,6 @@ function Compkiller:GetCalculatePosition(planePos: number, planeNormal: number, 
 end;  
 
 function Compkiller:_Blur(element : Frame , WindowRemote) : RBXScriptSignal
-	local rbxsignal = CurrentCamera:GetPropertyChangedSignal('CFrame'):Connect(UpdateFunction)
-	local loopThread = UserInputService.InputChanged:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
-			pcall(UpdateFunction);
-		end;
-	end);
-
-local lastUpdate = 0
-local connection
-connection = RunService.RenderStepped:Connect(function(deltaTime)
-    if tick() - lastUpdate < 0.3 then return end  -- Дебаунс 0.3 секунды
-    lastUpdate = tick()
-    pcall(UpdateFunction)
-end)  
-
-	disconnect = function()
-		rbxsignal:Disconnect();
-		loopThread:Disconnect();
-		task.cancel(THREAD);
-		Part:Destroy();
-		DepthOfField:Destroy(); 
-		if connection then
-        connection:Disconnect() 
-        connection = nil
-    end
-	end;
-
-	element.Destroying:Connect(disconnect);
-
-	return rbxsignal;
 end;
 
 function Compkiller:_AddDragBlacklist(Frame: Frame)
