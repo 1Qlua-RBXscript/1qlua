@@ -374,13 +374,6 @@ local Compkiller = {
 
 Compkiller.PerformanceMode = true
 
--- Отключить блюр полностью
-function Compkiller:_Blur(element, WindowRemote)
-    if Compkiller.PerformanceMode then
-        local fakeSignal = Instance.new("BindableEvent")
-        return fakeSignal.Event
-    end
-
 Compkiller.Colors = {
 	Highlight = Color3.fromRGB(17, 238, 253),
 	Toggle = Color3.fromRGB(14, 203, 213),
@@ -10651,5 +10644,3 @@ end;
 Compkiller.NilFolder.Name = "Nil-Instances";
 
 return Compkiller; 
-
-end
