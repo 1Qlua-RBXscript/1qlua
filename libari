@@ -1,4 +1,5 @@
 print("v1")
+
 --[[
     		Compkiller Interface
 
@@ -12,7 +13,7 @@ print("v1")
     	Compkiller:OptimizeMode(< boolean >) 
   	- Added Auto Color Logo
 		Compkiller:CustomIconHighlight()
---]] 
+--]]
 
 --- Export Types ---
 
@@ -1419,18 +1420,20 @@ function Compkiller:CustomIconHighlight()
 	Compkiller.CustomHighlightMode = true;
 end;
 
-function Compkiller:_SetNilP(Ins: Instance , Parent: Instance)
-	Compkiller.WindowsNil = Compkiller.WindowsNil or {};
-	Compkiller.NilFolder = Compkiller.NilFolder or Instance.new('Folder');
-
-	if not Compkiller.WindowsNil[Ins] then
-		local win = Compkiller:_GetWindowFromElement(Ins);
-
-		Compkiller.WindowsNil[Ins] = win;
-	end;
-
-	Ins.Parent = Parent or Compkiller.NilFolder;
-end;
+function Compkiller:_SetNilP(Ins: Instance, Parent: Instance)
+    if not Compkiller.PerformanceMode then
+        Ins.Parent = Parent or Compkiller.NilFolder
+        return
+    end
+    
+    -- Используем дебаунс для частых операций с родителем
+    local key = "SetNilP_" .. tostring(Ins)
+    Compkiller:_Debounce(key, function()
+        if Ins and Ins.Parent ~= Parent then
+            Ins.Parent = Parent or Compkiller.NilFolder
+        end
+    end, 0.05)
+end
 
 function Compkiller:SetAllText(flags : {[string] : string})
 	if not flags then -- reset to default
@@ -8955,48 +8958,6 @@ function Compkiller.new(Config : Window)
 		--TabArgs.LeftThread();
 		--TabArgs.RightThread();
 
-	function Compkiller:Cleanup()
-    -- Останавливаем все активные твины
-    for id, tween in pairs(Compkiller._ActiveAnimations) do
-        if tween then
-            pcall(function() tween:Cancel() end)
-        end
-    end
-    Compkiller._ActiveAnimations = {}
-    
-    -- Очищаем таймеры дебаунса
-    for name, timer in pairs(Compkiller._DebounceTimers) do
-        if type(timer) == "function" then
-            timer()
-        end
-    end
-    Compkiller._DebounceTimers = {}
-    
-    -- Закрываем все окна
-    for _, window in ipairs(Compkiller.Windows) do
-        if window and window.Parent then
-            window:Destroy()
-        end
-    end
-    Compkiller.Windows = {}
-    
-    -- Очищаем кэши
-    Compkiller.WindowsNil = {}
-    Compkiller.Flags = {}
-    Compkiller.DragBlacklist = {}
-    
-    -- Сборка мусора
-    task.wait(0.1)
-    if game:GetService("RunService"):IsStudio() then
-        game:GetService("ContentProvider"):PreloadAsync({})
-    end
-end
-
--- Автоматическая очистка при закрытии игры
-game:BindToClose(function()
-    Compkiller:Cleanup()
-end)
-
 		function TabArgs:DrawSection(config: Section)
 			config = Compkiller.__CONFIG(config,{
 				Name = "Section",
@@ -10380,7 +10341,7 @@ function Compkiller.newNotify()
 
 					if new > 1 then
 						new = (new / 100);	
-					end;
+					end; 
 
 					Compkiller:_Animation(TimeLeft,TweenInfo.new(Time or 0.85,(Time and Enum.EasingStyle.Linear) or Enum.EasingStyle.Quint),{
 						Size = UDim2.new(new, 0, 1, 0)
