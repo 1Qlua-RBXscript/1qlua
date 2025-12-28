@@ -13,8 +13,6 @@
 		Compkiller:CustomIconHighlight()
 --]]
 
-
-
 --- Export Types ---
 
 export type cloneref = (target: Instance) -> Instance; 
@@ -208,7 +206,6 @@ end);
 
 getgenv = getgenv or getfenv;
 
-
 -- Please ignore the ugly code. [Custom File System] --
 if game:GetService('RunService'):IsStudio() then
 	local BaseWorkspace = Instance.new('Folder',game:GetService("ReplicatedFirst"));
@@ -338,7 +335,7 @@ local TextService: TextService = cloneref(game:GetService('TextService'));
 local RunService: RunService = cloneref(game:GetService('RunService'));
 local Players: Players = cloneref(game:GetService('Players'));
 local HttpService: HttpService = cloneref(game:GetService('HttpService'));
-local LocalPlayer: Player = Players.LocalPlayer; 
+local LocalPlayer: Player = Players.LocalPlayer;
 local CoreGui: PlayerGui = (gethui and gethui()) or (get_hidden_gui and get_hidden_gui()) or cloneref(game:FindFirstChild('CoreGui')) or cloneref(LocalPlayer.PlayerGui);
 local Mouse: Mouse = LocalPlayer:GetMouse();
 local CurrentCamera: Camera? = cloneref(workspace.CurrentCamera);
@@ -346,7 +343,7 @@ local CurrentCamera: Camera? = cloneref(workspace.CurrentCamera);
 local Compkiller = {
 	Version = '2.6',
 	Logo = "rbxassetid://120245531583106",
-	Windows = {}, 
+	Windows = {},
 	Scale = {
 		Window = UDim2.new(0, 485,0, 565),
 		Mobile = UDim2.new(0, 450,0, 375),
@@ -359,8 +356,6 @@ local Compkiller = {
 	ArcylicParent = CurrentCamera,
 	ProtectGui = protect_gui or protectgui or (syn and syn.protect_gui) or function(s) return s; end,
 };
-
-
 
 Compkiller.Colors = {
 	Highlight = Color3.fromRGB(17, 238, 253),
@@ -390,7 +385,6 @@ Compkiller.Elements = {
 	LineColor = {},
 	HighStrokeColor = {},
 };
-
 
 Compkiller.DragBlacklist = {};
 Compkiller.IaDrag = false;
@@ -1410,60 +1404,7 @@ Compkiller.FontAwesome = {
 	volleyball = "rbxassetid://73870192536894",
 	['magnifying-glass'] = "rbxassetid://74387839235930",
 };
- 
--- Добавляем после локальных переменных в начале файла
-Compkiller._DebounceTimers = {}
-Compkiller._ActiveAnimations = {}
 
-function Compkiller:_Debounce(name, callback, delay)
-    delay = delay or 0.1
-    local timer = Compkiller._DebounceTimers[name]
-    
-    if timer then
-        timer()
-    end
-    
-    Compkiller._DebounceTimers[name] = task.delay(delay, function()
-        Compkiller._DebounceTimers[name] = nil
-        pcall(callback)
-    end)
-end
-
-function Compkiller:_Throttle(name, callback, interval)
-    interval = interval or 0.1
-    local lastCall = Compkiller._DebounceTimers[name]
-    local now = tick()
-    
-    if not lastCall or (now - lastCall) >= interval then
-        Compkiller._DebounceTimers[name] = now
-        pcall(callback)
-    end 
-end
-
--- Оптимизированная версия анимации
-function Compkiller:_Animation(Self: Instance, Info: TweenInfo, Property: {[K]: V})
-    local animationId = tostring(Self) .. "_" .. tostring(next(Property))
-    
-    -- Отменяем предыдущую анимацию для этого объекта и свойства
-    if Compkiller._ActiveAnimations[animationId] then
-        Compkiller._ActiveAnimations[animationId]:Cancel()
-    end
-    
-    local Tween = TweenService:Create(Self, Info or TweenInfo.new(0.25), Property)
-    Compkiller._ActiveAnimations[animationId] = Tween
-    Tween:Play()
-    
-    -- Очищаем ссылку после завершения
-    local connection
-    connection = Tween.Completed:Connect(function()
-        if connection then
-            connection:Disconnect()
-        end
-        Compkiller._ActiveAnimations[animationId] = nil 
-    end)
-    
-    return Tween
-end
 
 function Compkiller:OptimizeMode(v)
 	Compkiller.PerformanceMode = v;
@@ -1477,20 +1418,18 @@ function Compkiller:CustomIconHighlight()
 	Compkiller.CustomHighlightMode = true;
 end;
 
-function Compkiller:_SetNilP(Ins: Instance, Parent: Instance)
-    if not Compkiller.PerformanceMode then
-        Ins.Parent = Parent or Compkiller.NilFolder
-        return
-    end
-    
-    -- Используем дебаунс для частых операций с родителем
-    local key = "SetNilP_" .. tostring(Ins)
-    Compkiller:_Debounce(key, function()
-        if Ins and Ins.Parent ~= Parent then
-            Ins.Parent = Parent or Compkiller.NilFolder
-        end
-    end, 0.05)
-end
+function Compkiller:_SetNilP(Ins: Instance , Parent: Instance)
+	Compkiller.WindowsNil = Compkiller.WindowsNil or {};
+	Compkiller.NilFolder = Compkiller.NilFolder or Instance.new('Folder');
+
+	if not Compkiller.WindowsNil[Ins] then
+		local win = Compkiller:_GetWindowFromElement(Ins);
+
+		Compkiller.WindowsNil[Ins] = win;
+	end;
+
+	Ins.Parent = Parent or Compkiller.NilFolder;
+end;
 
 function Compkiller:SetAllText(flags : {[string] : string})
 	if not flags then -- reset to default
@@ -1532,7 +1471,7 @@ function Compkiller:_GetIcon(name : string , font_aws) : string
 	end;
 
 	if font_aws then
-		return Compkiller.FontAwesome[name] or name; 
+		return Compkiller.FontAwesome[name] or name;
 	end;  
 
 	return Compkiller.Lucide['lucide-'..tostring(name)] or Compkiller.Lucide[name] or Compkiller.Lucide[tostring(name)] or Compkiller.FontAwesome[name] or name;
@@ -1595,6 +1534,71 @@ function Compkiller:GetCalculatePosition(planePos: number, planeNormal: number, 
 end;  
 
 function Compkiller:_Blur(element : Frame , WindowRemote) : RBXScriptSignal
+	local rbxsignal = CurrentCamera:GetPropertyChangedSignal('CFrame'):Connect(UpdateFunction)
+	local loopThread = UserInputService.InputChanged:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+			pcall(UpdateFunction);
+		end;
+	end);
+
+local lastUpdate = 0
+local connection
+connection = RunService.RenderStepped:Connect(function(deltaTime)
+    if tick() - lastUpdate < 0.3 then return end  -- Дебаунс 0.3 секунды
+    lastUpdate = tick()
+    pcall(UpdateFunction)
+end)  
+
+	disconnect = function()
+		rbxsignal:Disconnect();
+		loopThread:Disconnect();
+		task.cancel(THREAD);
+		Part:Destroy();
+		DepthOfField:Destroy(); 
+		if connection then
+        connection:Disconnect() 
+        connection = nil
+    end
+	end;
+
+	element.Destroying:Connect(disconnect);
+
+	return rbxsignal;
+end;
+
+function Compkiller:_AddDragBlacklist(Frame: Frame)
+	local IsAdded = false;
+	local BASE_TIME = 0.01;
+
+	local SET_BLACKLIST = function(value)
+		local index = table.find(Compkiller.DragBlacklist , Frame);
+
+		if value and not Compkiller.IS_DRAG_MOVE then
+			if not index then
+				table.insert(Compkiller.DragBlacklist,Frame);
+			end;
+		else
+			if index then
+				table.remove(Compkiller.DragBlacklist,index);
+			end;
+		end;
+	end;
+
+	Frame.InputBegan:Connect(function(input)
+		if Compkiller:_IsMouseOverFrame(Frame) then
+			SET_BLACKLIST(true)
+		end;
+	end);
+
+	Frame.InputEnded:Connect(function(input)
+		SET_BLACKLIST(false);
+	end);
+
+	UserInputService.InputChanged:Connect(function()
+		if not Compkiller:_IsMouseOverFrame(Frame) then
+			SET_BLACKLIST(false);
+		end
+	end);
 end;
 
 function Compkiller:_GetWindowFromElement(Element)
@@ -1612,7 +1616,7 @@ function Compkiller:_GetWindowFromElement(Element)
 		if Element:IsDescendantOf(Frame) or Frame == Element then
 			return Window;
 		end;
-	end; 
+	end;
 end;
 
 function Compkiller.__SIGNAL(default)
@@ -2698,7 +2702,7 @@ function Compkiller:_AddColorPickerPanel(Button: ImageButton , Callback: (Color:
 	TransparentImage.Size = UDim2.new(1, 0, 1, 0)
 	TransparentImage.ZIndex = BaseZ_Index + 5
 	TransparentImage.Image = Compkiller:CacheImage("rbxassetid://6198493000")
-	TransparentImage.ImageColor3 = Color3.fromRGB(206, 206, 206) 
+	TransparentImage.ImageColor3 = Color3.fromRGB(206, 206, 206)
 	TransparentImage.ScaleType = Enum.ScaleType.Crop
 
 	UICorner_5.CornerRadius = UDim.new(1, 0)
@@ -5002,7 +5006,7 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 			end;
 		end)	
 
-		local IsHold = false;
+local IsHold = false;
 
 		local Update = function(Input)
 			local SizeScale = math.clamp((((Input.Position.X) - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X), 0, 1);
@@ -6148,7 +6152,7 @@ function Compkiller.new(Config : Window)
 		if MainFrame.BackgroundTransparency > 0.9 then
 			MainFrame.Visible = false;
 		else
-			MainFrame.Visible = true;   
+			MainFrame.Visible = true;
 		end;
 	end)
 
@@ -6681,7 +6685,7 @@ function Compkiller.new(Config : Window)
 			Compkiller:_Input(ImageLabel,function()
 				WindowArgs.UserSettings:Window(false);
 			end);
- 
+
 			WindowArgs.UserSettings:Window(false);
 
 			return Compkiller:_LoadElement(SectionFrame , true , Signal);
@@ -7001,7 +7005,6 @@ function Compkiller.new(Config : Window)
 				Compkiller:_Animation(TabButton,Tween,{
 					Size = UDim2.new(1, -10, 0, 32)
 				});
-
 				Compkiller:_Animation(Icon,Tween,{
 					Size = UDim2.new(0, 16, 0, 16),
 				});
@@ -8991,7 +8994,6 @@ function Compkiller.new(Config : Window)
 			local ParentLayout = (TabConfig.Type == "Double" and ((string.lower(config.Position) == "left" and Upvalue.LeftLayout) or Upvalue.RightLayout)) or Upvalue.LeftLayout;
 
 			local IsOpen = true;
-
 			local Section = Instance.new("Frame")
 			local UICorner = Instance.new("UICorner")
 			local UIStroke = Instance.new("UIStroke")
@@ -9467,7 +9469,7 @@ function Compkiller.new(Config : Window)
 			local Args = {};
 
 			function Args:AddText(Watermark : Watermark)
-				Watermark = Compkiller.__CONFIG(Watermark, { 
+				Watermark = Compkiller.__CONFIG(Watermark, {
 					Text = "Watermark",
 					Icon = "info"
 				});
@@ -10159,48 +10161,6 @@ function Compkiller.newNotify()
 
 	local LayoutREF = 0;
 
-function Compkiller:Cleanup()
-    -- Останавливаем все активные твины
-    for id, tween in pairs(Compkiller._ActiveAnimations) do
-        if tween then
-            pcall(function() tween:Cancel() end)
-        end
-    end
-    Compkiller._ActiveAnimations = {}
-    
-    -- Очищаем таймеры дебаунса
-    for name, timer in pairs(Compkiller._DebounceTimers) do
-        if type(timer) == "function" then
-            timer()
-        end
-    end
-    Compkiller._DebounceTimers = {}
-    
-    -- Закрываем все окна
-    for _, window in ipairs(Compkiller.Windows) do
-        if window and window.Parent then
-            window:Destroy()
-        end
-    end
-    Compkiller.Windows = {}
-    
-    -- Очищаем кэши
-    Compkiller.WindowsNil = {}
-    Compkiller.Flags = {}
-    Compkiller.DragBlacklist = {}
-    
-    -- Сборка мусора
-    task.wait(0.1)
-    if game:GetService("RunService"):IsStudio() then
-        game:GetService("ContentProvider"):PreloadAsync({})
-    end
-end
-
--- Автоматическая очистка при закрытии игры
-game:BindToClose(function()
-    Compkiller:Cleanup()
-end)
-
 	Compkiller.NOTIFY_CACHE = {
 		new = function(Notify: Notify) : NotifyPayback
 			Notify = Compkiller.__CONFIG(Notify, {
@@ -10424,11 +10384,6 @@ end)
 	return Compkiller.NOTIFY_CACHE;
 end;
 
-
-
 Compkiller.NilFolder.Name = "Nil-Instances";
 
-
-
-return Compkiller;  
-
+return Compkiller; 
