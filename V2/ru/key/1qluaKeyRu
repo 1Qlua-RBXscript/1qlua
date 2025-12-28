@@ -1,65 +1,3 @@
--- WindUI Rewrite - Part 1/?
--- Переписанный скрипт из Compkiller в WindUI
-
--- ======== ИНИЦИАЛИЗАЦИЯ WINDUI ======== --
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
--- ======== СОЗДАНИЕ ТЕМЫ ======== --
-WindUI:AddTheme({
-    Name = "1Qlua Theme",
-    
-    Accent = Color3.fromHex("#18181b"),
-    Background = Color3.fromHex("#101010"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#FFFFFF"),
-    Text = Color3.fromHex("#FFFFFF"),
-    Placeholder = Color3.fromHex("#7a7a7a"),
-    Button = Color3.fromHex("#52525b"),
-    Icon = Color3.fromHex("#a1a1aa"),
-    
-    Hover = Color3.fromHex("#FFFFFF"),
-    
-    WindowBackground = Color3.fromHex("101010"),
-    WindowShadow = Color3.fromHex("000000"),
-    
-    DialogBackground = Color3.fromHex("#101010"),
-    DialogBackgroundTransparency = 0,
-    DialogTitle = Color3.fromHex("#FFFFFF"),
-    DialogContent = Color3.fromHex("#FFFFFF"),
-    DialogIcon = Color3.fromHex("#a1a1aa"),
-    
-    WindowTopbarButtonIcon = Color3.fromHex("a1a1aa"),
-    WindowTopbarTitle = Color3.fromHex("FFFFFF"),
-    WindowTopbarAuthor = Color3.fromHex("FFFFFF"),
-    WindowTopbarIcon = Color3.fromHex("FFFFFF"),
-    
-    TabBackground = Color3.fromHex("#FFFFFF"),
-    TabTitle = Color3.fromHex("#FFFFFF"),
-    TabIcon = Color3.fromHex("a1a1aa"),
-    
-    ElementBackground = Color3.fromHex("#FFFFFF"),
-    ElementTitle = Color3.fromHex("#FFFFFF"),
-    ElementDesc = Color3.fromHex("#FFFFFF"),
-    ElementIcon = Color3.fromHex("#a1a1aa"),
-    
-    PopupBackground = Color3.fromHex("#101010"),
-    PopupBackgroundTransparency = 0,
-    PopupTitle = Color3.fromHex("#FFFFFF"),
-    PopupContent = Color3.fromHex("#FFFFFF"),
-    PopupIcon = Color3.fromHex("#a1a1aa"),
-})
-
--- Установка градиента (если поддерживается)
-WindUI:Gradient({                                                      
-    ["0"] = { Color = Color3.fromHex("#1f1f23"), Transparency = 0 },            
-    ["100"] = { Color = Color3.fromHex("#18181b"), Transparency = 0 },        
-}, {                                                                            
-    Rotation = 0,                                                               
-})
-
--- Установка темы
-WindUI:SetTheme("1Qlua Theme")
-
 -- ======== НАСТРОЙКИ ======== --
 local SETTINGS = {
     WALK_SPEED = {
@@ -84,138 +22,15 @@ local SETTINGS = {
     }
 }
 
--- ======== СИСТЕМА ОПТИМИЗАЦИИ ======== --
-local PerformanceManager = {
-    maxESPPlayers = 10,
-    espUpdateRate = 0.3,
-    activeLoops = {},
-    debugMode = false
-}
-
-function PerformanceManager:throttle(name, interval)
-    if not self.lastCall then self.lastCall = {} end
-    if not self.lastCall[name] then self.lastCall[name] = 0 end
-    
-    local now = tick()
-    if now - self.lastCall[name] < interval then
-        return true
-    end
-    self.lastCall[name] = now
-    return false
-end
-
-function PerformanceManager:getMemoryUsage()
-    local stats = game:GetService("Stats")
-    return stats:GetMemoryUsageMbForTag(Enum.DeveloperMemoryType.Gui)
-end
-
-function PerformanceManager:autoCleanup()
-    if self:getMemoryUsage() > 50 then
-        warn("⚠️ ВНИМАНИЕ: Высокое использование памяти, очистка...")
-        for _, child in pairs(game:GetService("CoreGui"):GetChildren()) do
-            if string.find(child.Name, "_ESP") then
-                child:Destroy()
-            end
-        end
-    end
-end
-
--- Запускаем мониторинг
-game:GetService("RunService").Heartbeat:Connect(function()
-    PerformanceManager:autoCleanup()
-end)
-
--- ======== СОЗДАНИЕ ОКНА ======== --
-local Window = WindUI:CreateWindow({
-    Title = "1Qlua - Универсальный хаб",
-    Icon = "door-open",
-    Author = "by 1Qlua",
-    Folder = "1QluaHub",
-    
-    Size = UDim2.fromOffset(580, 460),
-    MinSize = Vector2.new(560, 350),
-    MaxSize = Vector2.new(850, 560),
-    Transparent = true,
-    Theme = "1Qlua Theme",
-    Resizable = true,
-    SideBarWidth = 200,
-    BackgroundImageTransparency = 0.42,
-    HideSearchBar = true,
-    ScrollBarEnabled = false,
-    
-    User = {
-        Enabled = true,
-        Anonymous = true,
-        Callback = function()
-            print("User clicked")
-        end,
-    },
-})
-
--- Установка клавиши переключения
-Window:SetToggleKey(Enum.KeyCode.LeftAlt)
-
--- Уведомление при запуске
-WindUI:Notify({
-    Title = "1Qlua",
-    Content = "Универсальный хаб скриптов загружен!",
-    Duration = 8,
-    Icon = "check-circle"
-})
-
--- ======== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И ФУНКЦИИ ======== --
-local Players = game:GetService("Players")
-local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-
--- Глобальные настройки
-_G.Walk = SETTINGS.WALK_SPEED.DEFAULT
-_G.WalkSpeedEnabled = true
-
--- Переменные для функций
-local xrayEnabled = false
-local xrayLoop = nil
-local brightLoop = nil
-local viewing = nil
-local viewDied = nil
-local viewChanged = nil
-
--- ======== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======== --
-local function StopFreecam()
-    -- Логика остановки фрикама (добавить при необходимости)
-end
-
-local function getPlayer(name, speaker)
-    local found = {}
-    local nameLower = name:lower()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= speaker then
-            if player.Name:lower():find(nameLower) or player.DisplayName:lower():find(nameLower) then
-                table.insert(found, player)
-            end
-        end
-    end
-    return found
-end
-
-local function getRoot(character)
-    return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-end
-
--- Функция XRay
-local function xray()
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and not v.Parent:FindFirstChildOfClass("Humanoid") and not v.Parent.Parent:FindFirstChildOfClass("Humanoid") then
-            v.LocalTransparencyModifier = xrayEnabled and 0.7 or 0
-        end
-    end
-end
-
 -- Функция для создания папки без ключа
 local function createNoKeyFolder()
+    -- Проверяем доступные методы записи файлов
     local canWrite = false
-    local writeMethods = {writefile, makefolder, saveinstance}
+    local writeMethods = {
+        writefile,
+        makefolder,
+        saveinstance
+    }
     
     for _, method in pairs(writeMethods) do
         if type(method) == "function" then
@@ -225,25 +40,21 @@ local function createNoKeyFolder()
     end
     
     if not canWrite then
-        WindUI:Popup({
+        Compkiller.newNotify().new({
             Title = "Ошибка",
-            Icon = "alert-circle",
             Content = "Ваш эксплойт не поддерживает запись файлов",
-            Buttons = {
-                {
-                    Title = "OK",
-                    Callback = function() end,
-                    Variant = "Primary",
-                }
-            }
+            Duration = 5,
+            Icon = "rbxassetid://120245531583106"
         })
         return
     end
     
+    -- Пытаемся создать папку
     local success, err = pcall(function()
+        -- Проверяем разные возможные пути
         local paths = {
             "1qluaNoRuKey",
-            "workspace/1qluaNoRuKey", 
+            "workspace/1qluaNoRuKey",
             "exploit/1qluaNoRuKey",
             "bin/1qluaNoRuKey"
         }
@@ -265,34 +76,126 @@ local function createNoKeyFolder()
     end)
     
     if success then
-        WindUI:Notify({
-            Title = "Успех",
-            Content = "Папка для входа без ключа создана!",
-            Duration = 5,
-            Icon = "check-circle"
-        })
+
     else
-        WindUI:Popup({
+        Compkiller.newNotify().new({
             Title = "Ошибка",
-            Icon = "alert-circle",
             Content = "Не удалось создать папку: "..tostring(err),
-            Buttons = {
-                {
-                    Title = "OK", 
-                    Callback = function() end,
-                    Variant = "Primary",
-                }
-            }
+            Duration = 5,
+            Icon = "rbxassetid://120245531583106"
         })
     end
 end
 
+-- Variables
+local viewing = nil
+local viewDied = nil
+local viewChanged = nil
+local Players = game:GetService("Players")
+local speaker = Players.LocalPlayer
+
+-- Helper functions
+local function StopFreecam()
+    -- Add your freecam stopping logic here if needed
+end
+
+local function getPlayer(name, speaker)
+    local found = {}
+    local nameLower = name:lower()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= speaker then
+            if player.Name:lower():find(nameLower) or player.DisplayName:lower():find(nameLower) then
+                table.insert(found, player)
+            end
+        end
+    end
+    return found
+end
+
+local function getRoot(character)
+    return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+end
+
+-- Инициализация сервисов
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Глобальные переменные
+local xrayEnabled = false
+local xrayLoop = nil
+local brightLoop = nil
+
+-- Функция XRay
+local function xray()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and not v.Parent:FindFirstChildOfClass("Humanoid") and not v.Parent.Parent:FindFirstChildOfClass("Humanoid") then
+            v.LocalTransparencyModifier = xrayEnabled and 0.7 or 0
+        end
+    end
+end
+
+-- Variables
+local ESPenabled = false
+local CHMSenabled = false -- Assuming you have chams elsewhere
+local speaker = game.Players.LocalPlayer
+
+-- Глобальные переменные
+_G.Walk = SETTINGS.WALK_SPEED.DEFAULT
+_G.WalkSpeedEnabled = true
+
+local Players = game:GetService("Players")
+local COREGUI = game:GetService("CoreGui")
+
+-- ======== ИНИЦИАЛИЗАЦИЯ БИБЛИОТЕКИ ======== --
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/libari"))()
+local Notifier = Compkiller.newNotify()
+local ConfigManager = Compkiller:ConfigManager({
+    Directory = "1Qlua-Config",
+    Config = "Main-Config"
+})
+
+
+-- ======== СОЗДАНИЕ ОКНА ======== --
+local Window = Compkiller.new({
+    Name = "1Qlua - Универсальный хаб",
+    Keybind = "LeftAlt",
+    Logo = "rbxassetid://80494437171393",
+    Scale = Compkiller.Scale.Window,
+    TextSize = 15,
+})
+
+-- Уведомление при запуске
+Notifier.new({
+    Title = "1Qlua",
+    Content = "Универсальный хаб скриптов загружен!",
+    Duration = 8,
+    Icon = "rbxassetid://80494437171393"
+})
+
+-- ======== ВОДЯНОЙ ЗНАК ======== --
+local Watermark = Window:Watermark()
+Watermark:AddText({
+    Icon = "user",
+    Text = "1Qlua",
+})
+Watermark:AddText({
+    Icon = "server",
+    Text = "Версия 19",
+})
+Watermark:AddText({
+    Icon = "clock",
+    Text = Compkiller:GetDate(),
+})
+
 -- ======== ОБРАБОТЧИК СКОРОСТИ ======== --
-local Heartbeat = RunService.Heartbeat
+local Heartbeat = game:GetService("RunService").Heartbeat
+local Player = game:GetService("Players").LocalPlayer
 
 local function UpdateSpeed()
     if not _G.WalkSpeedEnabled then return end
-    local character = player.Character
+    local character = Player.Character
     if character then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid then
@@ -302,20 +205,20 @@ local function UpdateSpeed()
 end
 
 Heartbeat:Connect(UpdateSpeed)
-player.CharacterAdded:Connect(function(character)
+Player.CharacterAdded:Connect(function(character)
     character:WaitForChild("Humanoid")
     UpdateSpeed()
 end)
 
--- ======== ОСНОВНЫЕ ФУНКЦИИ ======== --
+-- ======== ФУНКЦИИ ======== --
 local Functions = {}
 
 Functions.JumpPower = function(value)
-    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    local humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
         humanoid.JumpPower = value
     end
-    player.CharacterAdded:Connect(function(character)
+    Player.CharacterAdded:Connect(function(character)
         character:WaitForChild("Humanoid").JumpPower = value
     end)
 end
@@ -330,32 +233,416 @@ Functions.FOV = function(value)
 end
 
 Functions.TimeOfDay = function(hours)
+    local Lighting = game:GetService("Lighting")
     Lighting.ClockTime = hours % 12 == 0 and 12 or hours % 12
 end
 
 Functions.LoadScript = function(url)
     local success, err = pcall(loadstring(game:HttpGet(url)))
     if not success then
-        WindUI:Notify({
+        Notifier.new({
             Title = "Ошибка",
             Content = "Ошибка загрузки: "..err,
             Duration = 5,
-            Icon = "alert-circle"
+            Icon = "rbxassetid://7734068321"
         })
     end
 end
 
--- WindUI Rewrite - Part 2/?
--- Продолжение переписывания скрипта из Compkiller в WindUI
+-- ======== ВКЛАДКИ ======== --
+Window:DrawCategory({Name = "Основные"})
 
--- ======== СОЗДАНИЕ ВКЛАДКИ ИГРОКА ======== --
-local PlayerTab = Window:Tab({
-    Title = "Игрок",
+-- Вкладка Игрока
+local PlayerTab = Window:DrawTab({
+    Name = "Игрок",
     Icon = "user",
-    Locked = false
+    EnableScrolling = true
 })
 
--- ======== СЕРВИСЫ И ПЕРЕМЕННЫЕ ======== --
+local PlayerMainSection = PlayerTab:DrawSection({
+    Name = "Основные настройки",
+    Position = "left"
+})
+
+PlayerMainSection:AddButton({
+    Name = "Нажми чтобы заходить без ключа",
+    Callback = createNoKeyFolder
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Скорость передвижения",
+    Description = "Изменяет скорость вашего персонажа",
+    Min = 0,
+    Max = 150,
+    Default = 16,
+    Callback = function(v) _G.Walk = v end
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Высота прыжка",
+    Description = "Изменяет высоту прыжка персонажа",
+    Min = 0,
+    Max = 500,
+    Default = 50,
+    Callback = Functions.JumpPower
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Поле зрения (FOV)",
+    Description = "Изменяет угол обзора камеры",
+    Min = 0,
+    Max = 120,
+    Default = 70,
+    Callback = Functions.FOV
+})
+
+PlayerMainSection:AddSlider({
+    Name = "Время суток",
+    Description = "Изменяет текущее время в игре",
+    Min = 0,
+    Max = 24,
+    Default = 12,
+    Callback = Functions.TimeOfDay
+})
+
+local HitboxSection = PlayerTab:DrawSection({
+    Name = "Main Settings",
+    Position = 'left'
+});
+
+-- Переменные для хранения настроек
+local hitboxEnabled = false
+local currentPlayers = {}
+local hitboxSize = 2
+local hitboxTransparency = 0.4
+local selectedPlayerOptions = {"All"}
+
+-- Функция для получения списка игроков
+local function getPlayerList()
+    local players = {}
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            table.insert(players, player.Name)
+        end
+    end
+    return players
+end
+
+-- Функция для обновления хитбоксов
+local function updateHitboxes()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild('HumanoidRootPart') then
+            local root = player.Character.HumanoidRootPart
+            
+            -- Проверяем, должен ли этот игрок иметь хитбокс
+            local shouldHaveHitbox = false
+            if hitboxEnabled then
+                if table.find(selectedPlayerOptions, "All") then
+                    shouldHaveHitbox = (player ~= game.Players.LocalPlayer)
+                else
+                    local isEnemy = not player.Team or player.Team ~= game.Players.LocalPlayer.Team
+                    if table.find(selectedPlayerOptions, "Enemies") and isEnemy then
+                        shouldHaveHitbox = true
+                    elseif table.find(selectedPlayerOptions, "Team") and not isEnemy then
+                        shouldHaveHitbox = true
+                    elseif table.find(selectedPlayerOptions, player.Name) then
+                        shouldHaveHitbox = true
+                    end
+                end
+            end
+            
+            if shouldHaveHitbox then
+                root.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+                root.Transparency = hitboxTransparency
+            else
+                root.Size = Vector3.new(2, 1, 1)
+                root.Transparency = 1
+            end
+        end
+    end
+end
+
+-- Тоггл для включения/выключения хитбоксов
+HitboxSection:AddToggle({
+    Name = "Enable Hitboxes",
+    Flag = "Hitbox_Enabled",
+    Default = false,
+    Callback = function(value)
+        hitboxEnabled = value
+        updateHitboxes()
+    end
+})
+
+-- Слайдер для размера хитбокса
+HitboxSection:AddSlider({
+    Name = "Hitbox Size",
+    Min = 1,
+    Max = 10,
+    Default = 2,
+    Round = 1,
+    Flag = "Hitbox_Size",
+    Callback = function(value)
+        hitboxSize = value
+        if hitboxEnabled then
+            updateHitboxes()
+        end
+    end
+})
+
+-- Слайдер для прозрачности
+HitboxSection:AddSlider({
+    Name = "Transparency",
+    Min = 0,
+    Max = 1,
+    Default = 0.4,
+    Round = 0.1,
+    Flag = "Hitbox_Transparency",
+    Callback = function(value)
+        hitboxTransparency = value
+        if hitboxEnabled then
+            updateHitboxes()
+        end
+    end
+})
+
+-- Выбор игроков
+local playerOptions = {"All", "Enemies", "Team"}
+local playerNames = getPlayerList()
+for _, name in pairs(playerNames) do
+    table.insert(playerOptions, name)
+end
+
+HitboxSection:AddDropdown({
+    Name = "Select Players",
+    Default = {"All"},
+    Multi = true,
+    Flag = "Hitbox_Players",
+    Values = playerOptions,
+    Callback = function(selected)
+        selectedPlayerOptions = selected
+        if hitboxEnabled then
+            updateHitboxes()
+        end
+    end
+})
+
+-- Кнопка для обновления списка игроков
+HitboxSection:AddButton({
+    Name = "Refresh Players",
+    Callback = function()
+        playerOptions = {"All", "Enemies", "Team"}
+        playerNames = getPlayerList()
+        for _, name in pairs(playerNames) do
+            table.insert(playerOptions, name)
+        end
+        
+        -- Сохраняем текущий выбор
+        local currentSelection = selectedPlayerOptions
+        updateHitboxes()
+    end
+})
+
+-- Автоматическое обновление при появлении новых игроков
+game.Players.PlayerAdded:Connect(function(player)
+    playerOptions = {"All", "Enemies", "Team"}
+    playerNames = getPlayerList()
+    for _, name in pairs(playerNames) do
+        table.insert(playerOptions, name)
+    end
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+    playerOptions = {"All", "Enemies", "Team"}
+    playerNames = getPlayerList()
+    for _, name in pairs(playerNames) do
+        table.insert(playerOptions, name)
+    end
+end)
+
+
+-- Переменные для CFly
+local CFlyEnabled = false
+local CFlySpeed = 50
+local CFlyLoop = nil
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local head = character:WaitForChild("Head")
+
+-- Функция включения CFly
+local function EnableCFly()
+    if CFlyLoop then CFlyLoop:Disconnect() end
+    
+    humanoid.PlatformStand = true
+    head.Anchored = true
+    
+    CFlyLoop = game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
+        if not character or not humanoid or not head then return end
+        
+        local moveDirection = humanoid.MoveDirection * (CFlySpeed * deltaTime)
+        local headCF = head.CFrame
+        local cameraCF = workspace.CurrentCamera.CFrame
+        
+        -- Вычисляем смещение камеры относительно головы
+        local cameraOffset = headCF:ToObjectSpace(cameraCF).Position
+        
+        -- Корректируем позицию камеры
+        cameraCF = cameraCF * CFrame.new(-cameraOffset.X, -cameraOffset.Y, -cameraOffset.Z + 1)
+        
+        -- Получаем позиции камеры и головы
+        local cameraPos = cameraCF.Position
+        local headPos = headCF.Position
+        
+        -- Вычисляем новую позицию головы
+        local lookCF = CFrame.new(cameraPos, Vector3.new(headPos.X, cameraPos.Y, headPos.Z))
+        local objectSpaceVelocity = lookCF:VectorToObjectSpace(moveDirection)
+        
+        -- Применяем новую позицию
+        head.CFrame = CFrame.new(headPos) * (cameraCF - cameraPos) * CFrame.new(objectSpaceVelocity)
+    end)
+end
+
+-- Функция выключения CFly
+local function DisableCFly()
+    if CFlyLoop then
+        CFlyLoop:Disconnect()
+        CFlyLoop = nil
+    end
+    
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
+    
+    if head then
+        head.Anchored = false
+    end
+end
+
+-- Автоматическое отключение при смерти
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = newChar:WaitForChild("Humanoid")
+    head = newChar:WaitForChild("Head")
+    
+    if CFlyEnabled then
+        DisableCFly()
+        EnableCFly() -- Перезапускаем CFly
+    end
+end)
+
+-- Секция для CFly
+local CFlySection = PlayerTab:DrawSection({
+    Name = "Camera Fly",
+    Position = 'left'
+})
+
+-- Переключатель CFly
+local CFlyToggle = CFlySection:AddToggle({
+    Name = "Enable Camera Fly",
+    Flag = "CFly_Toggle",
+    Default = false,
+    Callback = function(enabled)
+        CFlyEnabled = enabled
+        
+        if enabled then
+            EnableCFly()
+        else
+            DisableCFly()
+        end
+    end
+})
+
+-- Ползунок скорости CFly
+CFlySection:AddSlider({
+    Name = "CFly Speed",
+    Min = 10,
+    Max = 500,
+    Default = 50,
+    Round = 0,
+    Flag = "CFly_Speed",
+    Callback = function(speed)
+        CFlySpeed = speed
+    end
+})
+
+
+local PlayerScriptsSection = PlayerTab:DrawSection({
+    Name = "Основные скрипты",
+    Position = "right"
+})
+
+-- XRay Toggle
+local XRayToggle = PlayerScriptsSection:AddToggle({
+    Name = "X-Ray",
+    Flag = "XRay_Enabled",
+    Default = false,
+    Callback = function(state)
+        xrayEnabled = state
+        xray()
+    end
+})
+
+-- Fullbright Toggle
+local FullbrightToggle = PlayerScriptsSection:AddToggle({
+    Name = "Fullbright",
+    Flag = "Fullbright_Enabled",
+    Default = false,
+    Callback = function(state)
+        if state then
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        else
+            Lighting.Brightness = 1
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 1000000
+            Lighting.GlobalShadows = true
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        end
+    end
+})
+
+-- Auto Fullbright Toggle
+PlayerScriptsSection:AddToggle({
+    Name = "Авто Fullbright",
+    Flag = "AutoFullbright_Enabled",
+    Default = false,
+    Callback = function(state)
+        if state then
+            if brightLoop then brightLoop:Disconnect() end
+            
+            brightLoop = RunService.RenderStepped:Connect(function()
+                Lighting.Brightness = 2
+                Lighting.ClockTime = 14
+                Lighting.FogEnd = 100000
+                Lighting.GlobalShadows = false
+                Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+                
+                -- Автоматически включаем Fullbright если он выключен
+                if not FullbrightToggle.Value then
+                    FullbrightToggle:Set(true)
+                end
+            end)
+        else
+            if brightLoop then
+                brightLoop:Disconnect()
+                brightLoop = nil
+            end
+        end
+    end
+})
+
+-- Обработчик изменения персонажа
+player.CharacterAdded:Connect(function(character)
+    if xrayEnabled then
+        xray()
+    end
+end)
+
+
+-- Сервисы
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
@@ -363,14 +650,24 @@ local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local speaker = Players.LocalPlayer
 
--- Переменные для функций
+-- Переменные
+local Noclipping, Clip
 local partHighlights = {}
 local espTransparency = 0.5
 local autoRejoinConnection
 local antiAfkEnabled = false
 local antiLagEnabled = false
 
--- ======== ФУНКЦИИ ДЛЯ PART ESP ======== --
+-- Функция уведомлений
+local function notify(title, text)
+    Compkiller.newNotify().new({
+        Title = title,
+        Content = text,
+        Duration = 3
+    })
+end
+
+-- Part ESP Functions
 local function createHighlight(part)
     local highlight = Instance.new("BoxHandleAdornment")
     highlight.Name = "PART_HIGHLIGHT_"..part.Name
@@ -402,12 +699,7 @@ local function highlightPart(partName)
             partHighlights[partName].connection:Disconnect()
         end
         partHighlights[partName] = nil
-        WindUI:Notify({
-            Title = "Part ESP",
-            Content = "Removed from "..partName,
-            Duration = 3,
-            Icon = "x-circle"
-        })
+        notify("Part ESP", "Removed from "..partName)
         return
     end
     
@@ -432,19 +724,9 @@ local function highlightPart(partName)
     end)
     
     if found then
-        WindUI:Notify({
-            Title = "Part ESP",
-            Content = "Highlighted "..partName,
-            Duration = 3,
-            Icon = "check-circle"
-        })
+        notify("Part ESP", "Highlighted "..partName)
     else
-        WindUI:Notify({
-            Title = "Part ESP",
-            Content = "No parts found",
-            Duration = 3,
-            Icon = "alert-circle"
-        })
+        notify("Part ESP", "No parts found")
     end
 end
 
@@ -463,441 +745,29 @@ local function clearAllHighlights()
         end
     end
     partHighlights = {}
-    WindUI:Notify({
-        Title = "Part ESP",
-        Content = "All highlights cleared",
-        Duration = 3,
-        Icon = "check-circle"
-    })
+    notify("Part ESP", "All highlights cleared")
 end
 
--- ======== СЕКЦИЯ ОСНОВНЫХ НАСТРОЕК ======== --
-local PlayerMainSection = PlayerTab:Section({
-    Title = "Основные настройки",
-    Opened = true
+
+
+-- Utility Section
+local UtilitySection = PlayerTab:DrawSection({
+    Name = "Utility",
+    Position = "left"
 })
 
-PlayerMainSection:Button({
-    Title = "Нажми чтобы заходить без ключа",
-    Desc = "Создает папку для входа без ключа",
-    Callback = createNoKeyFolder
-})
-
--- 1. Слайдер скорости передвижения
-local WalkSpeedSlider = PlayerMainSection:Slider({
-    Title = "Скорость передвижения",
-    Desc = "Изменяет скорость вашего персонажа",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 150,
-        Default = 16,
-    },
-    Callback = function(value)
-        _G.Walk = value
-        _G.WalkSpeedEnabled = true
-        
-        -- Немедленное применение
-        local character = player.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = value
-            end
-        end
-        
-        print("✅ Скорость установлена: " .. value)
-    end
-})
-
--- 2. Слайдер высоты прыжка
-local JumpPowerSlider = PlayerMainSection:Slider({
-    Title = "Высота прыжка",
-    Desc = "Изменяет высоту прыжка персонажа",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 500,
-        Default = 50,
-    },
-    Callback = function(value)
-        -- Немедленное применение
-        local character = player.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.JumpPower = value
-            end
-        end
-        
-        -- Для будущих персонажей
-        player.CharacterAdded:Connect(function(newChar)
-            newChar:WaitForChild("Humanoid").JumpPower = value
-        end)
-        
-        print("✅ Высота прыжка установлена: " .. value)
-    end
-})
-
--- 3. Слайдер FOV
-local FOVSlider = PlayerMainSection:Slider({
-    Title = "Поле зрения (FOV)",
-    Desc = "Изменяет угол обзора камеры",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 120,
-        Default = 70,
-    },
-    Callback = function(value)
-        if workspace.CurrentCamera then
-            workspace.CurrentCamera.FieldOfView = value
-        end
-        
-        -- Авто-применение при смене камеры
-        workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-            if workspace.CurrentCamera then
-                workspace.CurrentCamera.FieldOfView = value
-            end
-        end)
-        
-        print("✅ FOV установлен: " .. value)
-    end
-})
-
--- 4. Слайдер времени суток
-local TimeSlider = PlayerMainSection:Slider({
-    Title = "Время суток",
-    Desc = "Изменяет текущее время в игре",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 24,
-        Default = 12,
-    },
-    Callback = function(value)
-        Lighting.ClockTime = value
-        print("✅ Время установлено: " .. value)
-    end
-})
-
--- ======== СЕКЦИЯ HITBOX ======== --
-local HitboxSection = PlayerTab:Section({
-    Title = "Hitbox Settings",
-    Opened = true
-})
-
--- Переменные для хитбоксов
-local hitboxEnabled = false
-local hitboxSize = 2
-local hitboxTransparency = 0.4
-local selectedPlayerOptions = {"All"}
-
--- Функция для получения списка игроков
-local function getPlayerList()
-    local players = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer then
-            table.insert(players, player.Name)
-        end
-    end
-    return players
-end
-
--- Функция для обновления хитбоксов
-local function updateHitboxes()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild('HumanoidRootPart') then
-            local root = player.Character.HumanoidRootPart
-            
-            -- Проверяем, должен ли этот игрок иметь хитбокс
-            local shouldHaveHitbox = false
-            if hitboxEnabled then
-                if table.find(selectedPlayerOptions, "All") then
-                    shouldHaveHitbox = (player ~= Players.LocalPlayer)
-                else
-                    local isEnemy = not player.Team or player.Team ~= Players.LocalPlayer.Team
-                    if table.find(selectedPlayerOptions, "Enemies") and isEnemy then
-                        shouldHaveHitbox = true
-                    elseif table.find(selectedPlayerOptions, "Team") and not isEnemy then
-                        shouldHaveHitbox = true
-                    elseif table.find(selectedPlayerOptions, player.Name) then
-                        shouldHaveHitbox = true
-                    end
-                end
-            end
-            
-            if shouldHaveHitbox then
-                root.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                root.Transparency = hitboxTransparency
-            else
-                root.Size = Vector3.new(2, 1, 1)
-                root.Transparency = 1
-            end
-        end
-    end
-end
-
--- Тоггл для включения/выключения хитбоксов
-HitboxSection:Toggle({
-    Title = "Enable Hitboxes",
-    Desc = "Включить систему хитбоксов",
-    Value = false,
-    Callback = function(value)
-        hitboxEnabled = value
-        updateHitboxes()
-    end
-})
-
-local HitboxSizeSlider = HitboxSection:Slider({
-    Title = "Hitbox Size",
-    Desc = "Размер хитбокса игроков",
-    Step = 1,
-    Value = {
-        Min = 1,
-        Max = 10,
-        Default = 2,
-    },
-    Callback = function(value)
-        hitboxSize = value
-        if hitboxEnabled then
-            updateHitboxes()
-        end
-    end
-})
-
-local HitboxTransparencySlider = HitboxSection:Slider({
-    Title = "Transparency",
-    Desc = "Прозрачность хитбокса",
-    Step = 0.1,
-    Value = {
-        Min = 0,
-        Max = 1,
-        Default = 0.4,
-    },
-    Callback = function(value)
-        hitboxTransparency = value
-        if hitboxEnabled then
-            updateHitboxes()
-        end
-    end
-})
-
--- Выбор игроков
-local playerOptions = {"All", "Enemies", "Team"}
-local playerNames = getPlayerList()
-for _, name in pairs(playerNames) do
-    table.insert(playerOptions, name)
-end
-
-HitboxSection:Dropdown({
-    Title = "Select Players",
-    Desc = "Выберите игроков для хитбоксов",
-    Values = playerOptions,
-    Value = {"All"},
-    Multi = true,
-    Callback = function(selected)
-        selectedPlayerOptions = selected
-        if hitboxEnabled then
-            updateHitboxes()
-        end
-    end
-})
-
--- Кнопка для обновления списка игроков
-HitboxSection:Button({
-    Title = "Refresh Players",
-    Desc = "Обновить список игроков",
-    Callback = function()
-        playerOptions = {"All", "Enemies", "Team"}
-        playerNames = getPlayerList()
-        for _, name in pairs(playerNames) do
-            table.insert(playerOptions, name)
-        end
-        updateHitboxes()
-        WindUI:Notify({
-            Title = "Hitbox",
-            Content = "Player list refreshed",
-            Duration = 3,
-            Icon = "refresh-cw"
-        })
-    end
-})
-
--- Автоматическое обновление при появлении новых игроков
-Players.PlayerAdded:Connect(function(player)
-    playerOptions = {"All", "Enemies", "Team"}
-    playerNames = getPlayerList()
-    for _, name in pairs(playerNames) do
-        table.insert(playerOptions, name)
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    playerOptions = {"All", "Enemies", "Team"}
-    playerNames = getPlayerList()
-    for _, name in pairs(playerNames) do
-        table.insert(playerOptions, name)
-    end
-end)
-
--- ======== СЕКЦИЯ ВИЗУАЛЬНЫХ ЭФФЕКТОВ ======== --
-local VisualSection = PlayerTab:Section({
-    Title = "Visual Effects",
-    Opened = true
-})
-
--- XRay Toggle
-VisualSection:Toggle({
-    Title = "X-Ray",
-    Desc = "Видеть сквозь стены и объекты",
-    Value = false,
-    Callback = function(state)
-        xrayEnabled = state
-        xray()
-        WindUI:Notify({
-            Title = "X-Ray",
-            Content = state and "Enabled" or "Disabled",
-            Duration = 3,
-            Icon = state and "check-circle" or "x-circle"
-        })
-    end
-})
-
--- Fullbright Toggle
-VisualSection:Toggle({
-    Title = "Fullbright",
-    Desc = "Максимальная яркость освещения",
-    Value = false,
-    Callback = function(state)
-        if state then
-            Lighting.Brightness = 2
-            Lighting.ClockTime = 14
-            Lighting.FogEnd = 100000
-            Lighting.GlobalShadows = false
-            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-        else
-            Lighting.Brightness = 1
-            Lighting.ClockTime = 14
-            Lighting.FogEnd = 1000000
-            Lighting.GlobalShadows = true
-            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-        end
-        WindUI:Notify({
-            Title = "Fullbright",
-            Content = state and "Enabled" or "Disabled",
-            Duration = 3,
-            Icon = state and "check-circle" or "x-circle"
-        })
-    end
-})
-
--- Auto Fullbright Toggle
-VisualSection:Toggle({
-    Title = "Авто Fullbright",
-    Desc = "Автоматически поддерживать Fullbright",
-    Value = false,
-    Callback = function(state)
-        if state then
-            if brightLoop then brightLoop:Disconnect() end
-            
-            brightLoop = RunService.RenderStepped:Connect(function()
-                Lighting.Brightness = 2
-                Lighting.ClockTime = 14
-                Lighting.FogEnd = 100000
-                Lighting.GlobalShadows = false
-                Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-            end)
-        else
-            if brightLoop then
-                brightLoop:Disconnect()
-                brightLoop = nil
-            end
-        end
-        WindUI:Notify({
-            Title = "Auto Fullbright",
-            Content = state and "Enabled" or "Disabled",
-            Duration = 3,
-            Icon = state and "check-circle" or "x-circle"
-        })
-    end
-})
-
--- ======== СЕКЦИЯ PART ESP ======== --
-local PartESPSection = PlayerTab:Section({
-    Title = "Part ESP",
-    Opened = true
-})
-
-PartESPSection:Input({
-    Title = "Highlight Part",
-    Desc = "Введите название части для подсветки",
-    Placeholder = "Enter part name",
-    Callback = highlightPart
-})
-
-PartESPSection:Button({
-    Title = "Clear All Highlights",
-    Desc = "Очистить все подсветки",
-    Callback = clearAllHighlights
-})
-
--- Слайдер прозрачности (исправленный синтаксис)
-PartESPSection:Slider({
-    Title = "Highlight Transparency",
-    Desc = "Прозрачность подсветки частей",
-    Step = 0.1,
-    Value = {
-        Min = 0,
-        Max = 1,
-        Default = 0.5,
-    },
-    Callback = function(value)
-        espTransparency = value
-        -- Обновляем прозрачность всех существующих подсветок
-        for _, data in pairs(partHighlights) do
-            for _, part in pairs(data.parts) do
-                if part and part.Parent then
-                    local highlight = part:FindFirstChild("PART_HIGHLIGHT_"..part.Name)
-                    if highlight then
-                        highlight.Transparency = value
-                    end
-                end
-            end
-        end
-        WindUI:Notify({
-            Title = "Part ESP",
-            Content = "Прозрачность установлена: " .. value,
-            Duration = 2,
-            Icon = "eye"
-        })
-    end
-})
-
--- ======== СЕКЦИЯ УТИЛИТ ======== --
-local UtilitySection = PlayerTab:Section({
-    Title = "Utility",
-    Opened = true
-})
-
-UtilitySection:Button({
-    Title = "Copy Server Link",
-    Desc = "Скопировать ссылку на сервер",
+UtilitySection:AddButton({
+    Name = "Copy Server Link",
     Callback = function()
         setclipboard("roblox://placeId="..game.PlaceId.."&gameInstanceId="..game.JobId)
-        WindUI:Notify({
-            Title = "Server Link",
-            Content = "Copied to clipboard!",
-            Duration = 3,
-            Icon = "copy"
-        })
+        notify("Server Link", "Copied to clipboard!")
     end
 })
 
-UtilitySection:Toggle({
-    Title = "Auto Rejoin",
-    Desc = "Автоматически переподключаться при ошибке",
-    Value = false,
+UtilitySection:AddToggle({
+    Name = "Auto Rejoin",
+    Flag = "AutoRejoin",
+    Default = false,
     Callback = function(state)
         if state then
             if autoRejoinConnection then
@@ -906,31 +776,21 @@ UtilitySection:Toggle({
             autoRejoinConnection = GuiService.ErrorMessageChanged:Connect(function()
                 TeleportService:Teleport(game.PlaceId)
             end)
-            WindUI:Notify({
-                Title = "Auto Rejoin",
-                Content = "Enabled",
-                Duration = 3,
-                Icon = "check-circle"
-            })
+            notify("Auto Rejoin", "Enabled")
         else
             if autoRejoinConnection then
                 autoRejoinConnection:Disconnect()
                 autoRejoinConnection = nil
             end
-            WindUI:Notify({
-                Title = "Auto Rejoin",
-                Content = "Disabled", 
-                Duration = 3,
-                Icon = "x-circle"
-            })
+            notify("Auto Rejoin", "Disabled")
         end
     end
 })
 
-UtilitySection:Toggle({
-    Title = "Anti-AFK",
-    Desc = "Предотвращает отключение за бездействие",
-    Value = false,
+UtilitySection:AddToggle({
+    Name = "Anti-AFK",
+    Flag = "AntiAFK",
+    Default = false,
     Callback = function(state)
         antiAfkEnabled = state
         if state then
@@ -950,33 +810,597 @@ UtilitySection:Toggle({
                     VirtualUser:ClickButton2(Vector2.new())
                 end)
             end
-            WindUI:Notify({
-                Title = 'Anti-AFK',
-                Content = 'Enabled',
-                Duration = 3,
-                Icon = 'check-circle'
-            })
+            notify('Anti-AFK', 'Enabled')
         else
-            WindUI:Notify({
-                Title = 'Anti-AFK',
-                Content = 'Disabled',
-                Duration = 3,
-                Icon = 'x-circle'
-            })
+            notify('Anti-AFK', 'Disabled')
         end
     end
 })
 
--- WindUI Rewrite - Part 3/?
--- Продолжение переписывания скрипта из Compkiller в WindUI
-
--- ======== СЕКЦИЯ КОПИРОВАТЕЛЯ ПУТЕЙ ОБЪЕКТОВ ======== --
-local PathCopierSection = PlayerTab:Section({
-    Title = "Копирователь путей объектов",
-    Opened = true
+-- Visual Section
+local VisualSection = PlayerTab:DrawSection({
+    Name = "Visual",
+    Position = "left"
 })
 
--- Переменные для копирователя путей
+VisualSection:AddTextBox({
+    Name = "Highlight Part",
+    Placeholder = "Enter part name",
+    Callback = highlightPart
+})
+
+VisualSection:AddButton({
+    Name = "Clear Highlights",
+    Callback = clearAllHighlights
+})
+
+VisualSection:AddSlider({
+    Name = "Highlight Transparency",
+    Min = 0,
+    Max = 1,
+    Default = 0.5,
+    Increment = 0.1,
+    Callback = function(value)
+        espTransparency = value
+        for _, data in pairs(partHighlights) do
+            for _, part in pairs(data.parts) do
+                local highlight = part:FindFirstChild("PART_HIGHLIGHT_"..part.Name)
+                if highlight then
+                    highlight.Transparency = value
+                end
+            end
+        end
+    end
+})
+
+-- Teleport Section
+local TPSection = PlayerTab:DrawSection({
+    Name = "Teleport",
+    Position = "left"
+})
+
+local playerList = {}
+local selectedPlayer = ""
+local tpDistance = 5
+
+local function updatePlayerList()
+    playerList = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer then
+            table.insert(playerList, player.Name)
+        end
+    end
+end
+
+updatePlayerList()
+
+TPSection:AddDropdown({
+    Name = "Select Player",
+    Default = "",
+    Values = playerList,
+    Callback = function(value)
+        selectedPlayer = value
+    end
+})
+
+TPSection:AddSlider({
+    Name = "TP Distance",
+    Min = 0,
+    Max = 20,
+    Default = 5,
+    Round = 0,
+    Callback = function(value)
+        tpDistance = value
+    end
+})
+
+TPSection:AddButton({
+    Name = "Teleport To Player",
+    Callback = function()
+        if selectedPlayer == "" then
+            notify("Teleport", "Select a player first!")
+            return
+        end
+        
+        local target = Players:FindFirstChild(selectedPlayer)
+        if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+            notify("Teleport", "Target player not found!")
+            return
+        end
+        
+        local char = speaker.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then
+            notify("Teleport", "Your character not found!")
+            return
+        end
+        
+        char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -tpDistance)
+        notify("Teleport", "Teleported to "..selectedPlayer)
+    end
+})
+
+TPSection:AddButton({
+    Name = "Refresh Player List",
+    Callback = function()
+        updatePlayerList()
+        notify("Player List", "Refreshed")
+    end
+})
+
+-- Update player list automatically
+Players.PlayerAdded:Connect(function(player)
+    table.insert(playerList, player.Name)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    for i, name in ipairs(playerList) do
+        if name == player.Name then
+            table.remove(playerList, i)
+            break
+        end
+    end
+end)
+
+-- Переменные для управления телепортацией
+local Teleport = {
+    Enabled = false,
+    Speed = 3,
+    Mode = "По порядку",
+    CurrentIndex = 1,
+    FriendsOnly = false,
+    SkipDead = true,
+    HeightOffset = 5,
+    DistanceOffset = 5,
+    BodyPart = "HumanoidRootPart",
+    ShowInfo = true,
+    LastTeleportTime = 0,
+    Connection = nil
+}
+
+-- Создаем одну секцию
+local MainSection = PlayerTab:DrawSection({
+    Name = "Телепортация по игрокам",
+    Position = 'left'    
+})
+
+-- Основной переключатель телепортации
+local TeleportToggle = MainSection:AddToggle({
+    Name = "Включить Авто-Телепорт",
+    Flag = "Teleport_Enabled",
+    Default = false,
+    Callback = function(enabled)
+        if enabled then
+            StartAutoTeleport()
+        else
+            StopAutoTeleport()
+        end
+    end,
+})
+
+-- Слайдер для скорости телепортации (исправленный)
+MainSection:AddSlider({
+    Name = "Скорость Телепортации ",
+    Min = 0.1,
+    Max = 30,
+    Default = 3,
+    Round = 1,
+    Suffix = " сек",
+    Flag = "Teleport_Speed",
+    Callback = function(speed)
+        Teleport.Speed = speed
+        print("Скорость установлена: " .. speed .. " секунд")
+    end
+})
+
+-- Выбор режима телепортации
+MainSection:AddDropdown({
+    Name = "Режим Телепортации",
+    Default = "По порядку",
+    Flag = "Teleport_Mode",
+    Values = {"По порядку", "Случайно", "Ближайший", "Самый дальний"},
+    Callback = function(mode)
+        Teleport.Mode = mode
+        Teleport.CurrentIndex = 1
+        print("Режим установлен: " .. mode)
+    end
+})
+
+-- Слайдер для расстояния от игрока
+MainSection:AddSlider({
+    Name = "Дистанция от Игрока",
+    Min = 0,
+    Max = 20,
+    Default = 5,
+    Round = 1,
+    Suffix = " studs",
+    Flag = "Teleport_Distance",
+    Callback = function(distance)
+        Teleport.DistanceOffset = distance
+        print("Дистанция установлена: " .. distance)
+    end
+})
+
+-- Слайдер для высоты телепортации
+MainSection:AddSlider({
+    Name = "Высота Телепортации",
+    Min = 0,
+    Max = 50,
+    Default = 5,
+    Round = 1,
+    Suffix = " studs",
+    Flag = "Teleport_Height",
+    Callback = function(height)
+        Teleport.HeightOffset = height
+        print("Высота установлена: " .. height)
+    end
+})
+
+-- Дополнительные настройки
+MainSection:AddToggle({
+    Name = "Показывать Информацию",
+    Flag = "Show_Player_Info",
+    Default = true,
+    Callback = function(show)
+        Teleport.ShowInfo = show
+        print("Показ информации: " .. tostring(show))
+    end,
+})
+
+MainSection:AddToggle({
+    Name = "Только Друзья",
+    Flag = "Friends_Only",
+    Default = false,
+    Callback = function(friendsOnly)
+        Teleport.FriendsOnly = friendsOnly
+        print("Только друзья: " .. tostring(friendsOnly))
+    end,
+})
+
+MainSection:AddToggle({
+    Name = "Пропускать Мертвых",
+    Flag = "Skip_Dead_Players",
+    Default = true,
+    Callback = function(skip)
+        Teleport.SkipDead = skip
+        print("Пропускать мертвых: " .. tostring(skip))
+    end,
+})
+
+-- Кнопка ручной телепортации
+MainSection:AddButton({
+    Name = "Телепорт к Следующему Игроку",
+    Callback = function()
+        TeleportToNextPlayerManual()
+    end,
+})
+
+-- Кнопка обновления списка игроков
+MainSection:AddButton({
+    Name = "Обновить Список Игроков",
+    Callback = function()
+        RefreshPlayerList()
+    end,
+})
+
+-- Информационный параграф
+MainSection:AddParagraph({
+    Title = "Инструкция по Использованию",
+    Content = "1. Включите авто-телепортацию\n2. Настройте скорость (0.1-30 сек)\n3. Выберите режим и дистанцию\n4. Используйте кнопки для \nручного управления"
+})
+
+-- Функция получения списка игроков
+function GetPlayerNames()
+    local players = {}
+    local success, result = pcall(function()
+        for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game:GetService("Players").LocalPlayer then
+                table.insert(players, player.Name)
+            end
+        end
+    end)
+    return players
+end
+
+-- Функция получения валидных игроков
+function GetValidPlayers()
+    local validPlayers = {}
+    local localPlayer = game:GetService("Players").LocalPlayer
+    
+    for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+        if player ~= localPlayer and IsValidTarget(player) then
+            table.insert(validPlayers, player)
+        end
+    end
+    
+    return validPlayers
+end
+
+-- Функция проверки валидности цели
+function IsValidTarget(player)
+    if not player then return false end
+    
+    -- Проверка "только друзья"
+    if Teleport.FriendsOnly then
+        local success, isFriend = pcall(function()
+            return player:IsFriendsWith(game:GetService("Players").LocalPlayer.UserId)
+        end)
+        if not success or not isFriend then
+            return false
+        end
+    end
+    
+    -- Проверка на мертвых игроков
+    if Teleport.SkipDead then
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health <= 0 then
+                return false
+            end
+        end
+    end
+    
+    return true
+end
+
+-- Функция телепортации к игроку
+function TeleportToPlayer(player)
+    if not player then return false end
+    
+    local success, err = pcall(function()
+        local localPlayer = game:GetService("Players").LocalPlayer
+        local localCharacter = localPlayer.Character
+        local targetCharacter = player.Character
+        
+        if not localCharacter or not targetCharacter then 
+            return false
+        end
+        
+        local targetPart = targetCharacter:FindFirstChild(Teleport.BodyPart) or targetCharacter:FindFirstChild("HumanoidRootPart")
+        local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+        
+        if not targetPart or not localRoot then 
+            return false
+        end
+        
+        -- Вычисляем позицию с учетом расстояния
+        local lookVector = targetPart.CFrame.LookVector
+        local teleportPosition = targetPart.Position - (lookVector * Teleport.DistanceOffset)
+        local newCFrame = CFrame.new(teleportPosition + Vector3.new(0, Teleport.HeightOffset, 0))
+        
+        -- Телепортируемся
+        localRoot.CFrame = newCFrame
+        
+        -- Показываем информацию об игроке если включено
+        if Teleport.ShowInfo then
+            ShowPlayerInfo(player)
+        end
+        
+        return true
+    end)
+    
+    if not success then
+        warn("Ошибка телепортации: " .. tostring(err))
+        return false
+    end
+    
+    return true
+end
+
+-- Функция показа информации об игроке
+function ShowPlayerInfo(player)
+    local character = player.Character
+    local info = "Телепортирован к: " .. player.Name
+    
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            info = info .. "\nЗдоровье: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+        end
+    end
+    
+    Notifier.new({
+        Title = "Информация о телепортации",
+        Content = info,
+        Duration = 2,
+        Icon = "rbxassetid://120245531583106"
+    })
+end
+
+-- Функция получения следующей цели
+function GetNextTarget(players)
+    if #players == 0 then return nil end
+    
+    if Teleport.Mode == "По порядку" then
+        local target = players[Teleport.CurrentIndex]
+        Teleport.CurrentIndex = Teleport.CurrentIndex % #players + 1
+        return target
+    elseif Teleport.Mode == "Случайно" then
+        return players[math.random(1, #players)]
+    elseif Teleport.Mode == "Ближайший" then
+        return GetNearestPlayer(players)
+    elseif Teleport.Mode == "Самый дальний" then
+        return GetFurthestPlayer(players)
+    else
+        return players[1]
+    end
+end
+
+-- Функция получения ближайшего игрока
+function GetNearestPlayer(players)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local localCharacter = localPlayer.Character
+    if not localCharacter then return players[1] end
+    
+    local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return players[1] end
+    
+    local nearestPlayer = players[1]
+    local nearestDistance = math.huge
+    
+    for _, player in ipairs(players) do
+        local character = player.Character
+        if character then
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local distance = (localRoot.Position - root.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestPlayer = player
+                end
+            end
+        end
+    end
+    
+    return nearestPlayer
+end
+
+-- Функция получения самого дальнего игрока
+function GetFurthestPlayer(players)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local localCharacter = localPlayer.Character
+    if not localCharacter then return players[1] end
+    
+    local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return players[1] end
+    
+    local furthestPlayer = players[1]
+    local furthestDistance = 0
+    
+    for _, player in ipairs(players) do
+        local character = player.Character
+        if character then
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local distance = (localRoot.Position - root.Position).Magnitude
+                if distance > furthestDistance then
+                    furthestDistance = distance
+                    furthestPlayer = player
+                end
+            end
+        end
+    end
+    
+    return furthestPlayer
+end
+
+-- Функция старта автоматической телепортации (исправленная)
+function StartAutoTeleport()
+    if Teleport.Enabled then return end
+    
+    Teleport.Enabled = true
+    Teleport.CurrentIndex = 1
+    Teleport.LastTeleportTime = 0
+    
+    Notifier.new({
+        Title = "Телепортация",
+        Content = "Авто-телепортация запущена!",
+        Duration = 3,
+        Icon = "rbxassetid://120245531583106"
+    })
+    
+    -- Создаем отдельный поток для телепортации с правильным таймером
+    task.spawn(function()
+        while Teleport.Enabled do
+            local players = GetValidPlayers()
+            if #players > 0 then
+                local targetPlayer = GetNextTarget(players)
+                if targetPlayer then
+                    local success = TeleportToPlayer(targetPlayer)
+                    if success then
+                        print("Успешно телепортирован к: " .. targetPlayer.Name)
+                    end
+                end
+            else
+                print("Нет подходящих игроков для телепортации")
+            end
+            
+            -- Ждем указанное количество секунд
+            wait(Teleport.Speed)
+        end
+    end)
+end
+
+-- Функция остановки автоматической телепортации
+function StopAutoTeleport()
+    if not Teleport.Enabled then return end
+    
+    Teleport.Enabled = false
+    
+    Notifier.new({
+        Title = "Телепортация",
+        Content = "Авто-телепортация остановлена!",
+        Duration = 3,
+        Icon = "rbxassetid://120245531583106"
+    })
+end
+
+-- Функция ручной телепортации к следующему игроку
+function TeleportToNextPlayerManual()
+    if Teleport.Enabled then
+        Notifier.new({
+            Title = "Телепортация",
+            Content = "Сначала отключите авто-телепортацию!",
+            Duration = 3,
+            Icon = "rbxassetid://120245531583106"
+        })
+        return
+    end
+    
+    local players = GetValidPlayers()
+    if #players > 0 then
+        local targetPlayer = GetNextTarget(players)
+        if targetPlayer and TeleportToPlayer(targetPlayer) then
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Успешно телепортирован к: " .. targetPlayer.Name,
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        else
+            Notifier.new({
+                Title = "Телепортация",
+                Content = "Не удалось телепортироваться к игроку!",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        end
+    else
+        Notifier.new({
+            Title = "Телепортация",
+            Content = "Не найдено подходящих игроков!",
+            Duration = 3,
+            Icon = "rbxassetid://120245531583106"
+        })
+    end
+end
+
+-- Функция обновления списка игроков
+function RefreshPlayerList()
+    local playerCount = #GetValidPlayers()
+    Notifier.new({
+        Title = "Список Игроков",
+        Content = "Список игроков обновлен! Доступно: " .. playerCount,
+        Duration = 3,
+        Icon = "rbxassetid://120245531583106"
+    })
+end
+
+-- Функция для безопасного завершения
+local function Cleanup()
+    Teleport.Enabled = false
+end
+
+-- Очистка при выходе из игры
+game:GetService("Players").LocalPlayer.OnTeleport:Connect(Cleanup)
+
+-- Секция копирователя путей объектов
+local MainSection = PlayerTab:DrawSection({
+    Name = "Копирователь путей объектов",
+    Position = 'left'
+})
+
+-- Переменные
 local pathCopierEnabled = false
 local currentPath = ""
 local pathCopierConnection = nil
@@ -1081,7 +1505,7 @@ local function highlightObject(object)
     highlight.OutlineTransparency = 0
     highlight.Parent = object
     
-    task.delay(3, function()
+    delay(3, function()
         if highlight and highlight.Parent then
             highlight:Destroy()
         end
@@ -1102,12 +1526,14 @@ local function onObjectClicked(object)
         setclipboard(path)
     end)
     
-    WindUI:Notify({
-        Title = "Путь скопирован",
-        Content = "Объект: " .. object.Name .. "\nКласс: " .. object.ClassName .. "\nПуть скопирован!",
-        Duration = 4,
-        Icon = "copy"
-    })
+    if Window and Window.Notify then
+        Window.Notify.new({
+            Title = "Путь скопирован",
+            Content = "Объект: " .. object.Name .. "\nКласс: " .. object.ClassName .. "\nПуть скопирован!",
+            Duration = 4,
+            Icon = "copy"
+        })
+    end
     
     print("[Path Copier] Объект: " .. object.Name .. " | Путь: " .. path)
 end
@@ -1124,7 +1550,7 @@ local function setupPathCopier()
     pathCopierConnection = mouse.Button1Down:Connect(function()
         local target = mouse.Target
         if target and pathCopierEnabled then
-            task.wait(0.01)
+            wait(0.01)
             if target.Parent then
                 onObjectClicked(target)
             end
@@ -1152,113 +1578,115 @@ if not getgenv().PathCopierHighlightColor then
 end
 
 -- Toggle для включения/выключения
-PathCopierSection:Toggle({
-    Title = "Включить копирование",
-    Desc = "Включить инструмент копирования путей объектов",
-    Value = false,
+local PathCopierToggle = MainSection:AddToggle({
+    Name = "Включить \nкопирование ",
+    Flag = "PathCopier_Enabled",
+    Default = false,
     Callback = function(enabled)
         pathCopierEnabled = enabled
         if enabled then
-            WindUI:Notify({
-                Title = "Копирователь путей",
-                Content = "Инструмент включен! Нажмите на любой объект чтобы скопировать его путь.",
-                Duration = 3,
-                Icon = "copy"
-            })
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Инструмент включен! Нажмите на любой объект чтобы скопировать его путь.",
+                    Duration = 3,
+                    Icon = "copy"
+                })
+            end
             setupPathCopier()
         else
             teardownPathCopier()
-            WindUI:Notify({
-                Title = "Копирователь путей",
-                Content = "Инструмент выключен.",
-                Duration = 2,
-                Icon = "copy"
-            })
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Инструмент выключен.",
+                    Duration = 2,
+                    Icon = "copy"
+                })
+            end
         end
     end
 })
 
 -- Настройка формата пути
-PathCopierSection:Dropdown({
-    Title = "Формат пути",
-    Desc = "Выберите формат копируемого пути",
+local PathFormatDropdown = MainSection:AddDropdown({
+    Name = "Формат пути",
+    Default = "GetChildren",
+    Flag = "PathCopier_Format",
     Values = {"GetChildren", "FullPath", "Debug"},
-    Value = "GetChildren",
     Callback = function(format)
         getgenv().PathCopierFormat = format
     end
 })
 
 -- Настройка подсветки
-PathCopierSection:Toggle({
-    Title = "Включить подсветку",
-    Desc = "Подсвечивать выбранные объекты",
-    Value = true,
+local HighlightToggle = MainSection:AddToggle({
+    Name = "Включить подсветку",
+    Flag = "PathCopier_Highlight",
+    Default = true,
     Callback = function(enabled)
         getgenv().PathCopierHighlight = enabled
     end
 })
 
 -- Цвет подсветки
-PathCopierSection:Colorpicker({
-    Title = "Цвет подсветки",
-    Desc = "Цвет подсветки выбранных объектов",
+local HighlightColor = MainSection:AddColorPicker({
+    Name = "Цвет подсветки",
     Default = Color3.fromRGB(255, 255, 0),
+    Flag = "PathCopier_HighlightColor",
     Callback = function(color)
         getgenv().PathCopierHighlightColor = color
     end
 })
 
 -- Кнопка копирования
-PathCopierSection:Button({
-    Title = "Скопировать последний путь",
-    Desc = "Скопировать последний найденный путь",
+local CopyButton = MainSection:AddButton({
+    Name = "Скопировать последний путь",
     Callback = function()
         if currentPath ~= "" then
             pcall(function()
                 setclipboard(currentPath)
             end)
-            WindUI:Notify({
-                Title = "Копирователь путей",
-                Content = "Путь скопирован в буфер обмена!",
-                Duration = 2,
-                Icon = "check-circle"
-            })
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Путь скопирован в буфер обмена!",
+                    Duration = 2,
+                    Icon = "check"
+                })
+            end
         else
-            WindUI:Notify({
-                Title = "Копирователь путей",
-                Content = "Нет пути для копирования!",
-                Duration = 2,
-                Icon = "alert-circle"
-            })
+            if Window and Window.Notify then
+                Window.Notify.new({
+                    Title = "Копирователь путей",
+                    Content = "Нет пути для копирования!",
+                    Duration = 2,
+                    Icon = "warning"
+                })
+            end
         end
     end
 })
 
 -- Инструкция
-PathCopierSection:Paragraph({
+MainSection:AddParagraph({
     Title = "Форматы путей",
     Content = "GetChildren - путь через индексы детей\nFullPath - обычный полный путь\nDebug - с ID объекта и классом"
 })
 
 -- Автоотключение при выходе
-Players.LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
-    if not Players.LocalPlayer.Parent then
+game:GetService("Players").LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
+    if not game:GetService("Players").LocalPlayer.Parent then
         teardownPathCopier()
     end
 end)
 
--- ======== СЕКЦИЯ ДОПОЛНИТЕЛЬНЫХ СКРИПТОВ ======== --
-local PlayerScriptsSection = PlayerTab:Section({
-    Title = "Дополнительные скрипты",
-    Opened = true
-})
 
--- Anti-Lag Toggle
-PlayerScriptsSection:Toggle({
-    Title = "Anti-Lag",
-    Desc = "Уменьшает лаги и улучшает производительность",
-    Value = false,
+
+PlayerScriptsSection:AddToggle({
+    Name = "Anti-Lag",
+    Flag = "AntiLag",
+    Default = false,
     Callback = function(state)
         antiLagEnabled = state
         if state then
@@ -1300,31 +1728,20 @@ PlayerScriptsSection:Toggle({
                 end
             end)
             
-            WindUI:Notify({
-                Title = "Anti-Lag",
-                Content = "Enabled - перезапустите игру для отключения",
-                Duration = 5,
-                Icon = "zap"
-            })
+            notify("Anti-Lag", "Enabled")
         else
-            WindUI:Notify({
-                Title = "Anti-Lag",
-                Content = "Restart game to disable completely",
-                Duration = 3,
-                Icon = "zap"
-            })
+            notify("Anti-Lag", "Restart game to disable")
         end
     end
 })
 
--- Noclip Toggle
-PlayerScriptsSection:Toggle({
-    Title = "Noclip",
-    Desc = "Проходить сквозь стены и объекты",
-    Value = false,
+PlayerScriptsSection:AddToggle({
+    Name = "Noclip",
+    Flag = "NoclipToggle",
+    Default = false,
     Callback = function(state)
         if state then
-            local Clip = false
+            Clip = false
             local function NoclipLoop()
                 if Clip == false and speaker.Character ~= nil then
                     for _, child in pairs(speaker.Character:GetDescendants()) do
@@ -1334,209 +1751,200 @@ PlayerScriptsSection:Toggle({
                     end
                 end
             end
-            local Noclipping = RunService.Stepped:Connect(NoclipLoop)
-            WindUI:Notify({
-                Title = 'Noclip',
-                Content = 'Enabled',
-                Duration = 3,
-                Icon = 'eye-off'
-            })
+            Noclipping = RunService.Stepped:Connect(NoclipLoop)
+            notify('Noclip', 'Enabled')
         else
             if Noclipping then
                 Noclipping:Disconnect()
+                Noclipping = nil
             end
-            WindUI:Notify({
-                Title = 'Noclip',
-                Content = 'Disabled',
-                Duration = 3,
-                Icon = 'eye'
-            })
+            Clip = true
+            notify('Noclip', 'Disabled')
         end
     end
 })
 
--- ======== КНОПКИ ЗАГРУЗКИ СКРИПТОВ ======== --
-local ScriptButtons = {
-    {
-        Title = "Запускает нужные скрипты",
-        Desc = "Запускает парочку нужных скриптов для игры",
-        Icon = "play",
-        Url = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/ALLSCRIPTRUN"
-    },
-    {
-        Title = "Infinite Yield",
-        Desc = "Мощные админ-команды для управления игрой",
-        Icon = "command",
-        Url = "https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua"
-    },
-    {
-        Title = "f3x",
-        Desc = "Инструмент для строительства",
-        Icon = "box",
-        Url = "https://raw.githubusercontent.com/infyiff/backup/refs/heads/main/f3x.lua"
-    },
-    {
-        Title = "DEX Explorer",
-        Desc = "Инструмент для исследования игровых объектов",
-        Icon = "search",
-        Url = "https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"
-    },
-    {
-        Title = "DEX++",
-        Desc = "Улучшенная версия DEX Explorer",
-        Icon = "search",
-        Url = "https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/refs/heads/main/DexPlusBackup.luau"
-    },
-    {
-        Title = "Полёт (F)",
-        Desc = "Включение режима полёта по нажатию F",
-        Icon = "wind",
-        Script = [[loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()]]
-    },
-    {
-        Title = "Невидимость (E)",
-        Desc = "Делает вашего персонажа невидимым",
-        Icon = "eye-off",
-        Url = "https://pastebin.com/raw/VtWhnEnm"
-    },
-    {
-        Title = "ТП к игрокам",
-        Desc = "Телепортироваться к другим игрокам",
-        Icon = "users",
-        Url = "https://pastebin.com/raw/z4HARAHs"
-    },
-    {
-        Title = "Удалить стены",
-        Desc = "Удаляет препятствия в игре",
-        Icon = "trash-2",
-        Url = "https://pastebin.com/raw/FBKJTUyw"
-    },
-    {
-        Title = "Падение на месте (R)",
-        Desc = "Персонаж падает на месте без движения",
-        Icon = "arrow-down",
-        Url = "https://pastebin.com/raw/CTUaCKN1"
-    },
-    {
-        Title = "Свободная камера (Shift+P)",
-        Desc = "Отключает привязку камеры к персонажу",
-        Icon = "camera",
-        Url = "https://pastebin.com/raw/ct8Kq5F0"
-    },
-    {
-        Title = "Полет на машине (V)",
-        Desc = "Позволяет транспорту летать",
-        Icon = "car",
-        Url = "https://pastebin.com/raw/9bNj1EcR"
-    },
-    {
-        Title = "Чекпойнты",
-        Desc = "Создает точки для быстрой телепортации",
-        Icon = "flag",
-        Url = "https://pastebin.com/raw/rz7uUmED"
-    },
-    {
-        Title = "Обход голосового чата",
-        Desc = "Позволяет обойти ограничения голосового чата",
-        Icon = "mic",
-        Url = "https://raw.githubusercontent.com/CorpseCMD/MyScripts/main/VoicechatBypass.lua"
-    },
-    {
-        Title = "Шейдеры",
-        Desc = "Улучшает визуальные эффекты игры",
-        Icon = "palette",
-        Url = "https://pastebin.com/raw/1XA5qM3D"
-    },
-    {
-        Title = "Sigma Spy",
-        Desc = "Мониторинг игровых событий",
-        Icon = "eye",
-        Url = "https://raw.githubusercontent.com/depthso/Sigma-Spy/main/Main.lua"
-    },
-    {
-        Title = "English version",
-        Desc = "Переключиться на английскую версию",
-        Icon = "globe",
-        Url = "https://pastebin.com/raw/32k6f2Ns"
-    },
-    {
-        Title = "Админ Команды от 1qlua",
-        Desc = "Набор административных команд",
-        Icon = "shield",
-        Url = "https://pastebin.com/raw/t3chuwNu"
-    },
-    {
-        Title = "Тест инжектора",
-        Desc = "Проверить ваш инжектор",
-        Icon = "test-tube",
-        Url = "https://rawscripts.net/raw/Universal-Script-UNChecker-GUI-Version-27355"
-    },
-    {
-        Title = "Поменять сервер",
-        Desc = "Быстро поменять сервер",
-        Icon = "refresh-cw",
-        Url = "https://raw.githubusercontent.com/Syr0nix/RedFoxServerBowser/main/Mainlua"
-    }
-}
+PlayerScriptsSection:AddButton({
+    Name = "Запускает нужные скрипты",
+    Description = "Запускает парочку нужных скриптов для игры",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/ALLSCRIPTRUN")
+    end
+})
 
--- Создание кнопок для скриптов
-for _, scriptInfo in ipairs(ScriptButtons) do
-    PlayerScriptsSection:Button({
-        Title = scriptInfo.Title,
-        Desc = scriptInfo.Desc,
-        Callback = function()
-            if scriptInfo.Url then
-                Functions.LoadScript(scriptInfo.Url)
-            elseif scriptInfo.Script then
-                local success, err = pcall(loadstring(scriptInfo.Script))
-                if not success then
-                    WindUI:Notify({
-                        Title = "Ошибка",
-                        Content = "Ошибка загрузки: "..err,
-                        Duration = 5,
-                        Icon = "alert-circle"
-                    })
-                end
-            end
-            WindUI:Notify({
-                Title = scriptInfo.Title,
-                Content = "Скрипт запускается...",
-                Duration = 3,
-                Icon = "play"
-            })
-        end
-    })
-end
+PlayerScriptsSection:AddButton({
+    Name = "Infinite Yield",
+    Description = "Мощные админ-команды для управления игрой",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua")
+    end
+})
 
--- Специальная кнопка для добавления в друзья
-PlayerScriptsSection:Button({
-    Title = "Добавить всех в друзья",
-    Desc = "Автоматически отправляет заявки в друзья всем игрокам",
+PlayerScriptsSection:AddButton({
+    Name = "f3x",
+    Description = "Прикольный кубик",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/infyiff/backup/refs/heads/main/f3x.lua")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "DEX Explorer",
+    Description = "Инструмент для исследования игровых объектов",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "DEX++",
+    Description = "Инструмент для исследования игровых объектов",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/refs/heads/main/DexPlusBackup.luau")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Полёт (F)",
+    Description = "Включение режима полёта по нажатию F",
+    Callback = function()
+        loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Невидимость (E)",
+    Description = "Делает вашего персонажа невидимым",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/VtWhnEnm")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "ТП к игрокам",
+    Description = "Телепортироваться к другим игрокам",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/z4HARAHs")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Играть с писюном",
+    Description = "Добавляет анимацию для развлечения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/73RsNXY2")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Удалить стены",
+    Description = "Удаляет препятствия в игре",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/FBKJTUyw")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Падение на месте (R)",
+    Description = "Персонаж падает на месте без движения",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/CTUaCKN1")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Свободная камера (Shift+P)",
+    Description = "Отключает привязку камеры к персонажу",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/ct8Kq5F0")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Полет на машине (V)",
+    Description = "Позволяет транспорту летать",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/9bNj1EcR")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Добавить всех в друзья",
+    Description = "Автоматически отправляет заявки в друзья",
     Callback = function()
         local plrs = game:GetService('Players')
-        local count = 0
         for i,v in pairs(plrs:GetChildren()) do
-            if v ~= plrs.LocalPlayer then
-                task.wait(1)
-                plrs.LocalPlayer:RequestFriendship(v)
-                count = count + 1
-            end
+            task.wait(1)
+            plrs.LocalPlayer:RequestFriendship(v)
         end
-        WindUI:Notify({
-            Title = "Друзья",
-            Content = "Отправлено "..count.." заявок в друзья",
-            Duration = 5,
-            Icon = "users"
-        })
     end
 })
 
--- WindUI Rewrite - Part 4/?
--- Продолжение переписывания скрипта из Compkiller в WindUI
+PlayerScriptsSection:AddButton({
+    Name = "Чекпойнты",
+    Description = "Создает точки для быстрой телепортации",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/rz7uUmED")
+    end
+})
 
--- ======== ESP ФУНКЦИИ ======== --
-local COREGUI = game:GetService("CoreGui")
+PlayerScriptsSection:AddButton({
+    Name = "Обход голосового чата",
+    Description = "Позволяет обойти ограничения голосового чата",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/CorpseCMD/MyScripts/main/VoicechatBypass.lua")
+    end
+})
 
+PlayerScriptsSection:AddButton({
+    Name = "Шейдеры",
+    Description = "Улучшает визуальные эффекты игры",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/1XA5qM3D")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Sigma Spy",
+    Description = "Мониторинг игровых событий",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/depthso/Sigma-Spy/main/Main.lua")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "English version",   
+    Description = "Переключиться на английскую версию",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/32k6f2Ns")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Админ Команды от 1qlua",
+    Description = "Набор административных команд",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/t3chuwNu")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Тест инжектора",
+    Description = "Проверить ваш инжектор",
+    Callback = function()
+        Functions.LoadScript("https://rawscripts.net/raw/Universal-Script-UNChecker-GUI-Version-27355")
+    end
+})
+
+PlayerScriptsSection:AddButton({
+    Name = "Поменять сервер",
+    Description = "Быстро поменять сервер",
+    Callback = function()
+        Functions.LoadScript("https://raw.githubusercontent.com/Syr0nix/RedFoxServerBowser/main/Mainlua")
+    end
+})
+
+-- ESP Functions
 local function CreateESP(player, teamCheck)
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
@@ -1579,8 +1987,8 @@ local function CreateESP(player, teamCheck)
     healthFill.BorderSizePixel = 0
     healthFill.Size = UDim2.new(1, 0, 1, 0)
     healthFill.Parent = healthBar
-    
-    local function updateHealth()
+
+local function updateHealth()
         if character and character:FindFirstChild("Humanoid") then
             local humanoid = character.Humanoid
             healthFill.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
@@ -1645,71 +2053,83 @@ local function ESP(player, teamCheck)
 end
 
 local function ToggleESP(teamCheck)
-    if ESPenabled then
-        ESPenabled = false
-        for _, child in pairs(COREGUI:GetChildren()) do
-            if string.sub(child.Name, -4) == "_ESP" then
-                child:Destroy()
-            end
-        end
+    if not CHMSenabled then
+        ESPenabled = not ESPenabled
         
-        WindUI:Notify({
-            Title = "ESP",
-            Content = "ESP has been disabled",
-            Duration = 3,
-            Icon = "eye-off"
-        })
+        if ESPenabled then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= speaker then
+                    ESP(player, teamCheck)
+                end
+            end
+            
+            Players.PlayerAdded:Connect(function(player)
+                if ESPenabled then
+                    ESP(player, teamCheck)
+                end
+            end)
+            
+            Notifier.new({
+                Title = "ESP",
+                Content = "ESP has been enabled" .. (teamCheck and " (Team Check)" or ""),
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        else
+            for _, child in pairs(COREGUI:GetChildren()) do
+                if string.sub(child.Name, -4) == "_ESP" then
+                    child:Destroy()
+                end
+            end
+            
+            Notifier.new({
+                Title = "ESP",
+                Content = "ESP has been disabled",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            })
+        end
     else
-        ESPenabled = true
-        
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= speaker then
-                ESP(player, teamCheck)
-            end
-        end
-        
-        Players.PlayerAdded:Connect(function(player)
-            if ESPenabled then
-                ESP(player, teamCheck)
-            end
-        end)
-        
-        WindUI:Notify({
+        Notifier.new({
             Title = "ESP",
-            Content = "ESP has been enabled" .. (teamCheck and " (Team Check)" or ""),
+            Content = "Disable chams (nochams) before using esp",
             Duration = 3,
-            Icon = "eye"
+            Icon = "rbxassetid://120245531583106"
         })
     end
 end
 
--- ======== ВКЛАДКА ESP ======== --
-local ESPTab = Window:Tab({
-    Title = "ESP Settings",
+
+
+local ESPTab = Window:DrawTab({
+    Name = "ESP Settings",
     Icon = "eye",
-    Locked = false
+    EnableScrolling = true
 })
 
--- Основные настройки ESP
-local ESSettings = ESPTab:Section({
-    Title = "ESP Settings",
-    Opened = true
+local ESSettings = ESPTab:DrawSection({
+    Name = "ESP Settings",
+    Position = 'left'
 })
 
 -- ESP Toggles
-ESSettings:Toggle({
-    Title = "Enable ESP",
-    Desc = "Включить ESP для всех игроков",
-    Value = false,
+ESSettings:AddToggle({
+    Name = "Enable ESP",
+    Flag = "ESP_Enabled",
+    Default = false,
     Callback = function(state)
-        ToggleESP(false)
+        if state then
+            ToggleESP(false)
+        else
+            ToggleESP(false)
+        end
     end
 })
 
-ESSettings:Toggle({
-    Title = "Team Check",
-    Desc = "Разные цвета для команды и врагов",
-    Value = false,
+ESSettings:AddToggle({
+    Name = "Team Check",
+    Flag = "ESP_TeamCheck",
+    Default = false,
     Callback = function(state)
         if ESPenabled then
             -- Refresh ESP with new team check setting
@@ -1719,10 +2139,10 @@ ESSettings:Toggle({
     end
 })
 
-ESSettings:Toggle({
-    Title = "Show Names",
-    Desc = "Показывать имена игроков",
-    Value = true,
+ESSettings:AddToggle({
+    Name = "Show Names",
+    Flag = "ESP_ShowNames",
+    Default = true,
     Callback = function(state)
         for _, child in pairs(COREGUI:GetChildren()) do
             if string.sub(child.Name, -4) == "_ESP" then
@@ -1735,10 +2155,10 @@ ESSettings:Toggle({
     end
 })
 
-ESSettings:Toggle({
-    Title = "Show Health Bar",
-    Desc = "Показывать полоску здоровья",
-    Value = true,
+ESSettings:AddToggle({
+    Name = "Show Health Bar",
+    Flag = "ESP_ShowHealth",
+    Default = true,
     Callback = function(state)
         for _, child in pairs(COREGUI:GetChildren()) do
             if string.sub(child.Name, -4) == "_ESP" then
@@ -1751,10 +2171,10 @@ ESSettings:Toggle({
     end
 })
 
-ESSettings:Toggle({
-    Title = "Show Box",
-    Desc = "Показывать рамку вокруг игроков",
-    Value = true,
+ESSettings:AddToggle({
+    Name = "Show Box",
+    Flag = "ESP_ShowBox",
+    Default = true,
     Callback = function(state)
         for _, child in pairs(COREGUI:GetChildren()) do
             if string.sub(child.Name, -4) == "_ESP" then
@@ -1767,10 +2187,10 @@ ESSettings:Toggle({
     end
 })
 
-ESSettings:Toggle({
-    Title = "Show Tracer",
-    Desc = "Показывать линии к игрокам",
-    Value = true,
+ESSettings:AddToggle({
+    Name = "Show Tracer",
+    Flag = "ESP_ShowTracer",
+    Default = true,
     Callback = function(state)
         for _, child in pairs(COREGUI:GetChildren()) do
             if string.sub(child.Name, -4) == "_ESP" then
@@ -1783,18 +2203,18 @@ ESSettings:Toggle({
     end
 })
 
--- Цвета ESP
-local ESPColors = ESPTab:Section({
-    Title = "ESP Colors",
-    Opened = true
+-- ESP Colors
+local ESPColors = ESPTab:DrawSection({
+    Name = "ESP Colors",
+    Position = 'right'
 })
 
-ESPColors:Colorpicker({
-    Title = "Enemy Color",
-    Desc = "Цвет для вражеских игроков",
+ESPColors:AddColorPicker({
+    Name = "Enemy Color",
+    Flag = "ESP_EnemyColor",
     Default = Color3.fromRGB(255, 0, 0),
     Callback = function(color)
-        if not ESPenabled then return end
+        if not ESPenabled or not ConfigManager:GetValue("ESP_TeamCheck") then return end
         
         for _, child in pairs(COREGUI:GetChildren()) do
             if string.sub(child.Name, -4) == "_ESP" then
@@ -1818,12 +2238,12 @@ ESPColors:Colorpicker({
     end
 })
 
-ESPColors:Colorpicker({
-    Title = "Team Color",
-    Desc = "Цвет для игроков команды",
+ESPColors:AddColorPicker({
+    Name = "Team Color",
+    Flag = "ESP_TeamColor",
     Default = Color3.fromRGB(0, 255, 0),
     Callback = function(color)
-        if not ESPenabled then return end
+        if not ESPenabled or not ConfigManager:GetValue("ESP_TeamCheck") then return end
         
         for _, child in pairs(COREGUI:GetChildren()) do
             if string.sub(child.Name, -4) == "_ESP" then
@@ -1847,21 +2267,40 @@ ESPColors:Colorpicker({
     end
 })
 
--- Настройки текста
-local TextSettings = ESPTab:Section({
-    Title = "Text Settings",
-    Opened = true
+ESPColors:AddColorPicker({
+    Name = "Text Color",
+    Flag = "ESP_TextColor",
+    Default = Color3.fromRGB(255, 255, 255),
+    Callback = function(color)
+        if not ESPenabled then return end
+        
+        for _, child in pairs(COREGUI:GetChildren()) do
+            if string.sub(child.Name, -4) == "_ESP" then
+                local frame = child:FindFirstChild("Frame")
+                if frame then
+                    local espText = frame:FindFirstChild("ESPText")
+                    if espText then
+                        espText.TextColor3 = color
+                    end
+                end
+            end
+        end
+    end
 })
 
-local ESPTextSizeSlider = TextSettings:Slider({
-    Title = "Text Size",
-    Desc = "Размер текста ESP",
-    Step = 1,
-    Value = {
-        Min = 10,
-        Max = 30,
-        Default = 18,
-    },
+-- Text Settings
+local TextSettings = ESPTab:DrawSection({
+    Name = "Text Settings",
+    Position = 'right'
+})
+
+TextSettings:AddSlider({
+    Name = "Text Size",
+    Min = 10,
+    Max = 30,
+    Default = 18,
+    Round = 0,
+    Flag = "ESP_TextSize",
     Callback = function(value)
         if not ESPenabled then return end
         
@@ -1879,11 +2318,11 @@ local ESPTextSizeSlider = TextSettings:Slider({
     end
 })
 
-TextSettings:Dropdown({
-    Title = "Text Font",
-    Desc = "Шрифт текста ESP",
+TextSettings:AddDropdown({
+    Name = "Text Font",
+    Default = "SourceSansBold",
+    Flag = "ESP_TextFont",
     Values = {"SourceSans", "SourceSansBold", "SourceSansItalic", "Code", "Highway", "SciFi", "Arcade", "Fantasy"},
-    Value = "SourceSansBold",
     Callback = function(value)
         if not ESPenabled then return end
         
@@ -1912,16 +2351,97 @@ TextSettings:Dropdown({
     end
 })
 
--- ======== ВКЛАДКА FLING (ТОЛЬКО WALK FLING) ======== --
-local FlingTab = Window:Tab({
-    Title = "Fling",
-    Icon = "wind",
-    Locked = false
+-- Создаем вкладку Fling
+local FlingTab = Window:DrawTab({
+    Name = "Fling",
+    Icon = "target",
+    EnableScrolling = true
+})
+
+-- Секция для обычного fling
+local FlingSection = FlingTab:DrawSection({
+    Name = "Main Fling",
+    Position = 'left'
 })
 
 -- Переменные для управления
+local flinging = false
 local walkflinging = false
 local antifling = nil
+local flingDied = nil
+
+-- Функция включения fling
+local function enableFling()
+    if flinging then return end
+    
+    flinging = true
+    for _, child in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+        if child:IsA("BasePart") then
+            child.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+        end
+    end
+    
+    game:GetService("RunService").Stepped:Connect(function()
+        if not flinging then return end
+        game.Players.LocalPlayer.Character.Humanoid:ChangeState(11)
+    end)
+    
+    wait(.1)
+    local bambam = Instance.new("BodyAngularVelocity")
+    bambam.Name = "FlingVelocity"
+    bambam.Parent = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    bambam.AngularVelocity = Vector3.new(0,99999,0)
+    bambam.MaxTorque = Vector3.new(0,math.huge,0)
+    bambam.P = math.huge
+    
+    for i, v in next, game.Players.LocalPlayer.Character:GetChildren() do
+        if v:IsA("BasePart") then
+            v.CanCollide = false
+            v.Massless = true
+            v.Velocity = Vector3.new(0, 0, 0)
+        end
+    end
+    
+    local function flingDiedF()
+        disableFling()
+    end
+    
+    flingDied = game.Players.LocalPlayer.Character:FindFirstChildOfClass('Humanoid').Died:Connect(flingDiedF)
+    
+    while flinging do
+        bambam.AngularVelocity = Vector3.new(0,99999,0)
+        wait(.2)
+        bambam.AngularVelocity = Vector3.new(0,0,0)
+        wait(.1)
+    end
+end
+
+-- Функция выключения fling
+local function disableFling()
+    if not flinging then return end
+    
+    if flingDied then
+        flingDied:Disconnect()
+    end
+    
+    flinging = false
+    wait(.1)
+    
+    local speakerChar = game.Players.LocalPlayer.Character
+    if not speakerChar or not speakerChar:FindFirstChild("HumanoidRootPart") then return end
+    
+    for i,v in pairs(speakerChar.HumanoidRootPart:GetChildren()) do
+        if v.ClassName == 'BodyAngularVelocity' then
+            v:Destroy()
+        end
+    end
+    
+    for _, child in pairs(speakerChar:GetDescendants()) do
+        if child:IsA("BasePart") then
+            child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+        end
+    end
+end
 
 -- Функция включения walkfling
 local function enableWalkFling()
@@ -1930,7 +2450,7 @@ local function enableWalkFling()
     walkflinging = true
     local RunService = game:GetService("RunService")
     
-    local humanoid = Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+    local humanoid = game.Players.LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
     if humanoid then
         humanoid.Died:Connect(function()
             disableWalkFling()
@@ -1939,13 +2459,13 @@ local function enableWalkFling()
     
     while walkflinging do
         RunService.Heartbeat:Wait()
-        local character = Players.LocalPlayer.Character
+        local character = game.Players.LocalPlayer.Character
         local root = character and character:FindFirstChild("HumanoidRootPart")
         local vel, movel = nil, 0.1
 
         while not (character and character.Parent and root and root.Parent) do
             RunService.Heartbeat:Wait()
-            character = Players.LocalPlayer.Character
+            character = game.Players.LocalPlayer.Character
             root = character and character:FindFirstChild("HumanoidRootPart")
         end
 
@@ -1978,8 +2498,8 @@ local function enableAntiFling()
     end
     
     antifling = game:GetService("RunService").Stepped:Connect(function()
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Players.LocalPlayer and player.Character then
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
                 for _, v in pairs(player.Character:GetDescendants()) do
                     if v:IsA("BasePart") then
                         v.CanCollide = false
@@ -1998,136 +2518,106 @@ local function disableAntiFling()
     end
 end
 
--- Секция Walk Fling
-local WalkFlingSection = FlingTab:Section({
-    Title = "Walk Fling",
-    Opened = true
+-- Добавляем элементы в UI
+FlingSection:AddToggle({
+    Name = "Fling",
+    Flag = "Fling_Toggle",
+    Default = false,
+    Callback = function(state)
+        if state then
+            enableFling()
+        else
+            disableFling()
+        end
+    end
 })
 
-WalkFlingSection:Toggle({
-    Title = "Walk Fling",
-    Desc = "Активирует Walk Fling для вашего персонажа",
-    Value = false,
+FlingSection:AddToggle({
+    Name = "WalkFling",
+    Flag = "WalkFling_Toggle",
+    Default = false,
     Callback = function(state)
         if state then
             enableWalkFling()
-            WindUI:Notify({
-                Title = "Walk Fling",
-                Content = "Walk Fling включен",
-                Duration = 3,
-                Icon = "wind"
-            })
         else
             disableWalkFling()
-            WindUI:Notify({
-                Title = "Walk Fling",
-                Content = "Walk Fling выключен",
-                Duration = 3,
-                Icon = "wind"
-            })
         end
     end
 })
 
--- Секция Anti Fling
-local AntiFlingSection = FlingTab:Section({
-    Title = "Anti Fling",
-    Opened = true
-})
-
-AntiFlingSection:Toggle({
-    Title = "Anti Fling",
-    Desc = "Защищает от флинга других игроков",
-    Value = false,
+FlingSection:AddToggle({
+    Name = "AntiFling",
+    Flag = "AntiFling_Toggle",
+    Default = false,
     Callback = function(state)
         if state then
             enableAntiFling()
-            WindUI:Notify({
-                Title = "Anti Fling",
-                Content = "Anti Fling включен",
-                Duration = 3,
-                Icon = "shield"
-            })
         else
             disableAntiFling()
-            WindUI:Notify({
-                Title = "Anti Fling",
-                Content = "Anti Fling выключен",
-                Duration = 3,
-                Icon = "shield"
-            })
         end
     end
 })
 
--- Секция утилит Fling
-local FlingUtilsSection = FlingTab:Section({
-    Title = "Fling Utilities",
-    Opened = true
+-- Секция для настроек флинга
+local FlingSettings = FlingTab:DrawSection({
+    Name = "Fling Settings",
+    Position = 'right'
 })
 
-FlingUtilsSection:Button({
-    Title = "Reset Character",
-    Desc = "Перезагружает вашего персонажа",
-    Callback = function()
-        Players.LocalPlayer.Character:BreakJoints()
-        WindUI:Notify({
-            Title = "Reset Character",
-            Content = "Персонаж перезагружается",
-            Duration = 3,
-            Icon = "refresh-cw"
-        })
+FlingSettings:AddSlider({
+    Name = "Fling Power",
+    Min = 1000,
+    Max = 99999,
+    Default = 99999,
+    Round = 0,
+    Flag = "Fling_Power",
+    Callback = function(value)
+        -- Можно добавить логику изменения силы флинга
     end
 })
 
-FlingUtilsSection:Paragraph({
-    Title = "Информация о Walk Fling",
-    Content = "Walk Fling создает эффект полета при ходьбе.\nAnti Fling защищает от флинга других игроков."
+FlingSettings:AddDropdown({
+    Name = "Fling Type",
+    Default = "Normal",
+    Values = {"Normal", "Reverse", "Chaos"},
+    Callback = function(value)
+        -- Можно добавить разные типы флинга
+    end
+})
+
+FlingSettings:AddButton({
+    Name = "Reset Character",
+    Callback = function()
+        game.Players.LocalPlayer.Character:BreakJoints()
+    end
 })
 
 -- Автоматическое отключение при смерти
-Players.LocalPlayer.CharacterAdded:Connect(function(character)
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
     character:WaitForChild("Humanoid").Died:Connect(function()
+        disableFling()
         disableWalkFling()
     end)
 end)
 
--- ======== ВКЛАДКА КАМЕРЫ ======== --
-local CameraTab = Window:Tab({
-    Title = "Camera",
+-- Create Camera Tab
+local CameraTab = Window:DrawTab({
+    Name = "Camera",
     Icon = "camera",
-    Locked = false
+    EnableScrolling = true
 })
 
--- Переменные для камеры
-local viewing = nil
-local viewDied = nil
-local viewChanged = nil
-
--- Функция остановки фрикама (заглушка)
-local function StopFreecam()
-    -- Add your freecam stopping logic here if needed
-end
-
--- Секция наблюдения
-local SpectateSection = CameraTab:Section({
-    Title = "Spectate",
-    Opened = true
+-- Spectate Section
+local SpectateSection = CameraTab:DrawSection({
+    Name = "Spectate",
+    Position = 'left'
 })
 
 -- Player List Dropdown
-local playerListValues = {"Select Player"}
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= speaker then
-        table.insert(playerListValues, player.Name)
-    end
-end
-
-local playerDropdown = SpectateSection:Dropdown({
-    Title = "Player List",
-    Desc = "Выберите игрока для наблюдения",
-    Values = playerListValues,
-    Value = "Select Player",
+local playerDropdown = SpectateSection:AddDropdown({
+    Name = "Player List",
+    Default = "Select Player",
+    Values = {"Select Player"},
     Callback = function(selectedPlayer)
         if selectedPlayer ~= "Select Player" then
             StopFreecam()
@@ -2139,15 +2629,10 @@ local playerDropdown = SpectateSection:Dropdown({
                 end
                 viewing = player
                 workspace.CurrentCamera.CameraSubject = player.Character
-                WindUI:Notify({
-                    Title = 'Spectate',
-                    Content = 'Наблюдаем за ' .. player.Name,
-                    Duration = 3,
-                    Icon = 'eye'
-                })
+                notify('Spectate', 'Viewing ' .. player.Name)
                 
                 local function viewDiedFunc()
-                    repeat task.wait() until player.Character ~= nil and getRoot(player.Character)
+                    repeat wait() until player.Character ~= nil and getRoot(player.Character)
                     workspace.CurrentCamera.CameraSubject = player.Character
                 end
                 viewDied = player.CharacterAdded:Connect(viewDiedFunc)
@@ -2161,7 +2646,7 @@ local playerDropdown = SpectateSection:Dropdown({
     end
 })
 
--- Функция обновления списка игроков
+-- Update player list function
 local function updatePlayerList()
     local playerNames = {"Select Player"}
     for _, player in pairs(Players:GetPlayers()) do
@@ -2169,7 +2654,7 @@ local function updatePlayerList()
             table.insert(playerNames, player.Name)
         end
     end
-    -- Для WindUI нужно обновить значения дропдауна
+    playerDropdown:SetValues(playerNames)
 end
 
 -- Initial update and connect to player added/removed
@@ -2178,53 +2663,41 @@ Players.PlayerAdded:Connect(updatePlayerList)
 Players.PlayerRemoving:Connect(updatePlayerList)
 
 -- Unspectate
-SpectateSection:Button({
-    Title = "Unspectate",
-    Desc = "Прекратить наблюдение",
+SpectateSection:AddButton({
+    Name = "Unspectate",
     Callback = function()
         StopFreecam()
         if viewing ~= nil then
             viewing = nil
-            WindUI:Notify({
-                Title = 'Spectate',
-                Content = 'Наблюдение отключено',
-                Duration = 3,
-                Icon = 'eye-off'
-            })
+            notify('Spectate', 'View turned off')
         end
         if viewDied then
             viewDied:Disconnect()
             viewChanged:Disconnect()
         end
         workspace.CurrentCamera.CameraSubject = speaker.Character
-        playerDropdown:Set("Select Player")
+        playerDropdown:SetValue("Select Player")
     end
 })
 
--- Секция просмотра частей
-local ViewPartSection = CameraTab:Section({
-    Title = "View Parts",
-    Opened = true
+-- View Part Section
+local ViewPartSection = CameraTab:DrawSection({
+    Name = "View Parts",
+    Position = 'right'
 })
 
 -- View Part by Name
-ViewPartSection:Input({
-    Title = "View Part",
-    Desc = "Введите название части для просмотра",
+ViewPartSection:AddTextBox({
+    Name = "View Part",
     Placeholder = "Part Name",
     Callback = function(name)
         StopFreecam()
         if name then
             for _, v in pairs(workspace:GetDescendants()) do
                 if v.Name:lower() == name:lower() and v:IsA("BasePart") then
-                    task.wait(0.1)
+                    wait(0.1)
                     workspace.CurrentCamera.CameraSubject = v
-                    WindUI:Notify({
-                        Title = 'View Part',
-                        Content = 'Наблюдаем за ' .. v.Name,
-                        Duration = 3,
-                        Icon = 'cube'
-                    })
+                    notify('View Part', 'Viewing ' .. v.Name)
                     break
                 end
             end
@@ -2233,9 +2706,8 @@ ViewPartSection:Input({
 })
 
 -- Return Camera to Player
-ViewPartSection:Button({
-    Title = "Return to Player",
-    Desc = "Вернуть камеру к своему персонажу",
+ViewPartSection:AddButton({
+    Name = "Return to Player",
     Callback = function()
         StopFreecam()
         if viewing ~= nil then
@@ -2246,54 +2718,44 @@ ViewPartSection:Button({
             viewChanged:Disconnect()
         end
         workspace.CurrentCamera.CameraSubject = speaker.Character
-        playerDropdown:Set("Select Player")
-        WindUI:Notify({
-            Title = 'Camera',
-            Content = 'Камера возвращена к персонажу',
-            Duration = 3,
-            Icon = 'user'
-        })
+        playerDropdown:SetValue("Select Player")
+        notify('Camera', 'Returned to player view')
     end
 })
 
--- Настройки камеры
-local CameraSettingsSection = CameraTab:Section({
-    Title = "Camera Settings",
-    Opened = true
+-- Camera Settings Section
+local CameraSettingsSection = CameraTab:DrawSection({
+    Name = "Camera Settings",
+    Position = 'left'
 })
 
-local FOVSliderCamera = CameraSettingsSection:Slider({
-    Title = "Field of View",
-    Desc = "Настройка угла обзора камеры",
-    Step = 1,
-    Value = {
-        Min = 1,
-        Max = 120,
-        Default = 70,
-    },
+-- FOV Slider
+CameraSettingsSection:AddSlider({
+    Name = "Field of View",
+    Min = 1,
+    Max = 120,
+    Default = 70,
+    Round = 0,
     Callback = function(value)
         workspace.CurrentCamera.FieldOfView = value
     end
 })
 
-local ZoomDistanceSlider = CameraSettingsSection:Slider({
-    Title = "Max Zoom Distance",
-    Desc = "Максимальное расстояние зума камеры",
-    Step = 1,
-    Value = {
-        Min = 1,
-        Max = 1000,
-        Default = 400,
-    },
+-- Max Zoom Distance
+CameraSettingsSection:AddSlider({
+    Name = "Max Zoom Distance",
+    Min = 1,
+    Max = 1000,
+    Default = 400,
+    Round = 0,
     Callback = function(value)
         speaker.CameraMaxZoomDistance = value
     end
 })
 
 -- Fix Camera
-CameraSettingsSection:Button({
-    Title = "Fix Camera",
-    Desc = "Исправить проблемы с камерой",
+CameraSettingsSection:AddButton({
+    Name = "Fix Camera",
     Callback = function()
         StopFreecam()
         viewing = nil
@@ -2302,8 +2764,8 @@ CameraSettingsSection:Button({
             viewChanged:Disconnect()
         end
         workspace.CurrentCamera:remove()
-        task.wait(.1)
-        repeat task.wait() until speaker.Character ~= nil
+        wait(.1)
+        repeat wait() until speaker.Character ~= nil
         workspace.CurrentCamera.CameraSubject = speaker.Character:FindFirstChildWhichIsA('Humanoid')
         workspace.CurrentCamera.CameraType = "Custom"
         speaker.CameraMinZoomDistance = 0.5
@@ -2312,89 +2774,64 @@ CameraSettingsSection:Button({
         if speaker.Character and speaker.Character:FindFirstChild("Head") then
             speaker.Character.Head.Anchored = false
         end
-        playerDropdown:Set("Select Player")
-        WindUI:Notify({
-            Title = 'Camera',
-            Content = 'Камера исправлена',
-            Duration = 3,
-            Icon = 'camera'
-        })
+        playerDropdown:SetValue("Select Player")
+        notify('Camera', 'Camera fixed')
     end
 })
 
 -- Shift Lock
-CameraSettingsSection:Button({
-    Title = "Enable Shift Lock",
-    Desc = "Включить блокировку камеры Shift",
+CameraSettingsSection:AddButton({
+    Name = "Enable Shift Lock",
     Callback = function()
         speaker.DevEnableMouseLock = true
-        WindUI:Notify({
-            Title = 'Shiftlock',
-            Content = 'Shift lock теперь доступен',
-            Duration = 3,
-            Icon = 'lock'
-        })
+        notify('Shiftlock', 'Shift lock is now available')
     end
 })
 
--- WindUI Rewrite - Part 5/5
--- Финальная часть переписывания скрипта из Compkiller в WindUI
 
--- ======== ВКЛАДКА SLAP BATTLES ======== --
-local SlapBattlesTab = Window:Tab({
-    Title = "Slap Battles",
+-- Вкладка Slap Battles
+local SlapBattlesTab = Window:DrawTab({
+    Name = "Slap Battles",
     Icon = "hand",
-    Locked = false
+    EnableScrolling = true
 })
 
-local SlapBattlesSection = SlapBattlesTab:Section({
-    Title = "Эксклюзивные скрипты",
-    Opened = true
+local SlapBattlesSection = SlapBattlesTab:DrawSection({
+    Name = "Эксклюзивные скрипты",
+    Position = "left"
 })
 
-SlapBattlesSection:Button({
-    Title = "Хитбоксы",
-    Desc = "Увеличивает зону поражения",
+SlapBattlesSection:AddButton({
+    Name = "Хитбоксы",
+    Description = "Увеличивает зону поражения",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/Bilmemi/hitbox2/main/op")
     end
 })
 
-SlapBattlesSection:Button({
-    Title = "Авто-автобус",
-    Desc = "Автоматически использует способность автобуса",
+SlapBattlesSection:AddButton({
+    Name = "Авто-автобус",
+    Description = "Автоматически использует способность автобуса",
     Callback = function()
         while task.wait(6) do
             game:GetService("ReplicatedStorage"):WaitForChild("busmoment"):FireServer()
         end
-        WindUI:Notify({
-            Title = "Auto Bus",
-            Content = "Авто-автобус активирован",
-            Duration = 3,
-            Icon = "bus"
-        })
     end
 })
 
-SlapBattlesSection:Button({
-    Title = "Бесконечное Уно",
-    Desc = "Постоянно активирует способность Уно",
+SlapBattlesSection:AddButton({
+    Name = "Бесконечное Уно",
+    Description = "Постоянно активирует способность Уно",
     Callback = function()
         while task.wait(6) do
             game:GetService("ReplicatedStorage"):WaitForChild("ReverseAbility"):FireServer()
         end
-        WindUI:Notify({
-            Title = "Infinite Uno",
-            Content = "Бесконечное Уно активировано",
-            Duration = 3,
-            Icon = "rotate-ccw"
-        })
     end
 })
 
-SlapBattlesSection:Button({
-    Title = "Аура убийства",
-    Desc = "Автоматическая атака ближайших игроков",
+SlapBattlesSection:AddButton({
+    Name = "Аура убийства",
+    Description = "Автоматическая атака ближайших игроков",
     Callback = function()
         local json = game:HttpGet("https://raw.githubusercontent.com/LeoKholYt/lkhub/main/list.json")
         local jsonData = game:GetService("HttpService"):JSONDecode(json)
@@ -2404,514 +2841,472 @@ SlapBattlesSection:Button({
     end
 })
 
--- ======== ВКЛАДКА LUMBER TYCOON 2 ======== --
-local LumberTycoonTab = Window:Tab({
-    Title = "Lumber Tycoon 2",
+-- Вкладка Lumber Tycoon 2
+local LumberTycoonTab = Window:DrawTab({
+    Name = "Lumber Tycoon 2",
     Icon = "tree-pine",
-    Locked = false
+    EnableScrolling = true
 })
 
-local LumberTycoonSection = LumberTycoonTab:Section({
-    Title = "Фарм-скрипты",
-    Opened = true
+local LumberTycoonSection = LumberTycoonTab:DrawSection({
+    Name = "Фарм-скрипты",
+    Position = "left"
 })
 
-LumberTycoonSection:Button({
-    Title = "Kron Hub",
-    Desc = "Лучший скрипт для автоматизации",
+LumberTycoonSection:AddButton({
+    Name = "Kron Hub",
+    Description = "Лучший скрипт для автоматизации",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/DevKron/Kron_Hub/main/version_1.0")
     end
 })
 
-LumberTycoonSection:Button({
-    Title = "LT2 LuaWare",
-    Desc = "Оптимизированный скрипт для мобильных устройств",
+LumberTycoonSection:AddButton({
+    Name = "LT2 LuaWare",
+    Description = "Оптимизированный скрипт для мобильных устройств",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/frencaliber/LuaWareLoader.lw/main/luawareloader.wtf")
     end
 })
 
-LumberTycoonSection:Button({
-    Title = "LT2 Better Script",
-    Desc = "Улучшенная версия для ПК",
+LumberTycoonSection:AddButton({
+    Name = "LT2 Better Script",
+    Description = "Улучшенная версия для ПК",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/Butterisgood/Butter/main/Root2.lua")
     end
 })
 
-LumberTycoonSection:Button({
-    Title = "Удалить защитные стены",
-    Desc = "Убирает защитные барьеры",
+LumberTycoonSection:AddButton({
+    Name = "Удалить защитные стены",
+    Description = "Убирает защитные барьеры",
     Callback = function()
         while task.wait() do
             game:GetService("Workspace").Effects:Destroy()
         end
-        WindUI:Notify({
-            Title = "LT2",
-            Content = "Защитные стены удаляются",
-            Duration = 3,
-            Icon = "shield-off"
-        })
     end
 })
 
--- ======== ВКЛАДКА MURDER MYSTERY 2 ======== --
-local MM2Tab = Window:Tab({
-    Title = "Murder Mystery 2",
+-- Вкладка MM2
+local MM2Tab = Window:DrawTab({
+    Name = "Murder Mystery 2",
     Icon = "sword",
-    Locked = false
+    EnableScrolling = true
 })
 
-local MM2Section = MM2Tab:Section({
-    Title = "Скрипты для MM2",
-    Opened = true
+local MM2Section = MM2Tab:DrawSection({
+    Name = "Скрипты для MM2",
+    Position = "left"
 })
 
-MM2Section:Button({
-    Title = "Лучший скрипт для MM2",
-    Desc = "Различные функции для Murder Mystery 2",
+MM2Section:AddButton({
+    Name = "Лучший скрипт для MM2",
+    Description = "Различные функции для Murder Mystery 2",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/FOGOTY/mm2-piano-reborn/main/scr")
     end
 })
 
--- ======== ВКЛАДКА ОГАЙО ======== --
-local OhioTab = Window:Tab({
-    Title = "Огайо",
+-- Вкладка Огайо
+local OhioTab = Window:DrawTab({
+    Name = "Огайо",
     Icon = "map",
-    Locked = false
+    EnableScrolling = true
 })
 
-local OhioSection = OhioTab:Section({
-    Title = "Функции для Огайо",
-    Opened = true
+local OhioSection = OhioTab:DrawSection({
+    Name = "Функции для Огайо",
+    Position = "left"
 })
 
-OhioSection:Button({
-    Title = "ESP игроков",
-    Desc = "Показывает игроков через стены",
+OhioSection:AddButton({
+    Name = "ESP игроков",
+    Description = "Показывает игроков через стены",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/r97SAaUa")
     end
 })
 
-OhioSection:Button({
-    Title = "Авто-фарм хлама V2",
-    Desc = "Автоматически собирает ресурсы",
+OhioSection:AddButton({
+    Name = "Авто-фарм хлама V2",
+    Description = "Автоматически собирает ресурсы",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/HNwdknXk")
     end
 })
 
-OhioSection:Button({
-    Title = "Автофарм банкоматов",
-    Desc = "Автоматический сбор денег",
+OhioSection:AddButton({
+    Name = "Автофарм банкоматов",
+    Description = "Автоматический сбор денег",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/szznrYvx")
     end
 })
 
-OhioSection:Button({
-    Title = "ТП по CTRL+Клик",
-    Desc = "Телепортация к месту клика",
+OhioSection:AddButton({
+    Name = "ТП по CTRL+Клик",
+    Description = "Телепортация к месту клика",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/icB69Hhf")
     end
 })
 
-OhioSection:Button({
-    Title = "ТП к местам",
-    Desc = "Быстрая телепортация по локациям",
+OhioSection:AddButton({
+    Name = "ТП к местам",
+    Description = "Быстрая телепортация по локациям",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/nrJ7cVcJ")
     end
 })
 
-OhioSection:Button({
-    Title = "Мини хаб",
-    Desc = "Коллекция скриптов для Огайо",
+OhioSection:AddButton({
+    Name = "Мини хаб",
+    Description = "Коллекция скриптов для Огайо",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/fef2FzGc")
     end
 })
 
-OhioSection:Button({
-    Title = "Скрипт для Ohio",
-    Desc = "Универсальный скрипт для Ohio",
+OhioSection:AddButton({
+    Name = "Скрипт для Ohio",
+    Description = "Универсальный скрипт для Ohio",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/JENqZVm5")
     end
 })
 
--- ======== ВКЛАДКА KAT ======== --
-local KatTab = Window:Tab({
-    Title = "Kat",
+-- Вкладка Kat
+local KatTab = Window:DrawTab({
+    Name = "Kat",
     Icon = "contact",
-    Locked = false
+    EnableScrolling = true
 })
 
-local KatSection = KatTab:Section({
-    Title = "Функции для Kat",
-    Opened = true
+local KatSection = KatTab:DrawSection({
+    Name = "Функции для Kat",
+    Position = "left"
 })
 
-local KatWalkSpeedSlider = KatSection:Slider({
-    Title = "Скорость передвижения",
-    Desc = "Настройка скорости персонажа в Kat",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 100,
-        Default = 16,
-    },
-    Callback = function(value)
-        _G.Walk = value
-        _G.WalkSpeedEnabled = true
-        
-        local character = player.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = value
-            end
-        end
+KatSection:AddSlider({
+    Name = "Скорость передвижения",
+    Description = "Настройка скорости персонажа",
+    Min = 0,
+    Max = 25,
+    Default = 16,
+    Callback = function(v) _G.Walk = v end
+})
+
+KatSection:AddSlider({
+    Name = "Прыгучесть",
+    Description = "Настройка высоты прыжка",
+    Min = 0,
+    Max = 200,
+    Default = 50,
+    Callback = function(v)
+        getgenv().JumpPowerValue = v
+        pcall(function()
+            local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.JumpPower = v end
+        end)
     end
 })
 
-local KatJumpPowerSlider = KatSection:Slider({
-    Title = "Прыгучесть",
-    Desc = "Настройка высоты прыжка в Kat",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 200,
-        Default = 50,
-    },
-    Callback = function(value)
-        local character = player.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.JumpPower = value
-            end
-        end
-    end
+KatSection:AddSlider({
+    Name = "Поле зрения",
+    Description = "Настройка угла обзора камеры",
+    Min = 0,
+    Max = 120,
+    Default = 70,
+    Callback = Functions.FOV
 })
 
-local KatFOVSlider = KatSection:Slider({
-    Title = "Поле зрения",
-    Desc = "Настройка угла обзора камеры в Kat",
-    Step = 1,
-    Value = {
-        Min = 0,
-        Max = 120,
-        Default = 70,
-    },
-    Callback = function(value)
-        if workspace.CurrentCamera then
-            workspace.CurrentCamera.FieldOfView = value
-        end
-    end
-})
-
-KatSection:Button({
-    Title = "Удалить стены",
-    Desc = "Убирает препятствия на карте",
+KatSection:AddButton({
+    Name = "Удалить стены",
+    Description = "Убирает препятствия на карте",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/FBKJTUyw")
     end
 })
 
-KatSection:Button({
-    Title = "Kill Aura",
-    Desc = "Автоматическая атака врагов",
+KatSection:AddButton({
+    Name = "Kill Aura",
+    Description = "Автоматическая атака врагов",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/mk1ge1hm")
     end
 })
 
-KatSection:Button({
-    Title = "ESP",
-    Desc = "Видеть сквозь стены",
+KatSection:AddButton({
+    Name = "ESP",
+    Description = "Видеть сквозь стены",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/r97SAaUa")
     end
 })
 
-KatSection:Button({
-    Title = "Падение на месте (R)",
-    Desc = "Падать без перемещения",
+KatSection:AddButton({
+    Name = "Падение на месте (R)",
+    Description = "Падать без перемещения",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/CTUaCKN1")
     end
 })
 
--- ======== ВКЛАДКА JAILBREAK ======== --
-local JailbreakTab = Window:Tab({
-    Title = "Jailbreak",
+-- Вкладка Jailbreak
+local JailbreakTab = Window:DrawTab({
+    Name = "Jailbreak",
     Icon = "shield",
-    Locked = false
+    EnableScrolling = true
 })
 
-local JailbreakSection = JailbreakTab:Section({
-    Title = "Функции для Jailbreak",
-    Opened = true
+local JailbreakSection = JailbreakTab:DrawSection({
+    Name = "Функции для Jailbreak",
+    Position = "left"
 })
 
-JailbreakSection:Button({
-    Title = "Автофарм",
-    Desc = "Автоматический сбор денег",
+JailbreakSection:AddButton({
+    Name = "Автофарм",
+    Description = "Автоматический сбор денег",
     Callback = function()
         Functions.LoadScript("http://scripts.projectauto.xyz/AutoRobV5")
     end
 })
 
-JailbreakSection:Button({
-    Title = "Ускорение",
-    Desc = "Увеличение скорости передвижения",
+JailbreakSection:AddButton({
+    Name = "Ускорение",
+    Description = "Увеличение скорости передвижения",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/P8VjFPsQ")
     end
 })
 
-JailbreakSection:Button({
-    Title = "ESP",
-    Desc = "Видеть сквозь стены",
+JailbreakSection:AddButton({
+    Name = "ESP",
+    Description = "Видеть сквозь стены",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/r97SAaUa")
     end
 })
 
-JailbreakSection:Button({
-    Title = "ТП по CTRL+Клик",
-    Desc = "Телепортация к выбранной точке",
+JailbreakSection:AddButton({
+    Name = "ТП по CTRL+Клик",
+    Description = "Телепортация к выбранной точке",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/icB69Hhf")
     end
 })
 
--- ======== ВКЛАДКА A DUSTY TRIP ======== --
-local DustyTripTab = Window:Tab({
-    Title = "A Dusty Trip",
+-- Вкладка A Dusty Trip
+local DustyTripTab = Window:DrawTab({
+    Name = "A Dusty Trip",
     Icon = "car",
-    Locked = false
+    EnableScrolling = true
 })
 
-local DustyTripSection = DustyTripTab:Section({
-    Title = "Функции для A Dusty Trip",
-    Opened = true
+local DustyTripSection = DustyTripTab:DrawSection({
+    Name = "Функции для A Dusty Trip",
+    Position = "left"
 })
 
-DustyTripSection:Button({
-    Title = "Скорость 5000",
-    Desc = "Экстремальная скорость передвижения",
+DustyTripSection:AddButton({
+    Name = "Скорость 5000",
+    Description = "Экстремальная скорость передвижения",
     Callback = function()
         _G.Walk = 5000
-        _G.WalkSpeedEnabled = true
-        WindUI:Notify({
-            Title = "Speed",
-            Content = "Скорость установлена на 5000",
-            Duration = 3,
-            Icon = "zap"
-        })
+        _G.WalkSpeed = true
     end
 })
 
-DustyTripSection:Button({
-    Title = "Скорость 1000",
-    Desc = "Очень высокая скорость",
+DustyTripSection:AddButton({
+    Name = "Скорость 1000",
+    Description = "Очень высокая скорость",
     Callback = function()
         _G.Walk = 1000
-        _G.WalkSpeedEnabled = true
-        WindUI:Notify({
-            Title = "Speed",
-            Content = "Скорость установлена на 1000",
-            Duration = 3,
-            Icon = "zap"
-        })
+        _G.WalkSpeed = true
     end
 })
 
-DustyTripSection:Button({
-    Title = "Скорость 50",
-    Desc = "Умеренное ускорение",
+DustyTripSection:AddButton({
+    Name = "Скорость 50",
+    Description = "Умеренное ускорение",
     Callback = function()
         _G.Walk = 50
-        _G.WalkSpeedEnabled = true
-        WindUI:Notify({
-            Title = "Speed",
-            Content = "Скорость установлена на 50",
-            Duration = 3,
-            Icon = "zap"
-        })
+        _G.WalkSpeed = true
     end
 })
 
-DustyTripSection:Button({
-    Title = "Скорость 25",
-    Desc = "Небольшое ускорение",
+DustyTripSection:AddButton({
+    Name = "Скорость 25",
+    Description = "Небольшое ускорение",
     Callback = function()
         _G.Walk = 25
-        _G.WalkSpeedEnabled = true
-        WindUI:Notify({
-            Title = "Speed",
-            Content = "Скорость установлена на 25",
-            Duration = 3,
-            Icon = "zap"
-        })
+        _G.WalkSpeed = true
     end
 })
 
-DustyTripSection:Button({
-    Title = "Полёт на машине (V)",
-    Desc = "Летать на транспорте",
+DustyTripSection:AddButton({
+    Name = "Полёт на машине (V)",
+    Description = "Летать на транспорте",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/9bNj1EcR")
     end
 })
 
--- ======== ВКЛАДКА BUILD A BOAT ======== --
-local BuildBoatTab = Window:Tab({
-    Title = "Build A Boat",
+-- Вкладка Build A Boat
+local BuildBoatTab = Window:DrawTab({
+    Name = "Build A Boat",
     Icon = "sailboat",
-    Locked = false
+    EnableScrolling = true
 })
 
-local BuildBoatSection = BuildBoatTab:Section({
-    Title = "Функции для Build A Boat",
-    Opened = true
+local BuildBoatSection = BuildBoatTab:DrawSection({
+    Name = "Функции для Build A Boat",
+    Position = "left"
 })
 
-BuildBoatSection:Button({
-    Title = "Автофарм",
-    Desc = "Автоматический сбор ресурсов",
+BuildBoatSection:AddButton({
+    Name = "Автофарм",
+    Description = "Автоматический сбор ресурсов",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/24e7Skmv")
     end
 })
 
-BuildBoatSection:Button({
-    Title = "Хаб-скрипт",
-    Desc = "Пароль: N-314159",
+BuildBoatSection:AddButton({
+    Name = "Хаб-скрипт",
+    Description = "Пароль: N-314159",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/novakoolhub/Scripts/main/Scripts/NovBoatR1")
     end
 })
 
-BuildBoatSection:Button({
-    Title = "Полёт (F)",
-    Desc = "Активировать возможность летать",
+BuildBoatSection:AddButton({
+    Name = "Полёт (F)",
+    Description = "Активировать возможность летать",
     Callback = function()
         loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\40\39\104\116\116\112\115\58\47\47\103\105\115\116\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\109\101\111\122\111\110\101\89\84\47\98\102\48\51\55\100\102\102\57\102\48\97\55\48\48\49\55\51\48\52\100\100\100\54\55\102\100\99\100\51\55\48\47\114\97\119\47\101\49\52\101\55\52\102\52\50\53\98\48\54\48\100\102\53\50\51\51\52\51\99\102\51\48\98\55\56\55\48\55\52\101\98\51\99\53\100\50\47\97\114\99\101\117\115\37\50\53\50\48\120\37\50\53\50\48\102\108\121\37\50\53\50\48\50\37\50\53\50\48\111\98\102\108\117\99\97\116\111\114\39\41\44\116\114\117\101\41\41\40\41\10\10")()
     end
 })
 
--- ======== ВКЛАДКА ВЫРАСТИ САД ======== --
-local GrowGardenTab = Window:Tab({
-    Title = "Вырасти сад",
+-- Вкладка Вырасти сад
+local GrowGardenTab = Window:DrawTab({
+    Name = "Вырасти сад",
     Icon = "flower",
-    Locked = false
+    EnableScrolling = true
 })
 
-local GrowGardenSection = GrowGardenTab:Section({
-    Title = "Функции для Вырасти сад",
-    Opened = true
+local GrowGardenSection = GrowGardenTab:DrawSection({
+    Name = "Функции для Вырасти сад",
+    Position = "left"
 })
 
-GrowGardenSection:Button({
-    Title = "Автофарм",
-    Desc = "Автоматический сбор растений",
+GrowGardenSection:AddButton({
+    Name = "Автофарм",
+    Description = "Автоматический сбор растений",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/UZU3cmQZ")
     end
 })
 
-GrowGardenSection:Button({
-    Title = "Хаб скриптов",
-    Desc = "Коллекция функций для игры",
+GrowGardenSection:AddButton({
+    Name = "Хаб скриптов",
+    Description = "Коллекция функций для игры",
     Callback = function()
         Functions.LoadScript("https://raw.githubusercontent.com/ameicaa1/Grow-a-Garden/main/Grow_A_Garden.lua")
     end
 })
 
-GrowGardenSection:Button({
-    Title = "Ускорение",
-    Desc = "Увеличение скорости передвижения",
+GrowGardenSection:AddButton({
+    Name = "Ускорение",
+    Description = "Увеличение скорости передвижения",
     Callback = function()
         Functions.LoadScript("https://pastebin.com/raw/Zzqq3U0u")
     end
 })
 
--- ======== ВКЛАДКА DIG TO EARTH'S CORE ======== --
-local DigToCoreTab = Window:Tab({
-    Title = "Dig to Earth's CORE",
+-- Вкладка Dig to Earth's CORE
+local DigToCoreTab = Window:DrawTab({
+    Name = "Dig to Earth's CORE",
     Icon = "shovel",
-    Locked = false
+    EnableScrolling = true
 })
 
-local DigToCoreSection = DigToCoreTab:Section({
-    Title = "Функции для Dig to Earth's CORE",
-    Opened = true
+local DigToCoreSection = DigToCoreTab:DrawSection({
+    Name = "Функции для Dig to Earth's CORE",
+    Position = "left"
 })
 
-DigToCoreSection:Button({
-    Title = "Выдать деньги",
-    Desc = "Добавляет игровую валюту",
+DigToCoreSection:AddButton({
+    Name = "Выдать деньги",
+    Description = "Добавляет игровую валюту",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.AddRewardEvent:FireServer("Cash", 241561515)
-        WindUI:Notify({
-            Title = "Dig to Core",
-            Content = "Деньги выданы",
-            Duration = 3,
-            Icon = "dollar-sign"
-        })
     end
 })
 
-DigToCoreSection:Button({
-    Title = "Выдать спины",
-    Desc = "Добавляет спины для рулетки",
+DigToCoreSection:AddButton({
+    Name = "Выдать спины",
+    Description = "Добавляет спины для рулетки",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.AddRewardEvent:FireServer("Spins", 51)
-        WindUI:Notify({
-            Title = "Dig to Core",
-            Content = "Спины выданы",
-            Duration = 3,
-            Icon = "refresh-cw"
-        })
     end
 })
 
-DigToCoreSection:Button({
-    Title = "Выдать петов",
-    Desc = "Добавляет редких питомцев",
+DigToCoreSection:AddButton({
+    Name = "Выдать петов",
+    Description = "Добавляет редких питомцев",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.PetCageEvent:FireServer("Lava Dominus")
-        WindUI:Notify({
-            Title = "Dig to Core",
-            Content = "Петы выданы",
-            Duration = 3,
-            Icon = "heart"
-        })
     end
 })
 
--- ======== ВКЛАДКА HUMAN KEBABS ======== --
-local HumanKebabsTab = Window:Tab({
-    Title = "Human Kebabs",
+DigToCoreSection:AddButton({
+    Name = "Выдать 25к",
+    Description = "Добавляет 25000 денег",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(2)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать 375 гемов",
+    Description = "Добавляет 375 гемов",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(5)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "Выдать спины",
+    Description = "Добавляет спины",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(3)
+    end
+})
+
+DigToCoreSection:AddButton({
+    Name = "X10 МОНЕТ",
+    Description = "Увеличивает доход в 10 раз",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.SpinPrizeEvent:FireServer(8)
+    end
+})
+
+-- Вкладка Human Kebabs
+local HumanKebabsTab = Window:DrawTab({
+    Name = "Human Kebabs",
     Icon = "meh",
-    Locked = false
+    EnableScrolling = true
 })
 
-local HumanKebabsSection = HumanKebabsTab:Section({
-    Title = "Функции для Human Kebabs",
-    Opened = true
+local HumanKebabsSection = HumanKebabsTab:DrawSection({
+    Name = "Функции для Human Kebabs",
+    Position = "left"
 })
 
-HumanKebabsSection:Button({
-    Title = "Kill All",
-    Desc = "Автоматически атакует всех игроков",
+HumanKebabsSection:AddButton({
+    Name = "Kill All",
+    Description = "Автоматически атакует всех игроков",
     Callback = function()
         local player = game:GetService("Players").LocalPlayer
         local running = true
@@ -2931,41 +3326,69 @@ HumanKebabsSection:Button({
                 end
             end
         end)
-        WindUI:Notify({
-            Title = "Human Kebabs",
-            Content = "Kill All активирован",
-            Duration = 3,
-            Icon = "target"
-        })
     end
 })
 
-HumanKebabsSection:Button({
-    Title = "Остановить Kill All",
-    Desc = "Прекращает автоматическую атаку",
+HumanKebabsSection:AddButton({
+    Name = "Остановить Kill All",
+    Description = "Прекращает автоматическую атаку",
     Callback = function()
         if _G.StopAutoSkewer then
             _G.StopAutoSkewer()
-            WindUI:Notify({
-                Title = "Human Kebabs",
-                Content = "Kill All остановлен",
-                Duration = 3,
-                Icon = "square"
-            })
         end
     end
 })
 
--- ======== ВКЛАДКА AIMBOT ======== --
-local AimbotTab = Window:Tab({
-    Title = "Aimbot",
-    Icon = "crosshair",
-    Locked = false
+-- Вкладка Baseplate
+local BaseplateTab = Window:DrawTab({
+    Name = "Baseplate",
+    Icon = "meh",
+    EnableScrolling = true
 })
 
-local AimbotSection = AimbotTab:Section({
-    Title = "Настройки Aimbot",
-    Opened = true
+local BaseplateSection = BaseplateTab:DrawSection({
+    Name = "Функции для Baseplate",
+    Position = "left"
+})
+
+BaseplateSection:AddButton({
+    Name = "Скрипт для Baseplate",
+    Description = "Различные функции для Baseplate",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/aAYx0WZG")
+    end
+})
+
+-- Вкладка ESP
+local EspTab = Window:DrawTab({
+    Name = "ESP",
+    Icon = "meh",
+    EnableScrolling = true
+})
+
+local EspSection = EspTab:DrawSection({
+    Name = "Функции ESP",
+    Position = "left"
+})
+
+EspSection:AddButton({
+    Name = "ESP игроков",
+    Description = "Показывает игроков через стены",
+    Callback = function()
+        Functions.LoadScript("https://pastebin.com/raw/yKvD4NzC")
+    end
+})
+
+-- Вкладка Aimbot
+local AimbotTab = Window:DrawTab({
+    Name = "Aimbot",
+    Icon = "crosshair",
+    EnableScrolling = true
+})
+
+local AimbotSection = AimbotTab:DrawSection({
+    Name = "Настройки Aimbot",
+    Position = "left"
 })
 
 local aimbotEnabled = false
@@ -2976,28 +3399,25 @@ local prediction = 0.1
 local wallCheck = true
 local teamCheck = false
 
-AimbotSection:Toggle({
-    Title = "Включить Aimbot",
-    Desc = "Активировать автоматическое прицеливание",
-    Value = false,
+AimbotSection:AddToggle({
+    Name = "Включить Aimbot",
+    Default = false,
     Callback = function(v)
         aimbotEnabled = v
     end
 })
 
-AimbotSection:Dropdown({
-    Title = "Часть тела",
-    Desc = "Выберите часть тела для прицеливания",
+AimbotSection:AddDropdown({
+    Name = "Часть тела",
     Values = {"Head", "HumanoidRootPart", "Torso"},
-    Value = "Head",
+    Default = "Head",
     Callback = function(v)
         aimParts = {v}
     end
 })
 
-AimbotSection:Slider({
-    Title = "Поле зрения",
-    Desc = "Угол обзора для обнаружения целей",
+AimbotSection:AddSlider({
+    Name = "Поле зрения",
     Min = 10,
     Max = 500,
     Default = 100,
@@ -3006,9 +3426,8 @@ AimbotSection:Slider({
     end
 })
 
-AimbotSection:Slider({
-    Title = "Сглаживание",
-    Desc = "Плавность движения прицела",
+AimbotSection:AddSlider({
+    Name = "Сглаживание",
     Min = 1,
     Max = 100,
     Default = 5,
@@ -3017,113 +3436,98 @@ AimbotSection:Slider({
     end
 })
 
-AimbotSection:Toggle({
-    Title = "Проверка стен",
-    Desc = "Не целиться сквозь стены",
-    Value = true,
+AimbotSection:AddSlider({
+    Name = "Предсказание",
+    Min = 0,
+    Max = 20,
+    Default = 10,
+    Callback = function(v)
+        prediction = v / 100
+    end
+})
+
+AimbotSection:AddToggle({
+    Name = "Проверка стен",
+    Default = true,
     Callback = function(v)
         wallCheck = v
     end
 })
 
-AimbotSection:Toggle({
-    Title = "Проверка команды",
-    Desc = "Не целиться в своих",
-    Value = false,
+AimbotSection:AddToggle({
+    Name = "Проверка команды",
+    Default = false,
     Callback = function(v)
         teamCheck = v
     end
 })
 
--- ======== ВКЛАДКА НАСТРОЙКИ ======== --
-local SettingsTab = Window:Tab({
-    Title = "Настройки",
+-- Вкладка Настройки
+local SettingsTab = Window:DrawTab({
+    Name = "Настройки",
     Icon = "settings",
-    Locked = false
+    Type = "Single"
 })
 
-local UISettings = SettingsTab:Section({
-    Title = "Настройки интерфейса",
-    Opened = true
+local UISettings = SettingsTab:DrawSection({
+    Name = "Настройки интерфейса",
+    Position = "left"
 })
 
-UISettings:Toggle({
-    Title = "Всегда показывать UI",
-    Desc = "Отключает автоматическое скрытие интерфейса",
-    Value = false,
+UISettings:AddToggle({
+    Name = "Всегда показывать UI",
+    Description = "Отключает автоматическое скрытие интерфейса",
+    Default = false,
     Callback = function(v)
-        -- WindUI автоматически управляет этим
+        Window.AlwayShowTab = v
     end
 })
 
-UISettings:Colorpicker({
-    Title = "Цвет интерфейса",
-    Desc = "Изменяет основной цвет элементов",
-    Default = Color3.fromRGB(82, 82, 91),
+UISettings:AddColorPicker({
+    Name = "Цвет интерфейса",
+    Description = "Изменяет основной цвет элементов",
+    Default = Compkiller.Colors.Highlight,
     Callback = function(v)
-        -- Можно добавить изменение темы если нужно
+        Compkiller.Colors.Highlight = v
+        Compkiller:RefreshCurrentColor()
     end
 })
 
-UISettings:Button({
-    Title = "Сохранить настройки",
-    Desc = "Сохранить текущие настройки",
+UISettings:AddButton({
+    Name = "Сохранить настройки",
     Callback = function()
-        WindUI:Notify({
-            Title = "Настройки",
+        ConfigManager:Save()
+        Notifier.new({
+            Title = "Успех",
             Content = "Настройки сохранены!",
-            Duration = 3,
-            Icon = "save"
+            Duration = 3
         })
     end
 })
 
-UISettings:Button({
-    Title = "Загрузить настройки",
-    Desc = "Загрузить сохраненные настройки",
+UISettings:AddButton({
+    Name = "Загрузить настройки",
     Callback = function()
-        WindUI:Notify({
-            Title = "Настройки",
+        ConfigManager:Load()
+        Notifier.new({
+            Title = "Успех",
             Content = "Настройки загружены!",
-            Duration = 3,
-            Icon = "download"
+            Duration = 3
         })
     end
 })
 
-UISettings:Button({
-    Title = "Сбросить настройки",
-    Desc = "Вернуть настройки по умолчанию",
-    Callback = function()
-        WindUI:SetTheme("1Qlua Theme")
-        WindUI:Notify({
-            Title = "Настройки",
-            Content = "Настройки сброшены!",
-            Duration = 3,
-            Icon = "refresh-cw"
-        })
-    end
+-- Конфигурация
+local ConfigUI = Window:DrawConfig({
+    Name = "Конфигурация",
+    Icon = "folder",
+    Config = ConfigManager
 })
 
--- ======== ФИНАЛЬНОЕ УВЕДОМЛЕНИЕ ======== --
-WindUI:Notify({
-    Title = "1Qlua - WindUI",
-    Content = "Универсальный хаб успешно загружен!\nВсе функции доступны для использования.",
-    Duration = 8,
-    Icon = "check-circle"
-})
+ConfigUI:Init()
 
--- ======== ВОДЯНОЙ ЗНАК ======== --
-Window:Tag({
-    Title = "v19",
-    Icon = "github",
-    Color = Color3.fromHex("#30ff6a"),
-    Radius = 8,
-})
-
-print("🎉 1Qlua WindUI версия успешно загружена!")
-print("📁 Папка: 1QluaHub")
-print("🎨 Тема: 1Qlua Theme")
-print("🔧 Все вкладки и функции готовы к использованию!")
-
--- Переписывание завершено!
+-- Автозагрузка
+task.spawn(function()
+    task.wait(1)
+    ConfigManager:Load()
+end)
