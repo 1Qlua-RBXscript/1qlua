@@ -1664,7 +1664,7 @@ end)
 		Part:Destroy();
 		DepthOfField:Destroy(); 
 		if connection then
-        connection:Disconnect()
+        connection:Disconnect() 
         connection = nil
     end
 	end;
@@ -2045,6 +2045,7 @@ function Compkiller:_AddLinkValue(Name , Default , GlobalBlock , LinkValues , re
 				})
 			end;
 		end)
+
 
 		return ColorPicker , ColorFrame;
 	elseif Name == "Keybind" then
@@ -4064,62 +4065,7 @@ function Compkiller:_LoadOption(Value , TabSignal)
 
 		return Args;
 	end; 
-  
-	function Args:AddColorPicker(Config: MiniColorPicker)
-		Config = Compkiller.__CONFIG(Config,{
-			Default = Color3.fromRGB(255,255,255),
-			Transparency = 0,
-			Callback = function() end
-		});
-
-		local ColorPicker:Frame , ColorFrame: Frame = Value:AddLink('ColorPicker' , Config.Default);
-
-		local Button = Compkiller:_Input(ColorPicker);
-
-		local ColorPicker = Compkiller:_AddColorPickerPanel(Button,function(color,opc)
-			Config.Default = color;
-			Config.Transparency = opc;
-
-			ColorFrame.BackgroundColor3 = color;
-			ColorFrame.BackgroundTransparency = opc;
-
-			Config.Callback(Config.Default , Config.Transparency);
-		end);
-
-		ColorPicker:SetColor(Config.Default,Config.Transparency);
-		ColorPicker:Update()
-
-		local Args = {};
-
-		Args.Flag = Config.Flag;
-
-		function Args:SetValue(value,opc)
-			Config.Default = value;
-			Config.Transparency = opc;
-
-			ColorPicker:SetColor(value,opc)
-
-			ColorPicker:Update()
-
-			Config.Callback(value,opc);
-		end;
-  
-		function Args:GetValue() 
-			return {
-				ColorPicker = {
-					Color = Config.Default,
-					Transparency = Config.Transparency
-				}
-			};
-		end;
-
-		if Config.Flag then
-			Compkiller.Flags[Config.Flag] = Args;
-		end;
-
-		return Args;
-	end;
-
+ 
 	function Args:AddToggle(Config : MiniToggle)
 		Config = Compkiller.__CONFIG(Config,{
 			Flag = nil,
@@ -4654,7 +4600,7 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 	local Zindex = Parent.ZIndex + 1;
 	local Tween = TweenInfo.new(0.25,Enum.EasingStyle.Quint);
 
-	local Args = {};
+	local Args = {}; 
 
 	function Args:AddToggle(Config : Toggle)
 		Config = Compkiller.__CONFIG(Config,{
