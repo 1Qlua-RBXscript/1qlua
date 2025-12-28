@@ -4782,82 +4782,6 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 	end;
 
 	function Args:AddColorPicker(Config: ColorPicker)
-		Config = Compkiller.__CONFIG(Config,{
-			Name = "ColorPicker",
-			Default = Color3.fromRGB(255,255,255),
-			Flag = nil,
-			Transparency = 0,
-			Callback = function() end;
-		});
-
-		local Block = Compkiller:_CreateBlock(Signal);
-
-		Block:SetParent(Parent);
-
-		Block:SetText(Config.Name);
-
-		Block:SetLine(EnabledLine);
-
-		Block:SetVisible(Signal:GetValue());
-
-		local ColorPicker:Frame , ColorFrame: Frame = Block:AddLink('ColorPicker' , Config.Default);
-
-		local Button = Compkiller:_Input(ColorPicker);
-
-		local ColorPicker = Compkiller:_AddColorPickerPanel(Button,function(color,opc)
-			Config.Default = color;
-			Config.Transparency = opc;
-
-			ColorFrame.BackgroundColor3 = color;
-			ColorFrame.BackgroundTransparency = opc;
-
-			Config.Callback(Config.Default , Config.Transparency);
-		end);
-
-		ColorPicker:SetColor(Config.Default,Config.Transparency);
-		ColorPicker:Update()
-
-		local Args = {};
-
-		Args.Flag = Config.Flag;
-
-		function Args:SetValue(value,opc)
-			Config.Default = value;
-			Config.Transparency = opc;
-   
-			ColorPicker:SetColor(value,opc);
-			ColorPicker:Update();
-
-			Config.Callback(value,opc);
-		end;
-
-		function Args:SetText(str : string)
-			Block:SetText(str or Config.Name);
-		end;
-
-		function Args:GetText()
-			return Block:GetText();
-		end;
-
-		Args.Signal = Signal:Connect(function(bool)
-			Block:SetVisible(bool);
-		end);
-
-		Args.Link = Compkiller:_LoadOption(Block);
-
-		function Args:GetValue()
-			return {
-				ColorPicker = {
-					Color = Config.Default,
-					Transparency = Config.Transparency
-				}
-			};
-		end;
-
-		if Config.Flag then
-			Compkiller.Flags[Config.Flag] = Args;
-		end;
-
 		return Args;
 	end;
 
@@ -6939,7 +6863,7 @@ function Compkiller.new(Config : Window)
 
 		local Tween = TweenInfo.new(0.35,Enum.EasingStyle.Quint);
 
-		TabHover:Connect(function(bool)
+		TabHover:Connect(function(bool) 
 			if bool then
 				Compkiller:_Animation(CategoryText,Tween,{
 					TextTransparency = 0.500
@@ -6951,7 +6875,7 @@ function Compkiller.new(Config : Window)
 			else
 				Compkiller:_Animation(CategoryText,Tween,{
 					TextTransparency = 1
-				});
+				}); 
 
 				Compkiller:_Animation(Frame,Tween,{
 					BackgroundTransparency = 1
@@ -7897,7 +7821,7 @@ function Compkiller.new(Config : Window)
 
 				--
 
-				Compkiller:_Animation(ConfigList,Tween,{
+				Compkiller:_Animation(ConfigList,Tween,{ 
 					BackgroundTransparency = 0,
 				});
 
@@ -10072,7 +9996,7 @@ function Compkiller:ConfigManager(ConfigManager: ConfigManager) : ConfigFunction
 
 		local Flags = Compkiller:GetConfig("KV");
 
-		for i,v in next , decoded do
+		for i,v in next , decoded do 
 			if v and v.Flag then
 
 				local Value = Flags[v.Flag];
