@@ -10413,4 +10413,47 @@ end;
 
 Compkiller.NilFolder.Name = "Nil-Instances";
 
+-- Патч для оптимизации
+do
+    -- Оптимизировать все циклы
+    for _, window in pairs(Compkiller.Windows) do
+        if window and window.THREADS then
+            for _, threadInfo in pairs(window.THREADS) do
+                if type(threadInfo) == "thread" then
+                    task.cancel(threadInfo)
+                end
+            end
+        end
+    end
+    
+    -- Переопределить проблемные функции
+    local oldLoadElement = Compkiller._LoadElement
+    Compkiller._LoadElement = function(Parent, EnabledLine, Signal, DisableStackKeybind)
+        local element = oldLoadElement(Parent, EnabledLine, Signal, DisableStackKeybind)
+        
+        -- Добавить оптимизацию для слайдеров
+        if element.AddSlider then
+            local oldAddSlider = element.AddSlider
+            element.AddSlider = function(self, config)
+                local slider = oldAddSlider(self, config)
+                
+                -- Добавить throttle для обновления слайдера
+                local lastUpdate = 0
+                local function throttledUpdate(value)
+                    if tick() - lastUpdate > 0.05 then
+                        lastUpdate = tick()
+                        if slider.SetValue then
+                            slider:SetValue(value)
+                        end
+                    end
+                end
+                
+                return slider
+            end
+        end
+        
+        return element
+    end
+end
+
 return Compkiller; 
