@@ -15,15 +15,11 @@
 
 --- Export Types --- 
 
-
-
 export type cloneref = (target: Instance) -> Instance;   
-
-
  
 export type Window = {
 	Name: string, 
-	Keybind: string | Enum.KeyCode,  
+	Keybind: string | Enum.KeyCode,
 	Logo: string,
 	Scale: UDim2,
 	TextSize: number
@@ -346,9 +342,7 @@ local CoreGui: PlayerGui = (gethui and gethui()) or (get_hidden_gui and get_hidd
 local Mouse: Mouse = LocalPlayer:GetMouse();
 local CurrentCamera: Camera? = cloneref(workspace.CurrentCamera);
 
-
-
-print("v3")
+print("v2")
 
 local Compkiller = {
 	Version = '2.6',
@@ -366,9 +360,6 @@ local Compkiller = {
 	ArcylicParent = CurrentCamera,
 	ProtectGui = protect_gui or protectgui or (syn and syn.protect_gui) or function(s) return s; end,
 };
-
-Compkiller._ActiveAnimations = {}
-Compkiller._LastMouseMove = 0
 
 Compkiller.Colors = {
 	Highlight = Color3.fromRGB(17, 238, 253),
@@ -395,7 +386,7 @@ Compkiller.Elements = {
 	BlockColor = {},
 	StrokeColor = {},
 	SwitchColor = {},
-	DropColor = {},  
+	DropColor = {},
 	BlockBackground = {},
 	LineColor = {},
 	HighStrokeColor = {},
@@ -1231,7 +1222,7 @@ Compkiller.Lucide = {
 	["lucide-zoom-out"] = "rbxassetid://10747384679",
 };
 
-  
+
 Compkiller.FontAwesome = {
 	a = "rbxassetid://74244459944328",
 	['accessible-icon'] = "rbxassetid://135242143909610",
@@ -1451,8 +1442,9 @@ end
 
 -- Оптимизированная версия анимации
 function Compkiller:_Animation(Self: Instance, Info: TweenInfo, Property: {[K]: V})
-    -- Добавьте эту проверку
     local animationId = tostring(Self) .. "_" .. tostring(next(Property))
+    
+    -- Отменяем предыдущую анимацию для этого объекта и свойства
     if Compkiller._ActiveAnimations[animationId] then
         Compkiller._ActiveAnimations[animationId]:Cancel()
     end
@@ -1461,8 +1453,12 @@ function Compkiller:_Animation(Self: Instance, Info: TweenInfo, Property: {[K]: 
     Compkiller._ActiveAnimations[animationId] = Tween
     Tween:Play()
     
-    -- Очистка после завершения
-    Tween.Completed:Once(function()
+    -- Очищаем ссылку после завершения
+    local connection
+    connection = Tween.Completed:Connect(function()
+        if connection then
+            connection:Disconnect()
+        end
         Compkiller._ActiveAnimations[animationId] = nil
     end)
     
@@ -1553,7 +1549,7 @@ function Compkiller:_IsMouseOverFrame(Frame : Frame) : boolean
 
 	if Mouse.X >= AbsPos.X and Mouse.X <= AbsPos.X + AbsSize.X and Mouse.Y >= AbsPos.Y and Mouse.Y <= AbsPos.Y + AbsSize.Y then
 		return true;
-	end;  
+	end;
 end;
 
 function Compkiller:_Rounding(num: number, numDecimalPlaces: number) : number
@@ -1631,8 +1627,8 @@ function Compkiller:_AddDragBlacklist(Frame: Frame)
 		if not Compkiller:_IsMouseOverFrame(Frame) then
 			SET_BLACKLIST(false);
 		end
-	end);  
-end;  
+	end);
+end;
 
 function Compkiller:_GetWindowFromElement(Element)
 	if Compkiller.WindowsNil[Element] then 
@@ -3281,7 +3277,7 @@ function Compkiller:_DrawKeybinds(Window: ScreenGui)
 	MovingFrame.AnchorPoint = Vector2.new(1, 0.5)
 	MovingFrame.BackgroundTransparency = 1.000
 	MovingFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	MovingFrame.BorderSizePixel = 0 
+	MovingFrame.BorderSizePixel = 0
 	MovingFrame.Position = UDim2.new(1, 0, 0.5, 0)
 	MovingFrame.Size = UDim2.new(1, 30, 1, 0)
 
@@ -3592,7 +3588,7 @@ function Compkiller:_KeybindHandler(Parent: Frame , ObjectType: string , Element
 
 	KeybindHandler:GetPropertyChangedSignal('Size'):Connect(refreshPF);
 
-	task.delay(0.1,refreshPF); 
+	task.delay(0.1,refreshPF);
 
 	local ToggleUI = function(bool)
 		if bool then
@@ -3780,19 +3776,12 @@ function Compkiller:_KeybindHandler(Parent: Frame , ObjectType: string , Element
 	end);
 
 	UserInputService.InputBegan:Connect(function(Input)
-
-	UserInputService.InputChanged:Connect(function(Input)
-    -- Добавьте throttle
-    if tick() - Compkiller._LastMouseMove < 0.02 then return end
-    Compkiller._LastMouseMove = tick()
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseButton2 or Input.UserInputType == Enum.UserInputType.Touch then
 			if not Compkiller:_IsMouseOverFrame(Parent) and not Compkiller:_IsMouseOverFrame(KeybindHandler) then
 				KB_Signal:Fire(false);
 			end;
 		end;
-		end)
 	end);
-	
 
 	UserInputService.InputBegan:Connect(function(Input,Typing)
 		if Input.KeyCode.Name == APIRef.Keybind or Input.KeyCode == APIRef.Keybind or (Input.UserInputType == Enum.UserInputType.MouseButton1 and APIRef.Keybind == "MouseLeft") or (Input.UserInputType == Enum.UserInputType.MouseButton2 and APIRef.Keybind == "MouseRight") then
@@ -4038,7 +4027,7 @@ function Compkiller:_LoadOption(Value , TabSignal)
 		return Args;
 	end;
 
-	function Args:AddOption() 
+	function Args:AddOption()
 		local Element: ImageButton = Value:AddLink("Option");
 		local BaseZ_Index = math.random(1,15) * 100;
 
@@ -4990,7 +4979,7 @@ function Compkiller:_LoadElement(Parent: Frame , EnabledLine: boolean , Signal ,
 		UICorner_2.CornerRadius = UDim.new(0, 6)
 		UICorner_2.Parent = SliderInput
 
-		Frame.Parent = SliderInput   
+		Frame.Parent = SliderInput
 		Frame.AnchorPoint = Vector2.new(1, 0.5)
 		Frame.BackgroundColor3 = Compkiller.Colors.SwitchColor
 		Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
