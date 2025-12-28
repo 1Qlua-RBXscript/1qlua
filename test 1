@@ -1,0 +1,245 @@
+
+
+local LibraryUrl = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/labar"
+
+local Success, Library = pcall(function()
+    return loadstring(game:HttpGet(LibraryUrl))()
+end)
+
+if not Success or not Library then 
+    return warn("Error loading UI library!") 
+end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+-- Window
+Library:Watermark("| >ᴗ< | ♡1Qlua♡ (Хаб) | >ᴗ< |  v12 | >ᴗ< ")
+local Window = Library:Window("| 1Qlua ♡ Хаб |")
+
+-- функций
+
+-- NoClip переменные
+local NoClipEnabled = false
+local NoClipConnection = nil
+
+-- Fullbright переменные
+local FullbrightEnabled = false
+local OriginalLighting = nil
+
+-- Простая функция NoClip
+local function setupNoClip()
+    if NoClipConnection then
+        NoClipConnection:Disconnect()
+        NoClipConnection = nil
+    end
+    
+    NoClipConnection = RunService.Stepped:Connect(function()
+        if NoClipEnabled and LocalPlayer.Character then
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+-- Простая функция Fullbright
+local function setFullbright(enabled)
+    local Lighting = game:GetService("Lighting")
+    
+    if enabled then
+        -- Сохраняем оригинальные настройки
+        OriginalLighting = {
+            Ambient = Lighting.Ambient,
+            Brightness = Lighting.Brightness,
+            GlobalShadows = Lighting.GlobalShadows,
+            OutdoorAmbient = Lighting.OutdoorAmbient
+        }
+        
+        -- Устанавливаем яркое освещение
+        Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+    else
+        -- Восстанавливаем оригинальные настройки
+        if OriginalLighting then
+            Lighting.Ambient = OriginalLighting.Ambient
+            Lighting.Brightness = OriginalLighting.Brightness
+            Lighting.GlobalShadows = OriginalLighting.GlobalShadows
+            Lighting.OutdoorAmbient = OriginalLighting.OutdoorAmbient
+        end
+    end
+end
+
+-- Значения по умолчанию
+local walkSpeedValue = 16
+local jumpHeightValue = 7.2  -- 50 power примерно = 7.2 height
+local fovValue = 70
+
+-- Функция для обновления скорости
+local function updateSpeed(value)
+    walkSpeedValue = value
+    local character = game.Players.LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") then
+        task.wait(0.05)
+        character.Humanoid.WalkSpeed = walkSpeedValue
+    end
+end
+
+-- Функция для обновления прыжка (используем JumpHeight)
+local function updateJump(value)
+    -- Конвертируем power в height (примерная формула)
+    jumpHeightValue = value / 7
+    if jumpHeightValue < 0.5 then jumpHeightValue = 0.5 end
+    
+    local character = game.Players.LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") then
+        task.wait(0.05)
+        character.Humanoid.JumpHeight = jumpHeightValue
+    end
+end
+
+-- Функция для обновления FOV
+local function updateFOV(value)
+    fovValue = value
+    local camera = workspace.CurrentCamera
+    if camera then
+        task.wait(0.05)
+        camera.FieldOfView = fovValue
+    end
+end
+
+-- tab
+Window:Section("╰┈> Основной")
+local MainTab = Window:Tab("♡ Игрок ♡", "eye") 
+Window:Section("★ | Настройки")
+local SettingsTab = Window:Tab("☆ Настройки", "7733771472" )
+
+-- 3. Create a SubTab (Required hierarchy: Window -> Tab -> SubTab)
+local GeneralPage = MainTab:SubTab("♡ Основной ♡")
+local ScriptPage = MainTab:SubTab("❀ Скрипты ❀")
+
+-- 4. Create Groupboxes (Containers for items)
+-- You can choose "Left" or "Right" side
+-- You can also add collapsible groupbox: local FarmGroup = GeneralPage:Groupbox("Farming", "Left", "7733774602",  "true")
+local FarmGroup = GeneralPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+local ExtraGroup = GeneralPage:Groupbox("╰┈> Функции ♡", "Right", "eye")
+
+-- Создаем слайдеры
+FarmGroup:AddSlider({
+    Title = "♡Скорость⤵ \nпередвижения♡",
+    Min = 0,
+    Max = 150,
+    Default = 16,
+    Suffix = " ❀studs❀",
+    Callback = updateSpeed
+})
+
+FarmGroup:AddSlider({
+    Title = "♡Высота- \n -прыжка♡",
+    Min = 0,
+    Max = 500,
+    Default = 50,
+    Suffix = " ❀сила❀",
+    Callback = updateJump
+})
+
+FarmGroup:AddSlider({
+    Title = "♡Поле- \n-зрения♡",
+    Min = 0,
+    Max = 120,
+    Default = 70,
+    Suffix = " ❀градусов❀",
+    Callback = updateFOV
+})
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    task.wait(0.5)
+    local humanoid = character:WaitForChild("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = walkSpeedValue
+        humanoid.JumpHeight = jumpHeightValue
+    end
+end)
+if game.Players.LocalPlayer.Character then
+    local character = game.Players.LocalPlayer.Character
+    local humanoid = character:WaitForChild("Humanoid", 1)
+    if humanoid then
+        humanoid.WalkSpeed = walkSpeedValue
+        humanoid.JumpHeight = jumpHeightValue
+    end
+end
+if workspace.CurrentCamera then
+    workspace.CurrentCamera.FieldOfView = fovValue
+end
+
+
+-- Добавляем NoClip в интерфейс
+ExtraGroup:AddToggle({
+    Title = "˗ˋˏ♡ˎˊ˗NoClip˗ˋˏ♡ˎˊ˗",
+    Default = false,
+    Flag = "NoClipFlag",
+    Callback = function(Value)
+        NoClipEnabled = Value
+        
+        if Value then
+            setupNoClip()
+        elseif NoClipConnection then
+            NoClipConnection:Disconnect()
+            NoClipConnection = nil
+        end
+        
+        -- Восстанавливаем коллизию при выключении
+        if not Value and LocalPlayer.Character then
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+})
+
+-- Добавляем Fullbright в интерфейс
+ExtraGroup:AddToggle({
+    Title = "˗ˋˏ♡ˎˊ˗Fullbright˗ˋˏ♡ˎˊ˗",
+    Default = false,
+    Flag = "FullbrightFlag",
+    Callback = function(Value)
+        FullbrightEnabled = Value
+        setFullbright(Value)
+    end
+})
+
+-- Автоматическое переподключение NoClip при респавне персонажа
+LocalPlayer.CharacterAdded:Connect(function()
+    if NoClipEnabled then
+        task.wait(0.5) -- Ждем пока персонаж загрузится
+        setupNoClip()
+    end
+end)
+
+-- Очистка при выключении скрипта
+game:GetService("UserInputService").WindowFocused:Connect(function()
+    if not NoClipEnabled and not FullbrightEnabled then return end
+    
+    if not NoClipEnabled and NoClipConnection then
+        NoClipConnection:Disconnect()
+        NoClipConnection = nil
+    end
+    
+    if not FullbrightEnabled and OriginalLighting then
+        setFullbright(false)
+    end
+end)
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://5410949701", -- Replace with your ID
+    Size = UDim2.new(0, 120, 0, 120), -- Size
+})
