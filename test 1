@@ -125,11 +125,14 @@ local SettingsTab = Window:Tab("☆ Настройки", "7733771472" )
 local GeneralPage = MainTab:SubTab("♡ Основной ♡")
 local ScriptPage = MainTab:SubTab("❀ Скрипты ❀")
 
+
 -- 4. Create Groupboxes (Containers for items)
 -- You can choose "Left" or "Right" side
 -- You can also add collapsible groupbox: local FarmGroup = GeneralPage:Groupbox("Farming", "Left", "7733774602",  "true")
 local FarmGroup = GeneralPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
 local ExtraGroup = GeneralPage:Groupbox("╰┈> Функции ♡", "Right", "eye")
+local PlayerGroup = ScriptPage:Groupbox("╰┈> Игрок♡", "Left", "camera")
+local ScriptsGroup = ScriptPage:Groupbox("╰┈> Скрипты♡", "Right", "eye")
 
 -- Создаем слайдеры
 FarmGroup:AddSlider({
@@ -230,16 +233,4 @@ game:GetService("UserInputService").WindowFocused:Connect(function()
     if not NoClipEnabled and not FullbrightEnabled then return end
     
     if not NoClipEnabled and NoClipConnection then
-        NoClipConnection:Disconnect()
-        NoClipConnection = nil
-    end
-    
-    if not FullbrightEnabled and OriginalLighting then
-        setFullbright(false)
-    end
-end)
-
-ExtraGroup:AddImage({
-    Image = "rbxassetid://5410949701", -- Replace with your ID
-    Size = UDim2.new(0, 120, 0, 120), -- Size
-})
+        NoClipConnection:Disco
