@@ -736,6 +736,85 @@ ExtraGroup:AddImage({
     Size = UDim2.new(0, 120, 0, 120), 
 })
 
+local BlindPage = GameTab:SubTab("❀ Blind Shot ❀")
+
+local FarmGroup = BlindPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://71291571288785", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Blind Shot                                    блинг шот ",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = BlindPage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "хорошый скрипт ",
+    Content = "хорошые функции",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "Casper",
+    Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/c2rpt/Blind-shot/refs/heads/main/Main.lua"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://8942361465", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+local BeePage = GameTab:SubTab("♡ Bee Swarm Simulator ♡")
+
+local FarmGroup = BeePage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://70670008160718", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Bee Swarm Simulator                                                бее сфарм симулятор бии сварм  ",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = BeePage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "хорошый скрипт для фарма",
+    Content = "хорошые функции",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "Atlas",
+    Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Chris12089/atlasbss/main/script.lua"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://6768122900", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+
 -- ТУТ СКРИПТЫ!!!
 
 local GeneralPage = MainTab:SubTab("♡ Основной ♡")
