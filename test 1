@@ -29,10 +29,14 @@ local Spectating = false
 local OriginalCameraSubject = nil
 local ESPEnabled = false
 
+-- Кэш для аватарок
+local AvatarCache = {}
+
 -- Создаем кастомный GUI для выбора игрока
 local PlayerSelectionGUI = Instance.new("ScreenGui")
 PlayerSelectionGUI.Name = "PlayerSelector"
 PlayerSelectionGUI.ResetOnSpawn = false
+PlayerSelectionGUI.ZIndexBehavior = Enum.ZIndexBehavior.Global  -- Делаем поверх других GUI
 if syn then
     PlayerSelectionGUI.Parent = syn.protect_gui and syn.protect_gui(PlayerSelectionGUI) or game:GetService("CoreGui")
 else
@@ -40,11 +44,12 @@ else
 end
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 350, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
+MainFrame.ZIndex = 100  -- Высокий ZIndex для отображения поверх других элементов
 MainFrame.Parent = PlayerSelectionGUI
 
 local UICorner = Instance.new("UICorner")
@@ -59,6 +64,7 @@ Title.Text = "Выберите игрока"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.Gotham
 Title.TextSize = 16
+Title.ZIndex = 101
 Title.Parent = MainFrame
 
 local CloseButton = Instance.new("TextButton")
@@ -69,42 +75,127 @@ CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.TextSize = 14
+CloseButton.ZIndex = 101
 CloseButton.Parent = MainFrame
 
+-- Поле поиска
+local SearchBox = Instance.new("TextBox")
+SearchBox.Size = UDim2.new(1, -20, 0, 30)
+SearchBox.Position = UDim2.new(0, 10, 0, 50)
+SearchBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBox.PlaceholderText = "Поиск игрока..."
+SearchBox.Font = Enum.Font.Gotham
+SearchBox.TextSize = 14
+SearchBox.Text = ""  -- Убираем текст по умолчанию
+SearchBox.ZIndex = 101
+SearchBox.Parent = MainFrame
+
+local SearchBoxCorner = Instance.new("UICorner")
+SearchBoxCorner.CornerRadius = UDim.new(0, 4)
+SearchBoxCorner.Parent = SearchBox
+
 local PlayersFrame = Instance.new("ScrollingFrame")
-PlayersFrame.Size = UDim2.new(1, -20, 1, -60)
-PlayersFrame.Position = UDim2.new(0, 10, 0, 50)
+PlayersFrame.Size = UDim2.new(1, -20, 1, -100)
+PlayersFrame.Position = UDim2.new(0, 10, 0, 90)
 PlayersFrame.BackgroundTransparency = 1
 PlayersFrame.ScrollBarThickness = 5
+PlayersFrame.ZIndex = 101
 PlayersFrame.Parent = MainFrame
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 5)
 UIListLayout.Parent = PlayersFrame
 
--- Функции
+-- Функция для получения аватарки
+local function GetPlayerAvatar(player)
+    local userId = player.UserId
+    if AvatarCache[userId] then
+        return AvatarCache[userId]
+    end
+    
+    local success, result = pcall(function()
+        return game:GetService("Players"):GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+    end)
+    
+    if success and result then
+        AvatarCache[userId] = result
+        return result
+    end
+    
+    return "rbxasset://textures/ui/GuiImagePlaceholder.png"
+end
+
+-- Функция для создания кнопки игрока
+local function CreatePlayerButton(player)
+    local PlayerButton = Instance.new("Frame")
+    PlayerButton.Size = UDim2.new(1, 0, 0, 50)
+    PlayerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    PlayerButton.ZIndex = 102
+    PlayerButton.Parent = PlayersFrame
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 4)
+    ButtonCorner.Parent = PlayerButton
+    
+    -- Аватарка
+    local Avatar = Instance.new("ImageLabel")
+    Avatar.Size = UDim2.new(0, 40, 0, 40)
+    Avatar.Position = UDim2.new(0, 5, 0.5, -20)
+    Avatar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Avatar.Image = GetPlayerAvatar(player)
+    Avatar.ZIndex = 103
+    Avatar.Parent = PlayerButton
+    
+    local AvatarCorner = Instance.new("UICorner")
+    AvatarCorner.CornerRadius = UDim.new(0, 4)
+    AvatarCorner.Parent = Avatar
+    
+    -- Имя игрока
+    local PlayerName = Instance.new("TextLabel")
+    PlayerName.Size = UDim2.new(1, -55, 1, 0)
+    PlayerName.Position = UDim2.new(0, 50, 0, 0)
+    PlayerName.BackgroundTransparency = 1
+    PlayerName.Text = player.Name
+    PlayerName.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PlayerName.Font = Enum.Font.Gotham
+    PlayerName.TextSize = 14
+    PlayerName.TextXAlignment = Enum.TextXAlignment.Left
+    PlayerName.ZIndex = 103
+    PlayerName.Parent = PlayerButton
+    
+    -- Кнопка выбора
+    local SelectButton = Instance.new("TextButton")
+    SelectButton.Size = UDim2.new(1, 0, 1, 0)
+    SelectButton.BackgroundTransparency = 1
+    SelectButton.Text = ""
+    SelectButton.ZIndex = 104
+    SelectButton.Parent = PlayerButton
+    
+    SelectButton.MouseButton1Click:Connect(function()
+        SelectedPlayer = player
+        MainFrame.Visible = false
+    end)
+    
+    return PlayerButton
+end
+
+-- Функция обновления списка игроков
 local function UpdatePlayerList()
     for _, child in pairs(PlayersFrame:GetChildren()) do
-        if child:IsA("TextButton") then
+        if child:IsA("Frame") then
             child:Destroy()
         end
     end
     
+    local searchText = string.lower(SearchBox.Text)
+    
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local PlayerButton = Instance.new("TextButton")
-            PlayerButton.Size = UDim2.new(1, 0, 0, 40)
-            PlayerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            PlayerButton.Text = player.Name
-            PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            PlayerButton.Font = Enum.Font.Gotham
-            PlayerButton.TextSize = 14
-            PlayerButton.Parent = PlayersFrame
-            
-            PlayerButton.MouseButton1Click:Connect(function()
-                SelectedPlayer = player
-                MainFrame.Visible = false
-            end)
+            local playerName = string.lower(player.Name)
+            if searchText == "" or string.find(playerName, searchText, 1, true) then
+                CreatePlayerButton(player)
+            end
         end
     end
 end
@@ -600,12 +691,15 @@ ScriptsGroup:AddButton({
 })
 
 
--- Теперь добавляем элементы в Groupbox
 TpGrouo:AddButton({
     Title = "☃ Выбрать | игрока ☃",
     Callback = function()
         UpdatePlayerList()
         MainFrame.Visible = true
+        
+        -- Фокус на поле поиска при открытии
+        task.wait(0.1)
+        SearchBox:CaptureFocus()
     end
 })
 
@@ -624,12 +718,16 @@ TpGrouo:AddToggle({
     end
 })
 
+
 -- Обработчики событий
 CloseButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
 
--- Обновление списка игроков при изменениях
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    UpdatePlayerList()
+end)
+
 Players.PlayerAdded:Connect(function(player)
     task.wait(0.5)
     UpdatePlayerList()
@@ -650,7 +748,6 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Обновление ESP при появлении/исчезновении персонажа
 local function CharacterAdded(player, character)
     if PlayerESP[player] and ESPEnabled then
         PlayerESP[player]:Destroy()
@@ -671,7 +768,6 @@ local function CharacterRemoving(player, character)
     end
 end
 
--- Подписываемся на события персонажей
 for _, player in pairs(Players:GetPlayers()) do
     if player.Character then
         player.CharacterAdded:Connect(function(character)
@@ -686,7 +782,6 @@ for _, player in pairs(Players:GetPlayers()) do
     end)
 end
 
--- Обновление метки выбранного игрока
 local connection
 connection = RunService.RenderStepped:Connect(function()
     if SelectedPlayer then
@@ -700,7 +795,6 @@ connection = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Очистка при уничтожении GUI
 PlayerSelectionGUI.Destroying:Connect(function()
     if connection then
         connection:Disconnect()
