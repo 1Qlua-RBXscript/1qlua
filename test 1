@@ -22,6 +22,148 @@ local Window = Library:Window("| 1Qlua ♡ Хаб |")
 
 -- функций
 
+-- Переменные для хранения состояния
+local SelectedPlayer = nil
+local PlayerESP = {}
+local Spectating = false
+local OriginalCameraSubject = nil
+local ESPEnabled = false
+
+-- Создаем кастомный GUI для выбора игрока
+local PlayerSelectionGUI = Instance.new("ScreenGui")
+PlayerSelectionGUI.Name = "PlayerSelector"
+PlayerSelectionGUI.ResetOnSpawn = false
+if syn then
+    PlayerSelectionGUI.Parent = syn.protect_gui and syn.protect_gui(PlayerSelectionGUI) or game:GetService("CoreGui")
+else
+    PlayerSelectionGUI.Parent = game:GetService("CoreGui")
+end
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.Parent = PlayerSelectionGUI
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 6)
+UICorner.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Title.Text = "Выберите игрока"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.Gotham
+Title.TextSize = 16
+Title.Parent = MainFrame
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -35, 0, 5)
+CloseButton.Text = "X"
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 14
+CloseButton.Parent = MainFrame
+
+local PlayersFrame = Instance.new("ScrollingFrame")
+PlayersFrame.Size = UDim2.new(1, -20, 1, -60)
+PlayersFrame.Position = UDim2.new(0, 10, 0, 50)
+PlayersFrame.BackgroundTransparency = 1
+PlayersFrame.ScrollBarThickness = 5
+PlayersFrame.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.Parent = PlayersFrame
+
+-- Функции
+local function UpdatePlayerList()
+    for _, child in pairs(PlayersFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local PlayerButton = Instance.new("TextButton")
+            PlayerButton.Size = UDim2.new(1, 0, 0, 40)
+            PlayerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            PlayerButton.Text = player.Name
+            PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            PlayerButton.Font = Enum.Font.Gotham
+            PlayerButton.TextSize = 14
+            PlayerButton.Parent = PlayersFrame
+            
+            PlayerButton.MouseButton1Click:Connect(function()
+                SelectedPlayer = player
+                MainFrame.Visible = false
+            end)
+        end
+    end
+end
+
+local function TeleportToPlayer()
+    if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = SelectedPlayer.Character.HumanoidRootPart.CFrame
+        end
+    end
+end
+
+local function ToggleESP(state)
+    ESPEnabled = state
+    if not state then
+        for _, esp in pairs(PlayerESP) do
+            if esp then
+                esp:Destroy()
+            end
+        end
+        PlayerESP = {}
+    elseif SelectedPlayer then
+        if PlayerESP[SelectedPlayer] then
+            PlayerESP[SelectedPlayer]:Destroy()
+            PlayerESP[SelectedPlayer] = nil
+        end
+        
+        if SelectedPlayer.Character then
+            local highlight = Instance.new("Highlight")
+            highlight.OutlineTransparency = 0
+            highlight.FillTransparency = 0.5
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.Parent = SelectedPlayer.Character
+            PlayerESP[SelectedPlayer] = highlight
+        end
+    end
+end
+
+local function ToggleSpectate(state)
+    Spectating = state
+    if state and SelectedPlayer and SelectedPlayer.Character then
+        OriginalCameraSubject = Camera.CameraSubject
+        Camera.CameraSubject = SelectedPlayer.Character:FindFirstChildOfClass("Humanoid")
+    else
+        if OriginalCameraSubject then
+            Camera.CameraSubject = OriginalCameraSubject
+        end
+    end
+end
+
+local function ResetCamera()
+    if LocalPlayer.Character then
+        Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    end
+    Spectating = false
+end
+
+
 -- NoClip переменные
 local NoClipEnabled = false
 local NoClipConnection = nil
@@ -79,40 +221,65 @@ end
 
 -- Значения по умолчанию
 local walkSpeedValue = 16
-local jumpHeightValue = 7.2  -- 50 power примерно = 7.2 height
+local jumpHeightValue = 7.2
 local fovValue = 70
 
--- Функция для обновления скорости
+-- Переменные для контроля обновления
+local speedSliderValue = 16
+local jumpSliderValue = 50
+local fovSliderValue = 70
+
+-- Функции для обновления значений слайдеров
 local function updateSpeed(value)
-    walkSpeedValue = value
-    local character = game.Players.LocalPlayer.Character
-    if character and character:FindFirstChild("Humanoid") then
-        task.wait(0.05)
-        character.Humanoid.WalkSpeed = walkSpeedValue
-    end
+    speedSliderValue = value
 end
 
--- Функция для обновления прыжка (используем JumpHeight)
 local function updateJump(value)
-    -- Конвертируем power в height (примерная формула)
-    jumpHeightValue = value / 7
-    if jumpHeightValue < 0.5 then jumpHeightValue = 0.5 end
-    
-    local character = game.Players.LocalPlayer.Character
-    if character and character:FindFirstChild("Humanoid") then
-        task.wait(0.05)
-        character.Humanoid.JumpHeight = jumpHeightValue
-    end
+    jumpSliderValue = value
 end
 
--- Функция для обновления FOV
 local function updateFOV(value)
-    fovValue = value
-    local camera = workspace.CurrentCamera
-    if camera then
-        task.wait(0.05)
-        camera.FieldOfView = fovValue
+    fovSliderValue = value
+end
+
+-- Основная функция обновления каждые 0.1 секунды
+local updateConnection
+local function startUpdating()
+    if updateConnection then
+        updateConnection:Disconnect()
     end
+    
+    updateConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        -- Обновляем скорость передвижения
+        if walkSpeedValue ~= speedSliderValue then
+            walkSpeedValue = speedSliderValue
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = walkSpeedValue
+            end
+        end
+        
+        -- Обновляем высоту прыжка
+        local newJumpHeight = jumpSliderValue / 7
+        if newJumpHeight < 0.5 then newJumpHeight = 0.5 end
+        
+        if jumpHeightValue ~= newJumpHeight then
+            jumpHeightValue = newJumpHeight
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.JumpHeight = jumpHeightValue
+            end
+        end
+        
+        -- Обновляем FOV
+        if fovValue ~= fovSliderValue then
+            fovValue = fovSliderValue
+            local camera = workspace.CurrentCamera
+            if camera then
+                camera.FieldOfView = fovValue
+            end
+        end
+    end)
 end
 
 -- tab
@@ -131,8 +298,11 @@ local ScriptPage = MainTab:SubTab("❀ Скрипты ❀")
 -- You can also add collapsible groupbox: local FarmGroup = GeneralPage:Groupbox("Farming", "Left", "7733774602",  "true")
 local FarmGroup = GeneralPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
 local ExtraGroup = GeneralPage:Groupbox("╰┈> Функции ♡", "Right", "eye")
+local TpGrouo = GeneralPage:Groupbox("╰┈> Игроки ♡", "Left", "camera")
+
 local PlayerGroup = ScriptPage:Groupbox("╰┈> Игрок♡", "Left", "camera")
 local ScriptsGroup = ScriptPage:Groupbox("╰┈> Скрипты♡", "Right", "eye")
+
 
 -- Создаем слайдеры
 FarmGroup:AddSlider({
@@ -162,6 +332,10 @@ FarmGroup:AddSlider({
     Callback = updateFOV
 })
 
+-- Запускаем обновление
+startUpdating()
+
+-- Обработка появления персонажа
 game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.5)
     local humanoid = character:WaitForChild("Humanoid")
@@ -170,6 +344,8 @@ game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
         humanoid.JumpHeight = jumpHeightValue
     end
 end)
+
+-- Применяем текущие значения при запуске
 if game.Players.LocalPlayer.Character then
     local character = game.Players.LocalPlayer.Character
     local humanoid = character:WaitForChild("Humanoid", 1)
@@ -178,10 +354,20 @@ if game.Players.LocalPlayer.Character then
         humanoid.JumpHeight = jumpHeightValue
     end
 end
+
 if workspace.CurrentCamera then
     workspace.CurrentCamera.FieldOfView = fovValue
 end
 
+-- Очистка соединения при перезапуске
+game:GetService("UserInputService").WindowFocused:Connect(function()
+    if not updateConnection then return end
+    
+    -- Перезапускаем обновление
+    if not updateConnection.Connected then
+        startUpdating()
+    end
+end)
 
 -- Добавляем NoClip в интерфейс
 ExtraGroup:AddToggle({
@@ -233,4 +419,298 @@ game:GetService("UserInputService").WindowFocused:Connect(function()
     if not NoClipEnabled and not FullbrightEnabled then return end
     
     if not NoClipEnabled and NoClipConnection then
-        NoClipConnection:Disco
+        NoClipConnection:Disconnect()
+        NoClipConnection = nil
+    end
+    
+    if not FullbrightEnabled and OriginalLighting then
+        setFullbright(false)
+    end
+end)
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://5410949701", -- Replace with your ID
+    Size = UDim2.new(0, 120, 0, 120), -- Size
+})
+
+-- СКРИПТЫ ДЛЯ ИГРОКА (левый столбец)
+PlayerGroup:AddButton({
+    Title = "Полёт (V)",
+    Description = "Включение режима полёта по нажатию V ",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/9bNj1EcR'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Невидимость (E)",
+    Description = "Делает вашего персонажа невидимым",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/VtWhnEnm'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "ТП к игрокам",
+    Description = "Телепортироваться к другим игрокам",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/z4HARAHs'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Падение на месте (R)",
+    Description = "Персонаж падает на месте без движения",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/CTUaCKN1'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Свободная камера (Shift+P)",
+    Description = "Отключает привязку камеры к персонажу",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/ct8Kq5F0'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Полет на машине (V)",
+    Description = "Позволяет транспорту летать",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/9bNj1EcR'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Чекпойнты",
+    Description = "Создает точки для быстрой телепортации",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/rz7uUmED'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Шейдеры",
+    Description = "Улучшает визуальные эффекты игры",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/1XA5qM3D'),true))()
+    end
+})
+
+-- СКРИПТЫ (правый столбец)
+ScriptsGroup:AddButton({
+    Title = "Infinite Yield",
+    Description = "Мощные админ-команды для управления игрой",
+    Callback = function()
+       loadstring(game:HttpGet(('https://raw.githubusercontent.com/Infinite-Store/Infinite-Store/main/main.lua'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "f3x",
+    Description = "Прикольный кубик",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/infyiff/backup/refs/heads/main/f3x.lua'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "DEX Explorer",
+    Description = "Инструмент для исследования игровых объектов",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/infyiff/backup/main/dex.lua'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "DEX++",
+    Description = "Инструмент для исследования игровых объектов",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/refs/heads/main/DexPlusBackup.luau'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Играть с писюном",
+    Description = "Добавляет анимацию для развлечения",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/73RsNXY2'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Удалить стены",
+    Description = "Удаляет препятствия в игре",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/FBKJTUyw'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Добавить всех в друзья",
+    Description = "Автоматически отправляет заявки в друзья",
+    Callback = function()
+        local plrs = game:GetService('Players')
+        for i,v in pairs(plrs:GetChildren()) do
+            task.wait(1)
+            plrs.LocalPlayer:RequestFriendship(v)
+        end
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Обход голосового чата",
+    Description = "Позволяет обойти ограничения голосового чата",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/CorpseCMD/MyScripts/main/VoicechatBypass.lua'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Sigma Spy",
+    Description = "Мониторинг игровых событий",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/depthso/Sigma-Spy/main/Main.lua'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Админ Команды от 1qlua",
+    Description = "Набор административных команд",
+    Callback = function()
+        loadstring(game:HttpGet(('https://pastebin.com/raw/t3chuwNu'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Тест инжектора",
+    Description = "Проверить ваш инжектор",
+    Callback = function()
+        loadstring(game:HttpGet(('https://rawscripts.net/raw/Universal-Script-UNChecker-GUI-Version-27355'),true))()
+    end
+})
+
+ScriptsGroup:AddButton({
+    Title = "Поменять сервер",
+    Description = "Быстро поменять сервер",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/Syr0nix/RedFoxServerBowser/main/Mainlua'),true))()
+    end
+})
+
+
+-- Теперь добавляем элементы в Groupbox
+TpGrouo:AddButton({
+    Title = "☃ Выбрать | игрока ☃",
+    Callback = function()
+        UpdatePlayerList()
+        MainFrame.Visible = true
+    end
+})
+
+TpGrouo:AddButton({
+    Title = "웃 Телепортироваться 웃",
+    Callback = function()
+        TeleportToPlayer()
+    end
+})
+
+TpGrouo:AddToggle({
+    Title = "『ESP игрока』",
+    Default = false,
+    Callback = function(Value)
+        ToggleESP(Value)
+    end
+})
+
+-- Обработчики событий
+CloseButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+-- Обновление списка игроков при изменениях
+Players.PlayerAdded:Connect(function(player)
+    task.wait(0.5)
+    UpdatePlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    task.wait(0.5)
+    UpdatePlayerList()
+    if player == SelectedPlayer then
+        SelectedPlayer = nil
+        if selectedPlayerLabel then
+            selectedPlayerLabel.SetText("Выбранный: Нет")
+        end
+    end
+    if PlayerESP[player] then
+        PlayerESP[player]:Destroy()
+        PlayerESP[player] = nil
+    end
+end)
+
+-- Обновление ESP при появлении/исчезновении персонажа
+local function CharacterAdded(player, character)
+    if PlayerESP[player] and ESPEnabled then
+        PlayerESP[player]:Destroy()
+        local highlight = Instance.new("Highlight")
+        highlight.OutlineTransparency = 0
+        highlight.FillTransparency = 0.5
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.Parent = character
+        PlayerESP[player] = highlight
+    end
+end
+
+local function CharacterRemoving(player, character)
+    if PlayerESP[player] then
+        PlayerESP[player]:Destroy()
+        PlayerESP[player] = nil
+    end
+end
+
+-- Подписываемся на события персонажей
+for _, player in pairs(Players:GetPlayers()) do
+    if player.Character then
+        player.CharacterAdded:Connect(function(character)
+            CharacterAdded(player, character)
+        end)
+    end
+    player.CharacterAdded:Connect(function(character)
+        CharacterAdded(player, character)
+    end)
+    player.CharacterRemoving:Connect(function(character)
+        CharacterRemoving(player, character)
+    end)
+end
+
+-- Обновление метки выбранного игрока
+local connection
+connection = RunService.RenderStepped:Connect(function()
+    if SelectedPlayer then
+        if selectedPlayerLabel then
+            selectedPlayerLabel.SetText("Выбранный: " .. SelectedPlayer.Name)
+        end
+    else
+        if selectedPlayerLabel then
+            selectedPlayerLabel.SetText("Выбранный: Нет")
+        end
+    end
+end)
+
+-- Очистка при уничтожении GUI
+PlayerSelectionGUI.Destroying:Connect(function()
+    if connection then
+        connection:Disconnect()
+    end
+    for _, esp in pairs(PlayerESP) do
+        if esp then
+            esp:Destroy()
+        end
+    end
+end)
+
+-- Инициализация списка игроков при запуске
+UpdatePlayerList()
