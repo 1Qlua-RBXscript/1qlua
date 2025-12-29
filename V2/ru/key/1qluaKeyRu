@@ -1,5 +1,4 @@
 
-
 local LibraryUrl = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/labar"
 
 local Success, Library = pcall(function()
@@ -16,27 +15,79 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
--- Window
 Library:Watermark("| >ᴗ< | ♡1Qlua♡ (Хаб) | >ᴗ< |  v12 | >ᴗ< ")
 local Window = Library:Window("| 1Qlua ♡ Хаб |")
 
 -- функций
 
--- Переменные для хранения состояния
+-- флинг
+local walkflinging = false
+local antifling = nil
+local function enableWalkFling()
+    if walkflinging then return end
+    walkflinging = true
+    task.spawn(function()
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = game.Players.LocalPlayer
+        
+        while walkflinging do
+            RunService.Heartbeat:Wait()
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            
+            if root then
+                local vel = root.Velocity
+                root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+                
+                RunService.RenderStepped:Wait()
+                if root then
+                    root.Velocity = vel
+                end
+            end
+        end
+    end)
+end
+local function disableWalkFling()
+    walkflinging = false
+end
+local function enableAntiFling()
+    if antifling then
+        antifling:Disconnect()
+    end
+    
+    antifling = game:GetService("RunService").Stepped:Connect(function()
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                for _, v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end
+    end)
+end
+local function disableAntiFling()
+    if antifling then
+        antifling:Disconnect()
+        antifling = nil
+    end
+end
+-- ТУТ НАЧАЛО ДРУГОЙ ФУНКЦИИ
+-- это если что игроки
 local SelectedPlayer = nil
 local PlayerESP = {}
 local Spectating = false
 local OriginalCameraSubject = nil
 local ESPEnabled = false
 
--- Кэш для аватарок
+
 local AvatarCache = {}
 
--- Создаем кастомный GUI для выбора игрока
 local PlayerSelectionGUI = Instance.new("ScreenGui")
 PlayerSelectionGUI.Name = "PlayerSelector"
 PlayerSelectionGUI.ResetOnSpawn = false
-PlayerSelectionGUI.ZIndexBehavior = Enum.ZIndexBehavior.Global  -- Делаем поверх других GUI
+PlayerSelectionGUI.ZIndexBehavior = Enum.ZIndexBehavior.Global  
 if syn then
     PlayerSelectionGUI.Parent = syn.protect_gui and syn.protect_gui(PlayerSelectionGUI) or game:GetService("CoreGui")
 else
@@ -49,7 +100,7 @@ MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
-MainFrame.ZIndex = 100  -- Высокий ZIndex для отображения поверх других элементов
+MainFrame.ZIndex = 100 
 MainFrame.Parent = PlayerSelectionGUI
 
 local UICorner = Instance.new("UICorner")
@@ -78,7 +129,6 @@ CloseButton.TextSize = 14
 CloseButton.ZIndex = 101
 CloseButton.Parent = MainFrame
 
--- Поле поиска
 local SearchBox = Instance.new("TextBox")
 SearchBox.Size = UDim2.new(1, -20, 0, 30)
 SearchBox.Position = UDim2.new(0, 10, 0, 50)
@@ -87,14 +137,13 @@ SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchBox.PlaceholderText = "Поиск игрока..."
 SearchBox.Font = Enum.Font.Gotham
 SearchBox.TextSize = 14
-SearchBox.Text = ""  -- Убираем текст по умолчанию
+SearchBox.Text = "" 
 SearchBox.ZIndex = 101
 SearchBox.Parent = MainFrame
 
 local SearchBoxCorner = Instance.new("UICorner")
 SearchBoxCorner.CornerRadius = UDim.new(0, 4)
 SearchBoxCorner.Parent = SearchBox
-
 local PlayersFrame = Instance.new("ScrollingFrame")
 PlayersFrame.Size = UDim2.new(1, -20, 1, -100)
 PlayersFrame.Position = UDim2.new(0, 10, 0, 90)
@@ -102,43 +151,33 @@ PlayersFrame.BackgroundTransparency = 1
 PlayersFrame.ScrollBarThickness = 5
 PlayersFrame.ZIndex = 101
 PlayersFrame.Parent = MainFrame
-
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 5)
 UIListLayout.Parent = PlayersFrame
-
--- Функция для получения аватарки
 local function GetPlayerAvatar(player)
     local userId = player.UserId
     if AvatarCache[userId] then
         return AvatarCache[userId]
     end
-    
     local success, result = pcall(function()
         return game:GetService("Players"):GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
     end)
-    
     if success and result then
         AvatarCache[userId] = result
         return result
     end
-    
     return "rbxasset://textures/ui/GuiImagePlaceholder.png"
 end
 
--- Функция для создания кнопки игрока
 local function CreatePlayerButton(player)
     local PlayerButton = Instance.new("Frame")
     PlayerButton.Size = UDim2.new(1, 0, 0, 50)
     PlayerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     PlayerButton.ZIndex = 102
     PlayerButton.Parent = PlayersFrame
-    
     local ButtonCorner = Instance.new("UICorner")
     ButtonCorner.CornerRadius = UDim.new(0, 4)
     ButtonCorner.Parent = PlayerButton
-    
-    -- Аватарка
     local Avatar = Instance.new("ImageLabel")
     Avatar.Size = UDim2.new(0, 40, 0, 40)
     Avatar.Position = UDim2.new(0, 5, 0.5, -20)
@@ -146,12 +185,9 @@ local function CreatePlayerButton(player)
     Avatar.Image = GetPlayerAvatar(player)
     Avatar.ZIndex = 103
     Avatar.Parent = PlayerButton
-    
     local AvatarCorner = Instance.new("UICorner")
     AvatarCorner.CornerRadius = UDim.new(0, 4)
     AvatarCorner.Parent = Avatar
-    
-    -- Имя игрока
     local PlayerName = Instance.new("TextLabel")
     PlayerName.Size = UDim2.new(1, -55, 1, 0)
     PlayerName.Position = UDim2.new(0, 50, 0, 0)
@@ -163,8 +199,6 @@ local function CreatePlayerButton(player)
     PlayerName.TextXAlignment = Enum.TextXAlignment.Left
     PlayerName.ZIndex = 103
     PlayerName.Parent = PlayerButton
-    
-    -- Кнопка выбора
     local SelectButton = Instance.new("TextButton")
     SelectButton.Size = UDim2.new(1, 0, 1, 0)
     SelectButton.BackgroundTransparency = 1
@@ -180,7 +214,6 @@ local function CreatePlayerButton(player)
     return PlayerButton
 end
 
--- Функция обновления списка игроков
 local function UpdatePlayerList()
     for _, child in pairs(PlayersFrame:GetChildren()) do
         if child:IsA("Frame") then
@@ -254,22 +287,18 @@ local function ResetCamera()
     Spectating = false
 end
 
+--функции
 
--- NoClip переменные
 local NoClipEnabled = false
 local NoClipConnection = nil
-
--- Fullbright переменные
 local FullbrightEnabled = false
 local OriginalLighting = nil
 
--- Простая функция NoClip
 local function setupNoClip()
     if NoClipConnection then
         NoClipConnection:Disconnect()
         NoClipConnection = nil
     end
-    
     NoClipConnection = RunService.Stepped:Connect(function()
         if NoClipEnabled and LocalPlayer.Character then
             for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
@@ -281,26 +310,20 @@ local function setupNoClip()
     end)
 end
 
--- Простая функция Fullbright
 local function setFullbright(enabled)
     local Lighting = game:GetService("Lighting")
-    
     if enabled then
-        -- Сохраняем оригинальные настройки
         OriginalLighting = {
             Ambient = Lighting.Ambient,
             Brightness = Lighting.Brightness,
             GlobalShadows = Lighting.GlobalShadows,
             OutdoorAmbient = Lighting.OutdoorAmbient
         }
-        
-        -- Устанавливаем яркое освещение
         Lighting.Ambient = Color3.new(1, 1, 1)
         Lighting.Brightness = 2
         Lighting.GlobalShadows = false
         Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
     else
-        -- Восстанавливаем оригинальные настройки
         if OriginalLighting then
             Lighting.Ambient = OriginalLighting.Ambient
             Lighting.Brightness = OriginalLighting.Brightness
@@ -310,17 +333,15 @@ local function setFullbright(enabled)
     end
 end
 
--- Значения по умолчанию
+-- скорость
 local walkSpeedValue = 16
 local jumpHeightValue = 7.2
 local fovValue = 70
 
--- Переменные для контроля обновления
 local speedSliderValue = 16
 local jumpSliderValue = 50
 local fovSliderValue = 70
 
--- Функции для обновления значений слайдеров
 local function updateSpeed(value)
     speedSliderValue = value
 end
@@ -333,7 +354,6 @@ local function updateFOV(value)
     fovSliderValue = value
 end
 
--- Основная функция обновления каждые 0.1 секунды
 local updateConnection
 local function startUpdating()
     if updateConnection then
@@ -341,7 +361,6 @@ local function startUpdating()
     end
     
     updateConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        -- Обновляем скорость передвижения
         if walkSpeedValue ~= speedSliderValue then
             walkSpeedValue = speedSliderValue
             local character = game.Players.LocalPlayer.Character
@@ -349,8 +368,6 @@ local function startUpdating()
                 character.Humanoid.WalkSpeed = walkSpeedValue
             end
         end
-        
-        -- Обновляем высоту прыжка
         local newJumpHeight = jumpSliderValue / 7
         if newJumpHeight < 0.5 then newJumpHeight = 0.5 end
         
@@ -361,8 +378,6 @@ local function startUpdating()
                 character.Humanoid.JumpHeight = jumpHeightValue
             end
         end
-        
-        -- Обновляем FOV
         if fovValue ~= fovSliderValue then
             fovValue = fovSliderValue
             local camera = workspace.CurrentCamera
@@ -379,23 +394,24 @@ local MainTab = Window:Tab("♡ Игрок ♡", "eye")
 Window:Section("★ | Настройки")
 local SettingsTab = Window:Tab("☆ Настройки", "7733771472" )
 
--- 3. Create a SubTab (Required hierarchy: Window -> Tab -> SubTab)
 local GeneralPage = MainTab:SubTab("♡ Основной ♡")
 local ScriptPage = MainTab:SubTab("❀ Скрипты ❀")
 
+-- Подвкладки
+local InterfacePage = SettingsTab:SubTab("Интерфейс")
+local GamePage = SettingsTab:SubTab("Игра")
+local PerformancePage = SettingsTab:SubTab("Производительность")
+local SecurityPage = SettingsTab:SubTab("Безопасность")
 
--- 4. Create Groupboxes (Containers for items)
--- You can choose "Left" or "Right" side
--- You can also add collapsible groupbox: local FarmGroup = GeneralPage:Groupbox("Farming", "Left", "7733774602",  "true")
 local FarmGroup = GeneralPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
 local ExtraGroup = GeneralPage:Groupbox("╰┈> Функции ♡", "Right", "eye")
 local TpGrouo = GeneralPage:Groupbox("╰┈> Игроки ♡", "Left", "camera")
+local FilngGroup = GeneralPage:Groupbox("╰┈> Filng ♡", "Right", "camera")
 
 local PlayerGroup = ScriptPage:Groupbox("╰┈> Игрок♡", "Left", "camera")
 local ScriptsGroup = ScriptPage:Groupbox("╰┈> Скрипты♡", "Right", "eye")
 
 
--- Создаем слайдеры
 FarmGroup:AddSlider({
     Title = "♡Скорость⤵ \nпередвижения♡",
     Min = 0,
@@ -423,10 +439,8 @@ FarmGroup:AddSlider({
     Callback = updateFOV
 })
 
--- Запускаем обновление
 startUpdating()
 
--- Обработка появления персонажа
 game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.5)
     local humanoid = character:WaitForChild("Humanoid")
@@ -436,7 +450,6 @@ game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
     end
 end)
 
--- Применяем текущие значения при запуске
 if game.Players.LocalPlayer.Character then
     local character = game.Players.LocalPlayer.Character
     local humanoid = character:WaitForChild("Humanoid", 1)
@@ -450,32 +463,25 @@ if workspace.CurrentCamera then
     workspace.CurrentCamera.FieldOfView = fovValue
 end
 
--- Очистка соединения при перезапуске
 game:GetService("UserInputService").WindowFocused:Connect(function()
     if not updateConnection then return end
-    
-    -- Перезапускаем обновление
     if not updateConnection.Connected then
         startUpdating()
     end
 end)
 
--- Добавляем NoClip в интерфейс
 ExtraGroup:AddToggle({
     Title = "˗ˋˏ♡ˎˊ˗NoClip˗ˋˏ♡ˎˊ˗",
     Default = false,
     Flag = "NoClipFlag",
     Callback = function(Value)
         NoClipEnabled = Value
-        
         if Value then
             setupNoClip()
         elseif NoClipConnection then
             NoClipConnection:Disconnect()
             NoClipConnection = nil
         end
-        
-        -- Восстанавливаем коллизию при выключении
         if not Value and LocalPlayer.Character then
             for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then
@@ -486,7 +492,6 @@ ExtraGroup:AddToggle({
     end
 })
 
--- Добавляем Fullbright в интерфейс
 ExtraGroup:AddToggle({
     Title = "˗ˋˏ♡ˎˊ˗Fullbright˗ˋˏ♡ˎˊ˗",
     Default = false,
@@ -497,34 +502,29 @@ ExtraGroup:AddToggle({
     end
 })
 
--- Автоматическое переподключение NoClip при респавне персонажа
 LocalPlayer.CharacterAdded:Connect(function()
     if NoClipEnabled then
-        task.wait(0.5) -- Ждем пока персонаж загрузится
+        task.wait(0.5)
         setupNoClip()
     end
 end)
 
--- Очистка при выключении скрипта
 game:GetService("UserInputService").WindowFocused:Connect(function()
     if not NoClipEnabled and not FullbrightEnabled then return end
-    
     if not NoClipEnabled and NoClipConnection then
         NoClipConnection:Disconnect()
         NoClipConnection = nil
     end
-    
     if not FullbrightEnabled and OriginalLighting then
         setFullbright(false)
     end
 end)
 
 ExtraGroup:AddImage({
-    Image = "rbxassetid://5410949701", -- Replace with your ID
-    Size = UDim2.new(0, 120, 0, 120), -- Size
+    Image = "rbxassetid://5410949701", 
+    Size = UDim2.new(0, 120, 0, 120), 
 })
 
--- СКРИПТЫ ДЛЯ ИГРОКА (левый столбец)
 PlayerGroup:AddButton({
     Title = "Полёт (V)",
     Description = "Включение режима полёта по нажатию V ",
@@ -589,7 +589,6 @@ PlayerGroup:AddButton({
     end
 })
 
--- СКРИПТЫ (правый столбец)
 ScriptsGroup:AddButton({
     Title = "Infinite Yield",
     Description = "Мощные админ-команды для управления игрой",
@@ -696,8 +695,6 @@ TpGrouo:AddButton({
     Callback = function()
         UpdatePlayerList()
         MainFrame.Visible = true
-        
-        -- Фокус на поле поиска при открытии
         task.wait(0.1)
         SearchBox:CaptureFocus()
     end
@@ -719,7 +716,6 @@ TpGrouo:AddToggle({
 })
 
 
--- Обработчики событий
 CloseButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
@@ -806,5 +802,383 @@ PlayerSelectionGUI.Destroying:Connect(function()
     end
 end)
 
--- Инициализация списка игроков при запуске
 UpdatePlayerList()
+
+FilngGroup:AddToggle({
+    Title = "☼walk | Fling☼",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            enableWalkFling()
+        else
+            disableWalkFling()
+        end
+    end
+})
+
+FilngGroup:AddToggle({
+    Title = "✴Anti | Fling✴",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            enableAntiFling()
+        else
+            disableAntiFling()
+        end
+    end
+})
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        disableWalkFling()
+        disableAntiFling()
+    end)
+end)
+
+-- ==================== НАСТРОЙКИ ИНТЕРФЕЙСА ====================
+local InterfaceGroup = InterfacePage:Groupbox("Настройки интерфейса", "Left")
+
+InterfaceGroup:AddToggle({
+    Title = "Показывать водяной знак",
+    Default = true,
+    Flag = "WatermarkToggle",
+    Callback = function(Value)
+        Library.WatermarkSettings.Enabled = Value
+    end
+})
+
+InterfaceGroup:AddTextbox({
+    Title = "Текст водяного знака",
+    Default = "",
+    Placeholder = "Введите свой текст...",
+    ClearOnFocus = false,
+    Callback = function(Value)
+        Library.WatermarkSettings.Text = Value
+    end
+})
+
+-- ==================== ТЕМА И ЦВЕТА ====================
+local ThemeGroup = InterfacePage:Groupbox("Тема и цвета", "Right")
+
+-- Предустановленные темы
+local ThemeList = {"По умолчанию", "Темная", "Фиолетовая", "Зеленая", "Синяя", "Красная"}
+if Library.ThemePresets then
+    for ThemeName, _ in pairs(Library.ThemePresets) do
+        table.insert(ThemeList, ThemeName)
+    end
+    table.sort(ThemeList)
+end
+
+ThemeGroup:AddDropdown({
+    Title = "Предустановленная тема",
+    Values = ThemeList,
+    Default = "По умолчанию",
+    Multi = false,
+    Callback = function(Value)
+        if Library.SetTheme then
+            Library:SetTheme(Value)
+            Library:Notify("Тема", "Применена тема: " .. Value, 2)
+        end
+    end
+})
+
+ThemeGroup:AddSeparator()
+
+-- Кастомизация цветов
+ThemeGroup:AddLabel("Пользовательские цвета")
+
+ThemeGroup:AddColorPicker({
+    Title = "Акцентный цвет", 
+    Default = Library.Theme.Accent or Color3.fromRGB(0, 170, 255), 
+    Flag = "ThemeAccent",
+    Callback = function(Color, Alpha)
+        if Library.UpdateTheme then
+            Library:UpdateTheme("Accent", Color)
+        end
+    end
+})
+
+ThemeGroup:AddColorPicker({
+    Title = "Фон", 
+    Default = Library.Theme.Background or Color3.fromRGB(20, 20, 20), 
+    Flag = "ThemeBackground",
+    Callback = function(Color, Alpha)
+        if Library.UpdateTheme then
+            Library:UpdateTheme("Background", Color)
+        end
+    end
+})
+
+ThemeGroup:AddColorPicker({
+    Title = "Текст", 
+    Default = Library.Theme.Text or Color3.fromRGB(255, 255, 255), 
+    Flag = "ThemeText",
+    Callback = function(Color, Alpha)
+        if Library.UpdateTheme then
+            Library:UpdateTheme("Text", Color)
+        end
+    end
+})
+
+ThemeGroup:AddButton({
+    Title = "Сбросить цвета",
+    Callback = function()
+        if Library.SetTheme then
+            Library:SetTheme("Default")
+            Library:Notify("Тема", "Цвета сброшены", 2)
+        end
+    end
+})
+
+-- ==================== НАСТРОЙКИ ПРОИЗВОДИТЕЛЬНОСТИ ====================
+local PerformanceGroup = PerformancePage:Groupbox("Оптимизация", "Left")
+
+PerformanceGroup:AddButton({
+    Title = "Оптимизировать игру",
+    Description = "Улучшить FPS игры",
+    Callback = function()
+        local Lighting = game:GetService("Lighting")
+        
+        -- Базовая оптимизация графики
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 100000
+        Lighting.Brightness = 2
+        
+        -- Оптимизация для различных типов игр
+        if game:GetService("Terrain") then
+            game:GetService("Terrain").Decoration = false
+        end
+        
+        Library:Notify("Оптимизация", "Настройки графики применены", 3)
+    end
+})
+
+-- ==================== ГОРЯЧИЕ КЛАВИШИ ====================
+local KeybindsGroup = GamePage:Groupbox("Горячие клавиши", "Left")
+
+-- Горячая клавиша для показа/скрытия UI
+local uiVisible = true
+KeybindsGroup:AddKeybind({
+    Title = "Показать/Скрыть UI",
+    Default = Enum.KeyCode.RightShift,
+    Flag = "ToggleUIKey",
+    Callback = function(Key)
+        -- Сохраняем клавишу в настройках
+        Library.Settings.ToggleUIKey = Key
+        Library:Notify("Клавиша", "Клавиша установлена: " .. tostring(Key), 2)
+    end
+})
+
+-- Обработка горячей клавиши в отдельном потоке
+task.spawn(function()
+    while true do
+        task.wait()
+        if Library.Settings and Library.Settings.ToggleUIKey then
+            if UserInputService:IsKeyDown(Library.Settings.ToggleUIKey) then
+                if Window.Instance then
+                    Window.Instance.Enabled = not uiVisible
+                    uiVisible = not uiVisible
+                    task.wait(0.3) -- Задержка для предотвращения спама
+                end
+            end
+        end
+    end
+end)
+
+-- Альтернативная клавиша для скрытия
+KeybindsGroup:AddKeybind({
+    Title = "Экстренное скрытие",
+    Default = Enum.KeyCode.End,
+    Flag = "HideUIKey",
+    Callback = function(Key)
+        if Window.Instance then
+            Window.Instance.Enabled = false
+            uiVisible = false
+            Library:Notify("UI", "Интерфейс скрыт", 1)
+        end
+    end
+})
+
+-- ==================== НАСТРОЙКИ ИГРЫ ====================
+local GameSettingsGroup = GamePage:Groupbox("Настройки персонажа", "Right")
+
+GameSettingsGroup:AddButton({
+    Title = "Телепорт на спавн",
+    Callback = function()
+        -- Поиск спавн-точки
+        local spawnPoints = {
+            workspace:FindFirstChild("SpawnLocation"),
+            workspace:FindFirstChild("Spawn"),
+            workspace:FindFirstChild("SpawnPoint")
+        }
+        
+        for _, spawn in pairs(spawnPoints) do
+            if spawn then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = spawn.CFrame
+                    Library:Notify("Телепорт", "Перенесен на спавн", 2)
+                    return
+                end
+            end
+        end
+        Library:Notify("Ошибка", "Спавн не найден", 3)
+    end
+})
+
+-- ==================== НАСТРОЙКИ БЕЗОПАСНОСТИ ====================
+local SecurityGroup = SecurityPage:Groupbox("Защита", "Left")
+
+SecurityGroup:AddToggle({
+    Title = "Анти-афк",
+    Default = true,
+    Description = "Предотвращать кик за бездействие",
+    Callback = function(Value)
+        if Value then
+            -- Стандартная анти-афк система Roblox
+            local vu = game:GetService("VirtualUser")
+            game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                wait(1)
+                vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
+            Library:Notify("Защита", "Анти-АФК активирован", 2)
+        else
+            Library:Notify("Защита", "Анти-АФК отключен", 2)
+        end
+    end
+})
+
+SecurityGroup:AddToggle({
+    Title = "Скрывать интерфейс",
+    Default = false,
+    Description = "Автоматически скрывать UI при скриншотах",
+    Callback = function(Value)
+        Library.Settings.AutoHide = Value
+        if Value then
+            Library:Notify("Защита", "UI будет скрываться при PrintScreen", 2)
+        end
+    end
+})
+
+SecurityGroup:AddToggle({
+    Title = "Защита от вылетов",
+    Default = true,
+    Description = "Пытаться предотвратить вылеты игры",
+    Callback = function(Value)
+        Library.Settings.CrashProtection = Value
+        if Value then
+            -- Базовая защита от распространенных вылетов
+            game:GetService("ScriptContext").Error:Connect(function(message, trace)
+                if string.find(message:lower(), "crash") or string.find(message:lower(), "kick") then
+                    warn("Защита: предотвращен вылет - " .. message)
+                end
+            end)
+        end
+    end
+})
+
+-- ==================== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ====================
+local InfoGroup = PerformancePage:Groupbox("Информация", "Right")
+
+InfoGroup:AddLabelText("Версия скрипта:", "RedOnyx V17")
+InfoGroup:AddLabelText("Игра:", game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
+InfoGroup:AddLabelText("Игрок:", LocalPlayer.Name)
+InfoGroup:AddLabelText("Место в игре:", game.PlaceId)
+
+-- Отображение FPS
+local fpsLabel = InfoGroup:AddLabel("FPS: 60")
+
+-- Обновление FPS в реальном времени
+task.spawn(function()
+    local frames = 0
+    local lastTime = tick()
+    
+    while true do
+        task.wait(0.1)
+        frames = frames + 1
+        
+        if tick() - lastTime >= 1 then
+            local fps = math.floor(frames / (tick() - lastTime))
+            fpsLabel.Text = "FPS: " .. fps
+            frames = 0
+            lastTime = tick()
+        end
+    end
+end)
+
+InfoGroup:AddSeparator()
+InfoGroup:AddButton({
+    Title = "Скопировать информацию",
+    Description = "Скопировать информацию об игре",
+    Callback = function()
+        local info = string.format([[
+Игра: %s
+ID игры: %s
+Игрок: %s
+Сервер: %s
+]], 
+            game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name,
+            game.PlaceId,
+            LocalPlayer.Name,
+            game.JobId
+        )
+        setclipboard(info)
+        Library:Notify("Инфо", "Информация скопирована!", 2)
+    end
+})
+
+-- ==================== БЫСТРЫЕ ДЕЙСТВИЯ ====================
+local QuickActionsGroup = SecurityPage:Groupbox("Быстрые действия", "Right")
+
+QuickActionsGroup:AddButton({
+    Title = "Переподключиться",
+    Description = "Вернуться на этот сервер",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+})
+
+QuickActionsGroup:AddButton({
+    Title = "Сменить сервер",
+    Description = "Перейти на другой сервер",
+    Callback = function()
+        -- Простой поиск другого сервера
+        local success, result = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(
+                game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=10")
+            )
+        end)
+        
+        if success and result.data then
+            for _, server in pairs(result.data) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
+                    return
+                end
+            end
+        end
+        Library:Notify("Ошибка", "Не удалось найти сервер", 3)
+    end
+})
+
+QuickActionsGroup:AddButton({
+    Title = "Скопировать ID игры",
+    Callback = function()
+        setclipboard(tostring(game.PlaceId))
+        Library:Notify("Инфо", "ID игры скопирован!", 2)
+    end
+})
+
+QuickActionsGroup:AddButton({
+    Title = "Сбросить персонажа",
+    Callback = function()
+        if LocalPlayer.Character then
+            LocalPlayer.Character:BreakJoints()
+            task.wait(0.5)
+            if LocalPlayer.Character then
+                LocalPlayer.Character:Destroy()
+            end
+        end
+    end
+})
+
