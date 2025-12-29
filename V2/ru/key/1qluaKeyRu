@@ -1,6 +1,35 @@
 
 local LibraryUrl = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/labar"
-loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/animezui'),true))()
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+local player = game.Players.LocalPlayer
+
+local settings = {
+    SoundFile = "Anime.mp3",
+    SoundUrl = "https://cdn.discordapp.com/attachments/1374346480130719744/1455048920513249343/anime-ahh.mp3?ex=69534f68&is=6951fde8&hm=9a0fe776ff70e4584273412399cb5401ca9fe90f2785841f73a1d809ea2bc4b6&",
+    DefaultVolume = 0.5,
+    LoopEnabled = false,
+    AutoPlay = true
+}
+
+if not isfile(settings.SoundFile) then
+    writefile(settings.SoundFile, game:HttpGet(settings.SoundUrl))
+end
+
+local sound = Instance.new("Sound")
+sound.SoundId = getcustomasset(settings.SoundFile)
+sound.Volume = settings.DefaultVolume
+sound.Looped = settings.LoopEnabled
+sound.Parent = game:GetService("SoundService")
+
+
+if settings.AutoPlay then
+    task.wait()
+    sound:Play()
+end
+
+
+
 local Success, Library = pcall(function()
     return loadstring(game:HttpGet(LibraryUrl))()
 end)
@@ -508,8 +537,206 @@ end
 -- tab
 Window:Section("╰┈> Основной")
 local MainTab = Window:Tab("♡ Игрок ♡", "eye") 
+local GameTab = Window:Tab("♡ Игры ♡", "eye") 
 Window:Section("★ | Настройки")
 local SettingsTab = Window:Tab("☆ Настройки", "7733771472" )
+
+local GeneralPage = GameTab:SubTab("♡ Fling Things and People ♡")
+
+local FarmGroup = GeneralPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://9965929384", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Fling Things and People                       Fling Things and People  Швыряют вещи и людей кидать веши и людей флинг",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = GeneralPage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "хорошый скрипт для кидания игроков",
+    Content = "Авто выкидывание хорошое",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "FTAP Hub",
+    Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Bruhiscrazy/codespaces-blank/refs/heads/main/FTAPadminwatch.lua"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://9288958329", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+local ScriptPage = GameTab:SubTab("❀ Lamber Tycon 2 ❀")
+
+local FarmGroup = ScriptPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://85952302690707", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Lumber Tycoon 2                       ламбер такон 2 lamber",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = ScriptPage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "хорошый скрипт для игры",
+    Content = "хорошые функции",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "Kron Hub",
+    Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DevKron/Kron_Hub/main/version_1.0"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://7475075233", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+local CounterPage = GameTab:SubTab("♡ Counter Blox ♡")
+
+local FarmGroup = CounterPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://6106706486", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Counter Blox                              контрл блокс кс го 2 ",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = CounterPage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "Лучший скрипт для игры",
+    Content = "хорошые функции",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "Thegxx V1",
+    Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/bPUYMYis"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://8598068647", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+local BloxPage = GameTab:SubTab("❀ Blox Fruits ❀")
+
+local FarmGroup = BloxPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://6465306677", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Blox Fruits                                    блокс фрукс ",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = BloxPage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "хорошый скрипт для фарма",
+    Content = "хорошые функции",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "Kevinzzz",
+    Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/KevinGithubUsers/KevinGithubUsers/refs/heads/main/VScript(Blox%20Fruits).txt"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://6089224007", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+local FischPage = GameTab:SubTab("♡ Fisch ♡")
+
+local FarmGroup = FischPage:Groupbox("╰┈> Основное ♡", "Left", "camera")
+
+FarmGroup:AddImage({
+    Image = "rbxassetid://77005458544600", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+FarmGroup:AddParagraph({
+    Title = "Fisch                                                фищ фиш ",
+    Content = "Для пойска (теги)",
+    TextWrapped = true
+})
+FarmGroup:AddParagraph({
+    Title = "",
+    TextWrapped = true
+})
+
+local ExtraGroup = FischPage:Groupbox("╰┈> скрипты ♡", "Right", "eye")
+
+ExtraGroup:AddParagraph({
+    Title = "хорошый скрипт для фарма",
+    Content = "хорошые функции",
+    TextWrapped = true
+})
+
+ExtraGroup:AddButton({
+    Title = "html",
+    Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/vvisuall/VISUAL/refs/heads/main/ab"))()
+    end
+})
+
+ExtraGroup:AddImage({
+    Image = "rbxassetid://11603721148", 
+    Size = UDim2.new(0, 120, 0, 120), 
+})
+
+-- ТУТ СКРИПТЫ!!!
 
 local GeneralPage = MainTab:SubTab("♡ Основной ♡")
 local ScriptPage = MainTab:SubTab("❀ Скрипты ❀")
@@ -1374,5 +1601,6 @@ end)
 -- Отключаем все предупреждения в консоли
 local oldWarn = warn
 warn = function() end
+
 
 return "Музыкальный плеер успешно загружен"
