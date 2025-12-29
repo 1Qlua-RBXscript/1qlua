@@ -21,6 +21,11 @@ local Window = Library:Window("| 1Qlua ♡ Хаб |")
 -- функций
 -- музыка
 -- Настройки музыки
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local SoundService = game:GetService("SoundService")
+
 local settings = {
     SoundFile = "cat.mp3",
     SoundUrl = "https://cdn.discordapp.com/attachments/1374346480130719744/1455053866943910164/the_living_tombstone_-_Cats_slowedreverb_-_GemanTyoma_youtube.mp3?ex=69535403&is=69520283&hm=707c5099eda0ed08a13a1c43c222560b62795aea96d8ec440b2deadf2111616c&",
@@ -46,16 +51,12 @@ local function initializeMusic()
             writefile(settings.SoundFile, game:HttpGet(settings.SoundUrl))
         end
         
-        -- Ждем загрузки персонажа
-        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local rootPart = character:WaitForChild("HumanoidRootPart")
-        
-        -- Создаем звуковой объект
+        -- Создаем звуковой объект в SoundService (не в персонаже!)
         sound = Instance.new("Sound")
         sound.SoundId = getcustomasset(settings.SoundFile)
         sound.Volume = currentVolume
         sound.Looped = isLooped
-        sound.Parent = rootPart
+        sound.Parent = SoundService
         
         isMusicLoaded = true
         return true
@@ -103,6 +104,37 @@ local function setVolume(newVolume)
         sound.Volume = currentVolume
     end
 end
+
+-- Автоматическая загрузка и запуск через 3 секунды
+task.spawn(function()
+    -- Ждем немного перед загрузкой
+    task.wait(1)
+    
+    -- Загружаем музыку
+    local loaded = initializeMusic()
+    
+    if loaded then
+        task.wait(2) -- Ждем еще 2 секунды (всего 3 секунды)
+        
+        -- Автоматически запускаем музыку
+        if settings.AutoPlay then
+            if playMusic() then
+                -- Включаем тоггл в интерфейсе
+                if musicToggle then
+                    musicToggle:Set(true)
+                end
+            end
+        end
+    end
+end)
+
+-- Очистка при выходе из игры
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer and sound then
+        sound:Stop()
+        sound:Destroy()
+    end
+end)
 
 
 -- флинг
@@ -1188,7 +1220,6 @@ task.spawn(function()
         
         if tick() - lastTime >= 1 then
             local fps = math.floor(frames / (tick() - lastTime))
-            fpsLabel.Text = "FPS: " .. fps
             frames = 0
             lastTime = tick()
         end
@@ -1332,29 +1363,6 @@ InfGroup:AddParagraph({
     TextWrapped = true
 })
 
--- Автоматическая загрузка и запуск через 3 секунды
-task.spawn(function()
-    -- Ждем немного перед загрузкой
-    task.wait(1)
-    
-    -- Загружаем музыку
-    local loaded = initializeMusic()
-    
-    if loaded then
-        task.wait(2) -- Ждем еще 2 секунды (всего 3 секунды)
-        
-        -- Автоматически запускаем музыку
-        if settings.AutoPlay then
-            if playMusic() then
-                -- Включаем тоггл в интерфейсе
-                if musicToggle then
-                    musicToggle:Set(true)
-                end
-            end
-        end
-    end
-end)
-
 -- Очистка при выходе из игры
 game:GetService("Players").PlayerRemoving:Connect(function(player)
     if player == LocalPlayer and sound then
@@ -1363,6 +1371,7 @@ game:GetService("Players").PlayerRemoving:Connect(function(player)
     end
 end)
 
+-- Отключаем все предупреждения в консоли
 local oldWarn = warn
 warn = function() end
 
