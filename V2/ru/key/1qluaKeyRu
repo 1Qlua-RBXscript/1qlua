@@ -1,6 +1,6 @@
 
 local LibraryUrl = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/labar"
-
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Music/animezui'),true))()
 local Success, Library = pcall(function()
     return loadstring(game:HttpGet(LibraryUrl))()
 end)
