@@ -19,6 +19,91 @@ Library:Watermark("| >ᴗ< | ♡1Qlua♡ (Хаб) | >ᴗ< |  v12 | >ᴗ< ")
 local Window = Library:Window("| 1Qlua ♡ Хаб |")
 
 -- функций
+-- музыка
+-- Настройки музыки
+local settings = {
+    SoundFile = "cat.mp3",
+    SoundUrl = "https://cdn.discordapp.com/attachments/1374346480130719744/1455053866943910164/the_living_tombstone_-_Cats_slowedreverb_-_GemanTyoma_youtube.mp3?ex=69535403&is=69520283&hm=707c5099eda0ed08a13a1c43c222560b62795aea96d8ec440b2deadf2111616c&",
+    DefaultVolume = 0.5,
+    LoopEnabled = true,
+    AutoPlay = true,
+}
+
+
+-- Переменные для хранения состояния
+local sound = nil
+local isMusicLoaded = false
+local isPlaying = false
+local currentVolume = 0.5
+local isLooped = true
+local musicToggle = nil
+
+-- Функция загрузки и инициализации музыки
+local function initializeMusic()
+    if not isMusicLoaded then
+        -- Проверяем наличие файла и загружаем если нужно
+        if not isfile(settings.SoundFile) then
+            writefile(settings.SoundFile, game:HttpGet(settings.SoundUrl))
+        end
+        
+        -- Ждем загрузки персонажа
+        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local rootPart = character:WaitForChild("HumanoidRootPart")
+        
+        -- Создаем звуковой объект
+        sound = Instance.new("Sound")
+        sound.SoundId = getcustomasset(settings.SoundFile)
+        sound.Volume = currentVolume
+        sound.Looped = isLooped
+        sound.Parent = rootPart
+        
+        isMusicLoaded = true
+        return true
+    end
+    return false
+end
+
+-- Функции управления
+local function playMusic()
+    if sound and not sound.IsPlaying then
+        sound:Play()
+        isPlaying = true
+        return true
+    end
+    return false
+end
+
+local function stopMusic()
+    if sound and sound.IsPlaying then
+        sound:Stop()
+        isPlaying = false
+        return true
+    end
+    return false
+end
+
+local function toggleMusic()
+    if sound then
+        if sound.IsPlaying then
+            sound:Stop()
+            isPlaying = false
+            return false
+        else
+            sound:Play()
+            isPlaying = true
+            return true
+        end
+    end
+    return false
+end
+
+local function setVolume(newVolume)
+    currentVolume = newVolume
+    if sound then
+        sound.Volume = currentVolume
+    end
+end
+
 
 -- флинг
 local walkflinging = false
@@ -400,6 +485,7 @@ local ScriptPage = MainTab:SubTab("❀ Скрипты ❀")
 -- Подвкладки
 local InterfacePage = SettingsTab:SubTab("Интерфейс")
 local GamePage = SettingsTab:SubTab("Игра")
+local MusicPage = SettingsTab:SubTab("Музыка")
 local PerformancePage = SettingsTab:SubTab("Производительность")
 local SecurityPage = SettingsTab:SubTab("Безопасность")
 
@@ -407,6 +493,9 @@ local FarmGroup = GeneralPage:Groupbox("╰┈> Основное ♡", "Left", "
 local ExtraGroup = GeneralPage:Groupbox("╰┈> Функции ♡", "Right", "eye")
 local TpGrouo = GeneralPage:Groupbox("╰┈> Игроки ♡", "Left", "camera")
 local FilngGroup = GeneralPage:Groupbox("╰┈> Filng ♡", "Right", "camera")
+local MusicGroup = MusicPage:Groupbox("Управление", "Left")
+local InfGroup = MusicPage:Groupbox("Текуший трек", "Right")
+
 
 local PlayerGroup = ScriptPage:Groupbox("╰┈> Игрок♡", "Left", "camera")
 local ScriptsGroup = ScriptPage:Groupbox("╰┈> Скрипты♡", "Right", "eye")
@@ -1182,3 +1271,99 @@ QuickActionsGroup:AddButton({
     end
 })
 
+
+-- Тоггл включения/выключения музыки
+musicToggle = MusicGroup:AddToggle({
+    Title = "Включить музыку",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            playMusic()
+        else
+            stopMusic()
+        end
+    end
+})
+
+-- Слайдер громкости
+MusicGroup:AddSlider({
+    Title = "Громкость",
+    Min = 0,
+    Max = 5,
+    Default = currentVolume,
+    Rounding = 1,
+    Suffix = "",
+    Callback = function(Value)
+        setVolume(Value)
+    end
+})
+
+-- Тоггл повтора
+MusicGroup:AddToggle({
+    Title = "Повторять трек",
+    Default = isLooped,
+    Callback = function(Value)
+        isLooped = Value
+        if sound then
+            sound.Looped = isLooped
+        end
+    end
+})
+
+-- Кнопка перезапуска
+MusicGroup:AddButton({
+    Title = "Перезапустить трек",
+    Callback = function()
+        if sound then
+            sound:Stop()
+            task.wait(0.1)
+            sound:Play()
+            if musicToggle then
+                musicToggle:Set(true)
+            end
+        end
+    end
+})
+
+
+-- Информация о треке
+InfGroup:AddParagraph({
+    Title = "The Living Tombstone - \nCats (замедлено + \nреверберация)",
+    TextWrapped = true
+})
+
+-- Автоматическая загрузка и запуск через 3 секунды
+task.spawn(function()
+    -- Ждем немного перед загрузкой
+    task.wait(1)
+    
+    -- Загружаем музыку
+    local loaded = initializeMusic()
+    
+    if loaded then
+        task.wait(2) -- Ждем еще 2 секунды (всего 3 секунды)
+        
+        -- Автоматически запускаем музыку
+        if settings.AutoPlay then
+            if playMusic() then
+                -- Включаем тоггл в интерфейсе
+                if musicToggle then
+                    musicToggle:Set(true)
+                end
+            end
+        end
+    end
+end)
+
+-- Очистка при выходе из игры
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer and sound then
+        sound:Stop()
+        sound:Destroy()
+    end
+end)
+
+local oldWarn = warn
+warn = function() end
+
+return "Музыкальный плеер успешно загружен"
