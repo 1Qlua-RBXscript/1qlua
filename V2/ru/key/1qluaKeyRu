@@ -479,57 +479,46 @@ local function setFullbright(enabled)
     end
 end
 
--- скорость
+-- Значения по умолчанию
 local walkSpeedValue = 16
 local jumpHeightValue = 7.2
 local fovValue = 70
 
-local speedSliderValue = 16
-local jumpSliderValue = 50
-local fovSliderValue = 70
+-- Переменные для хранения соединений
+local speedLoop, jumpLoop, fovLoop
 
-local function updateSpeed(value)
-    speedSliderValue = value
+-- Функция для остановки всех loops
+local function stopAllLoops()
+    if speedLoop then speedLoop:Disconnect() speedLoop = nil end
+    if jumpLoop then jumpLoop:Disconnect() jumpLoop = nil end
+    if fovLoop then fovLoop:Disconnect() fovLoop = nil end
 end
 
-local function updateJump(value)
-    jumpSliderValue = value
-end
-
-local function updateFOV(value)
-    fovSliderValue = value
-end
-
-local updateConnection
-local function startUpdating()
-    if updateConnection then
-        updateConnection:Disconnect()
-    end
+-- Функция для запуска всех loops
+local function startAllLoops()
+    stopAllLoops()
     
-    updateConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if walkSpeedValue ~= speedSliderValue then
-            walkSpeedValue = speedSliderValue
-            local character = game.Players.LocalPlayer.Character
-            if character and character:FindFirstChild("Humanoid") then
-                character.Humanoid.WalkSpeed = walkSpeedValue
-            end
+    -- Loop для скорости
+    speedLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.WalkSpeed = walkSpeedValue
         end
-        local newJumpHeight = jumpSliderValue / 7
-        if newJumpHeight < 0.5 then newJumpHeight = 0.5 end
-        
-        if jumpHeightValue ~= newJumpHeight then
-            jumpHeightValue = newJumpHeight
-            local character = game.Players.LocalPlayer.Character
-            if character and character:FindFirstChild("Humanoid") then
-                character.Humanoid.JumpHeight = jumpHeightValue
-            end
+    end)
+    
+    -- Loop для прыжка
+    jumpLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.JumpHeight = jumpHeightValue
         end
-        if fovValue ~= fovSliderValue then
-            fovValue = fovSliderValue
-            local camera = workspace.CurrentCamera
-            if camera then
-                camera.FieldOfView = fovValue
-            end
+    end)
+    
+    -- Loop для FOV
+    fovLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        local camera = workspace.CurrentCamera
+        if camera then
+            camera.FieldOfView = fovValue
         end
     end)
 end
@@ -839,13 +828,22 @@ local PlayerGroup = ScriptPage:Groupbox("╰┈> Игрок♡", "Left", "camera
 local ScriptsGroup = ScriptPage:Groupbox("╰┈> Скрипты♡", "Right", "eye")
 
 
+
+-- Создаем слайдеры с мгновенным применением
 FarmGroup:AddSlider({
     Title = "♡Скорость⤵ \nпередвижения♡",
     Min = 0,
     Max = 150,
     Default = 16,
     Suffix = " ❀studs❀",
-    Callback = updateSpeed
+    Callback = function(value)
+        walkSpeedValue = value
+        -- Мгновенно применяем
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.WalkSpeed = walkSpeedValue
+        end
+    end
 })
 
 FarmGroup:AddSlider({
@@ -854,7 +852,15 @@ FarmGroup:AddSlider({
     Max = 500,
     Default = 50,
     Suffix = " ❀сила❀",
-    Callback = updateJump
+    Callback = function(value)
+        jumpHeightValue = value / 7
+        if jumpHeightValue < 0.5 then jumpHeightValue = 0.5 end
+        -- Мгновенно применяем
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.JumpHeight = jumpHeightValue
+        end
+    end
 })
 
 FarmGroup:AddSlider({
@@ -863,11 +869,20 @@ FarmGroup:AddSlider({
     Max = 120,
     Default = 70,
     Suffix = " ❀градусов❀",
-    Callback = updateFOV
+    Callback = function(value)
+        fovValue = value
+        -- Мгновенно применяем
+        local camera = workspace.CurrentCamera
+        if camera then
+            camera.FieldOfView = fovValue
+        end
+    end
 })
 
-startUpdating()
+-- Запускаем loops
+startAllLoops()
 
+-- Обработка респавна персонажа
 game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.5)
     local humanoid = character:WaitForChild("Humanoid")
@@ -875,8 +890,11 @@ game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
         humanoid.WalkSpeed = walkSpeedValue
         humanoid.JumpHeight = jumpHeightValue
     end
+    -- Перезапускаем loops для нового персонажа
+    startAllLoops()
 end)
 
+-- Применяем начальные значения
 if game.Players.LocalPlayer.Character then
     local character = game.Players.LocalPlayer.Character
     local humanoid = character:WaitForChild("Humanoid", 1)
@@ -889,13 +907,6 @@ end
 if workspace.CurrentCamera then
     workspace.CurrentCamera.FieldOfView = fovValue
 end
-
-game:GetService("UserInputService").WindowFocused:Connect(function()
-    if not updateConnection then return end
-    if not updateConnection.Connected then
-        startUpdating()
-    end
-end)
 
 ExtraGroup:AddToggle({
     Title = "˗ˋˏ♡ˎˊ˗NoClip˗ˋˏ♡ˎˊ˗",
