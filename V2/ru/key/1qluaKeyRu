@@ -1693,4 +1693,4 @@ local oldWarn = warn
 warn = function() end
 
 
-return "Музыкальный плеер успешно загружен"
+return "Музыкальный плеер успешно загружен""
