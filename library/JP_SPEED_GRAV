@@ -5,7 +5,7 @@ local LocalPlayer = Players.LocalPlayer
 -- Настройки по умолчанию
 local currentSettings = {
     Speed = 16,
-    Jump = 50,
+    Jump = 8,
     Gravity = 196.2
 }
 
