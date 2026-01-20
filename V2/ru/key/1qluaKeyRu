@@ -1,34 +1,7 @@
-
 local LibraryUrl = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/labar"
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 local player = game.Players.LocalPlayer
-
-local settings = {
-    SoundFile = "Anime.mp3",
-    SoundUrl = "https://cdn.discordapp.com/attachments/1374346480130719744/1455048920513249343/anime-ahh.mp3?ex=69534f68&is=6951fde8&hm=9a0fe776ff70e4584273412399cb5401ca9fe90f2785841f73a1d809ea2bc4b6&",
-    DefaultVolume = 0.5,
-    LoopEnabled = false,
-    AutoPlay = true
-}
-
-if not isfile(settings.SoundFile) then
-    writefile(settings.SoundFile, game:HttpGet(settings.SoundUrl))
-end
-
-local sound = Instance.new("Sound")
-sound.SoundId = getcustomasset(settings.SoundFile)
-sound.Volume = settings.DefaultVolume
-sound.Looped = settings.LoopEnabled
-sound.Parent = game:GetService("SoundService")
-
-
-if settings.AutoPlay then
-    task.wait()
-    sound:Play()
-end
-
-
 
 local Success, Library = pcall(function()
     return loadstring(game:HttpGet(LibraryUrl))()
@@ -63,8 +36,6 @@ local settings = {
     AutoPlay = true,
 }
 
-
--- Переменные для хранения состояния
 local sound = nil
 local isMusicLoaded = false
 local isPlaying = false
@@ -72,28 +43,21 @@ local currentVolume = 0.5
 local isLooped = true
 local musicToggle = nil
 
--- Функция загрузки и инициализации музыки
 local function initializeMusic()
     if not isMusicLoaded then
-        -- Проверяем наличие файла и загружаем если нужно
         if not isfile(settings.SoundFile) then
             writefile(settings.SoundFile, game:HttpGet(settings.SoundUrl))
         end
-        
-        -- Создаем звуковой объект в SoundService (не в персонаже!)
         sound = Instance.new("Sound")
         sound.SoundId = getcustomasset(settings.SoundFile)
         sound.Volume = currentVolume
         sound.Looped = isLooped
         sound.Parent = SoundService
-        
         isMusicLoaded = true
         return true
     end
     return false
 end
-
--- Функции управления
 local function playMusic()
     if sound and not sound.IsPlaying then
         sound:Play()
@@ -102,7 +66,6 @@ local function playMusic()
     end
     return false
 end
-
 local function stopMusic()
     if sound and sound.IsPlaying then
         sound:Stop()
@@ -111,7 +74,6 @@ local function stopMusic()
     end
     return false
 end
-
 local function toggleMusic()
     if sound then
         if sound.IsPlaying then
@@ -126,29 +88,20 @@ local function toggleMusic()
     end
     return false
 end
-
 local function setVolume(newVolume)
     currentVolume = newVolume
     if sound then
         sound.Volume = currentVolume
     end
 end
-
--- Автоматическая загрузка и запуск через 3 секунды
 task.spawn(function()
-    -- Ждем немного перед загрузкой
     task.wait(1)
-    
-    -- Загружаем музыку
     local loaded = initializeMusic()
     
     if loaded then
-        task.wait(2) -- Ждем еще 2 секунды (всего 3 секунды)
-        
-        -- Автоматически запускаем музыку
+        task.wait(2) 
         if settings.AutoPlay then
             if playMusic() then
-                -- Включаем тоггл в интерфейсе
                 if musicToggle then
                     musicToggle:Set(true)
                 end
@@ -157,16 +110,12 @@ task.spawn(function()
     end
 end)
 
--- Очистка при выходе из игры
 game:GetService("Players").PlayerRemoving:Connect(function(player)
     if player == LocalPlayer and sound then
         sound:Stop()
         sound:Destroy()
     end
 end)
-
-
--- флинг
 local walkflinging = false
 local antifling = nil
 local function enableWalkFling()
@@ -175,12 +124,10 @@ local function enableWalkFling()
     task.spawn(function()
         local RunService = game:GetService("RunService")
         local LocalPlayer = game.Players.LocalPlayer
-        
         while walkflinging do
             RunService.Heartbeat:Wait()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
-            
             if root then
                 local vel = root.Velocity
                 root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
@@ -200,7 +147,6 @@ local function enableAntiFling()
     if antifling then
         antifling:Disconnect()
     end
-    
     antifling = game:GetService("RunService").Stepped:Connect(function()
         for _, player in pairs(game:GetService("Players"):GetPlayers()) do
             if player ~= game.Players.LocalPlayer and player.Character then
@@ -1436,20 +1382,15 @@ KeybindsGroup:AddKeybind({
         end
     end
 })
-
--- ==================== НАСТРОЙКИ ИГРЫ ====================
 local GameSettingsGroup = GamePage:Groupbox("Настройки персонажа", "Right")
-
 GameSettingsGroup:AddButton({
     Title = "Телепорт на спавн",
     Callback = function()
-        -- Поиск спавн-точки
         local spawnPoints = {
             workspace:FindFirstChild("SpawnLocation"),
             workspace:FindFirstChild("Spawn"),
             workspace:FindFirstChild("SpawnPoint")
         }
-        
         for _, spawn in pairs(spawnPoints) do
             if spawn then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -1462,17 +1403,13 @@ GameSettingsGroup:AddButton({
         Library:Notify("Ошибка", "Спавн не найден", 3)
     end
 })
-
--- ==================== НАСТРОЙКИ БЕЗОПАСНОСТИ ====================
 local SecurityGroup = SecurityPage:Groupbox("Защита", "Left")
-
 SecurityGroup:AddToggle({
     Title = "Анти-афк",
     Default = true,
     Description = "Предотвращать кик за бездействие",
     Callback = function(Value)
         if Value then
-            -- Стандартная анти-афк система Roblox
             local vu = game:GetService("VirtualUser")
             game:GetService("Players").LocalPlayer.Idled:Connect(function()
                 vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
@@ -1515,7 +1452,6 @@ SecurityGroup:AddToggle({
     end
 })
 
--- ==================== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ====================
 local InfoGroup = PerformancePage:Groupbox("Информация", "Right")
 
 InfoGroup:AddLabelText("Версия скрипта:", "RedOnyx V17")
@@ -1523,10 +1459,7 @@ InfoGroup:AddLabelText("Игра:", game:GetService("MarketplaceService"):GetPro
 InfoGroup:AddLabelText("Игрок:", LocalPlayer.Name)
 InfoGroup:AddLabelText("Место в игре:", game.PlaceId)
 
--- Отображение FPS
 local fpsLabel = InfoGroup:AddLabel("FPS: 60")
-
--- Обновление FPS в реальном времени
 task.spawn(function()
     local frames = 0
     local lastTime = tick()
@@ -1692,5 +1625,3 @@ end)
 local oldWarn = warn
 warn = function() end
 
-
-return "Музыкальный плеер успешно загружен""
