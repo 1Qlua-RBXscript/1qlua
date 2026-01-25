@@ -779,7 +779,7 @@ local ScriptsGroup = ScriptPage:Groupbox("╰┈> Скрипты♡", "Right", "
 FarmGroup:AddSlider({
     Title = "♡Скорость⤵ \nпередвижения♡",
     Min = 0,
-    Max = 150,
+    Max = 1500,
     Default = 16,
     Suffix = " ❀studs❀",
     Callback = function(value)
@@ -1218,8 +1218,95 @@ game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
         disableAntiFling()
     end)
 end)
+local deletionModeEnabled = false
+local deletionKeybind = Enum.KeyCode.R
+local mouse = LocalPlayer:GetMouse()
+local highlight = Instance.new("Highlight")
+highlight.FillTransparency = 1
+highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+highlight.Parent = game:GetService("CoreGui")
+local DeletionGroup = GeneralPage:Groupbox("Object Deletion", "Left")
+local function deleteObjectUnderCursor()
+    if not deletionModeEnabled then return end
+    local target = mouse.Target
+    if target then
+        if target:IsDescendantOf(Workspace) then
+            local success, err = pcall(function()
+                target:Destroy()
+            end)
+            if success then
+                Library:Notify("Deleted", "Object removed: " .. target.Name, 2)
+            else
+                Library:Notify("Error", "Failed to delete object", 2)
+            end
+        else
+            Library:Notify("Warning", "This object cannot be deleted", 2)
+        end
+    else
+        Library:Notify("Warning", "No object under cursor", 2)
+    end
+end
+local function updateHighlight()
+    if deletionModeEnabled then
+        if mouse.Target and mouse.Target:IsDescendantOf(Workspace) then
+            highlight.Adornee = mouse.Target
+            highlight.Enabled = true
+        else
+            highlight.Enabled = false
+        end
+    else
+        highlight.Enabled = false
+    end
+end
+DeletionGroup:AddToggle({
+    Title = "Удаления обьектов",
+    Default = false,
+    Flag = "DeletionModeToggle",
+    Callback = function(Value)
+        deletionModeEnabled = Value
+        
+        if Value then
+            Library:Notify("Delete Mode", "ENABLED - click objects to delete", 2)
+        else
+            Library:Notify("Delete Mode", "DISABLED", 2)
+        end
+    end
+})
+DeletionGroup:AddKeybind({
+    Title = "Кнопка на удаления",
+    Default = Enum.KeyCode.R,
+    Flag = "DeletionHotkey",
+    Callback = function(Key)
+        deletionKeybind = Key
+        Library:Notify("Hotkey", "Set to: " .. tostring(Key), 2)
+    end
+})
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == deletionKeybind then
+        deletionModeEnabled = not deletionModeEnabled
+        if Library.Items["DeletionModeToggle"] then
+            Library.Items["DeletionModeToggle"].Set(deletionModeEnabled)
+        end
+        if deletionModeEnabled then
+            Library:Notify("Delete Mode", "ENABLED - click objects to delete", 2)
+        else
+            Library:Notify("Delete Mode", "DISABLED", 2)
+        end
+    end
+end)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
 
--- ==================== НАСТРОЙКИ ИНТЕРФЕЙСА ====================
+    if deletionModeEnabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        task.wait(0.05)
+        deleteObjectUnderCursor()
+    end
+end)
+game:GetService("RunService").Heartbeat:Connect(function()
+    updateHighlight()
+end)
+-- НАСТРОЙКИ ИНТЕРФЕЙСА
 local InterfaceGroup = InterfacePage:Groupbox("Настройки интерфейса", "Left")
 
 InterfaceGroup:AddToggle({
