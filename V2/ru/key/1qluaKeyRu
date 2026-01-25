@@ -1895,7 +1895,6 @@ task.spawn(function()
         end
     end
 end)
-
 InfoGroup:AddSeparator()
 InfoGroup:AddButton({
     Title = "Скопировать информацию",
@@ -1916,10 +1915,7 @@ ID игры: %s
         Library:Notify("Инфо", "Информация скопирована!", 2)
     end
 })
-
--- ==================== БЫСТРЫЕ ДЕЙСТВИЯ ====================
 local QuickActionsGroup = SecurityPage:Groupbox("Быстрые действия", "Right")
-
 QuickActionsGroup:AddButton({
     Title = "Переподключиться",
     Description = "Вернуться на этот сервер",
@@ -1927,7 +1923,6 @@ QuickActionsGroup:AddButton({
         game:GetService("TeleportService"):Teleport(game.PlaceId)
     end
 })
-
 QuickActionsGroup:AddButton({
     Title = "Сменить сервер",
     Description = "Перейти на другой сервер",
@@ -1938,7 +1933,6 @@ QuickActionsGroup:AddButton({
                 game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=10")
             )
         end)
-        
         if success and result.data then
             for _, server in pairs(result.data) do
                 if server.playing < server.maxPlayers and server.id ~= game.JobId then
@@ -1950,7 +1944,6 @@ QuickActionsGroup:AddButton({
         Library:Notify("Ошибка", "Не удалось найти сервер", 3)
     end
 })
-
 QuickActionsGroup:AddButton({
     Title = "Скопировать ID игры",
     Callback = function()
@@ -1958,7 +1951,6 @@ QuickActionsGroup:AddButton({
         Library:Notify("Инфо", "ID игры скопирован!", 2)
     end
 })
-
 QuickActionsGroup:AddButton({
     Title = "Сбросить персонажа",
     Callback = function()
@@ -1971,9 +1963,6 @@ QuickActionsGroup:AddButton({
         end
     end
 })
-
-
--- Тоггл включения/выключения музыки
 musicToggle = MusicGroup:AddToggle({
     Title = "Включить музыку",
     Default = false,
@@ -1985,8 +1974,6 @@ musicToggle = MusicGroup:AddToggle({
         end
     end
 })
-
--- Слайдер громкости
 MusicGroup:AddSlider({
     Title = "Громкость",
     Min = 0,
@@ -1998,8 +1985,6 @@ MusicGroup:AddSlider({
         setVolume(Value)
     end
 })
-
--- Тоггл повтора
 MusicGroup:AddToggle({
     Title = "Повторять трек",
     Default = isLooped,
@@ -2010,8 +1995,6 @@ MusicGroup:AddToggle({
         end
     end
 })
-
--- Кнопка перезапуска
 MusicGroup:AddButton({
     Title = "Перезапустить трек",
     Callback = function()
@@ -2025,23 +2008,15 @@ MusicGroup:AddButton({
         end
     end
 })
-
-
--- Информация о треке
 InfGroup:AddParagraph({
     Title = "The Living Tombstone - \nCats (замедлено + \nреверберация)",
     TextWrapped = true
 })
-
--- Очистка при выходе из игры
 game:GetService("Players").PlayerRemoving:Connect(function(player)
     if player == LocalPlayer and sound then
         sound:Stop()
         sound:Destroy()
     end
 end)
-
--- Отключаем все предупреждения в консоли
 local oldWarn = warn
 warn = function() end
-
