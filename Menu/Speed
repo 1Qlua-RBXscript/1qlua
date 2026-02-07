@@ -1,0 +1,644 @@
+-- LooP Menu SP v1.3
+-- Автоматическое сохранение/загрузка настроек в формате JSON
+
+-- Сервисы
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
+
+-- Переменные
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local humanoid = nil
+local settings = {
+    Speed = 16,
+    JumpHeight = 50,
+    FOV = 70
+}
+local dragging = false
+local dragStart, startPos
+local enabled = true
+local connections = {}
+local saveFileName = "1qluaseting/LooPMenuSP.json"
+
+-- Переменные для слайдеров
+local activeSlider = nil
+local sliding = false
+
+-- Создаем папку для настроек
+local function ensureSettingsFolder()
+    if not isfolder("1qluaseting") then
+        makefolder("1qluaseting")
+    end
+end
+
+-- Сохраняем настройки в формате JSON
+local function saveSettings()
+    ensureSettingsFolder()
+    
+    local success, result = pcall(function()
+        local jsonData = HttpService:JSONEncode(settings)
+        writefile(saveFileName, jsonData)
+        return true
+    end)
+    
+    if success then
+        if SaveButton then
+            SaveButton.Text = "✅ Сохранено!"
+            task.wait(0.8)
+            SaveButton.Text = "💾 Сохранить"
+        end
+        return true
+    else
+        print("Ошибка сохранения настроек:", result)
+        return false
+    end
+end
+
+-- Загружаем настройки из JSON
+local function loadSettings()
+    ensureSettingsFolder()
+    
+    if not isfile(saveFileName) then
+        return false
+    end
+    
+    local success, result = pcall(function()
+        local jsonData = readfile(saveFileName)
+        local loadedSettings = HttpService:JSONDecode(jsonData)
+        
+        settings.Speed = tonumber(loadedSettings.Speed) or 16
+        settings.JumpHeight = tonumber(loadedSettings.JumpHeight) or 50
+        settings.FOV = tonumber(loadedSettings.FOV) or 70
+        
+        return true
+    end)
+    
+    if success then
+        if LoadButton then
+            LoadButton.Text = "✅ Загружено!"
+            task.wait(0.8)
+            LoadButton.Text = "📂 Загрузить"
+        end
+        return true
+    else
+        print("Ошибка загрузки настроек:", result)
+        return false
+    end
+end
+
+-- Создаем GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "LooPMenuSP"
+ScreenGui.DisplayOrder = 999
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Главный фрейм
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 350, 0, 400)
+MainFrame.Position = UDim2.new(0, 50, 0, 50)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MainFrame.BackgroundTransparency = 0.05
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+
+-- Закругление и тень
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(60, 60, 70)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+-- Заголовок
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+Title.Text = "LooP Menu SP"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 22
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Center
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = Title
+
+-- Кнопка закрытия
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 35, 0, 35)
+CloseButton.Position = UDim2.new(1, -40, 0, 7)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 18
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Text = "✕"
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 17)
+CloseCorner.Parent = CloseButton
+
+-- Контейнер для настроек
+local SettingsContainer = Instance.new("ScrollingFrame")
+SettingsContainer.Name = "SettingsContainer"
+SettingsContainer.Size = UDim2.new(1, -20, 0, 220)
+SettingsContainer.Position = UDim2.new(0, 10, 0, 60)
+SettingsContainer.BackgroundTransparency = 1
+SettingsContainer.ScrollBarThickness = 4
+SettingsContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+SettingsContainer.CanvasSize = UDim2.new(0, 0, 0, 240)
+
+-- Функция создания настройки
+local function createSetting(parent, name, yPosition, minValue, maxValue, defaultValue, color)
+    local frame = Instance.new("Frame")
+    frame.Name = name .. "Frame"
+    frame.Size = UDim2.new(1, 0, 0, 75)
+    frame.Position = UDim2.new(0, 0, 0, yPosition)
+    frame.BackgroundTransparency = 1
+    
+    local label = Instance.new("TextLabel")
+    label.Name = name .. "Label"
+    label.Size = UDim2.new(0.65, 0, 0, 25)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name .. ": " .. defaultValue
+    label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    label.TextSize = 16
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local textBox = Instance.new("TextBox")
+    textBox.Name = name .. "Box"
+    textBox.Size = UDim2.new(0.3, 0, 0, 30)
+    textBox.Position = UDim2.new(0.7, 0, 0, 0)
+    textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.TextSize = 14
+    textBox.PlaceholderText = "Значение"
+    textBox.Text = tostring(defaultValue)
+    textBox.ClearTextOnFocus = false
+    
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 6)
+    boxCorner.Parent = textBox
+    
+    local sliderBackground = Instance.new("Frame")
+    sliderBackground.Name = name .. "SliderBg"
+    sliderBackground.Size = UDim2.new(1, 0, 0, 10)
+    sliderBackground.Position = UDim2.new(0, 0, 0, 35)
+    sliderBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    sliderBackground.BorderSizePixel = 0
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 5)
+    sliderCorner.Parent = sliderBackground
+    
+    local slider = Instance.new("Frame")
+    slider.Name = name .. "Slider"
+    slider.Size = UDim2.new(1, 0, 0, 20)
+    slider.Position = UDim2.new(0, 0, 0, 30)
+    slider.BackgroundTransparency = 1
+    
+    local fill = Instance.new("Frame")
+    fill.Name = name .. "Fill"
+    fill.Size = UDim2.new((defaultValue - minValue) / (maxValue - minValue), 0, 1, 0)
+    fill.Position = UDim2.new(0, 0, 0, 0)
+    fill.BackgroundColor3 = color
+    fill.BorderSizePixel = 0
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 5)
+    fillCorner.Parent = fill
+    
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Name = name .. "Value"
+    valueLabel.Size = UDim2.new(0, 40, 0, 20)
+    valueLabel.Position = UDim2.new(1, -45, 0, 45)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(defaultValue)
+    valueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    valueLabel.TextSize = 14
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    
+    fill.Parent = sliderBackground
+    valueLabel.Parent = frame
+    sliderBackground.Parent = frame
+    textBox.Parent = frame
+    label.Parent = frame
+    frame.Parent = parent
+    
+    return frame, label, textBox, slider, fill, valueLabel, sliderBackground
+end
+
+-- Создаем настройки
+local SpeedFrame, SpeedLabel, SpeedBox, SpeedSlider, SpeedFill, SpeedValue, SpeedBg = createSetting(SettingsContainer, "Скорость", 0, 1, 100, 16, Color3.fromRGB(0, 170, 255))
+local JumpFrame, JumpLabel, JumpBox, JumpSlider, JumpFill, JumpValue, JumpBg = createSetting(SettingsContainer, "Прыжок", 80, 1, 100, 50, Color3.fromRGB(0, 200, 100))
+local FOVFrame, FOVLabel, FOVBox, FOVSlider, FOVFill, FOVValue, FOVBg = createSetting(SettingsContainer, "FOV", 160, 70, 150, 70, Color3.fromRGB(200, 100, 255))
+
+-- Кнопки управления
+local ButtonsFrame = Instance.new("Frame")
+ButtonsFrame.Name = "ButtonsFrame"
+ButtonsFrame.Size = UDim2.new(1, -20, 0, 50)
+ButtonsFrame.Position = UDim2.new(0, 10, 0, 290)
+ButtonsFrame.BackgroundTransparency = 1
+
+local SaveButton = Instance.new("TextButton")
+SaveButton.Name = "SaveButton"
+SaveButton.Size = UDim2.new(0.48, 0, 1, 0)
+SaveButton.Position = UDim2.new(0, 0, 0, 0)
+SaveButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+SaveButton.Text = "💾 Сохранить"
+SaveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveButton.TextSize = 16
+SaveButton.Font = Enum.Font.GothamBold
+
+local SaveCorner = Instance.new("UICorner")
+SaveCorner.CornerRadius = UDim.new(0, 8)
+SaveCorner.Parent = SaveButton
+
+local LoadButton = Instance.new("TextButton")
+LoadButton.Name = "LoadButton"
+LoadButton.Size = UDim2.new(0.48, 0, 1, 0)
+LoadButton.Position = UDim2.new(0.52, 0, 0, 0)
+LoadButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+LoadButton.Text = "📂 Загрузить"
+LoadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadButton.TextSize = 16
+LoadButton.Font = Enum.Font.GothamBold
+
+local LoadCorner = Instance.new("UICorner")
+LoadCorner.CornerRadius = UDim.new(0, 8)
+LoadCorner.Parent = LoadButton
+
+-- Статус бар
+local StatusBar = Instance.new("Frame")
+StatusBar.Name = "StatusBar"
+StatusBar.Size = UDim2.new(1, -20, 0, 30)
+StatusBar.Position = UDim2.new(0, 10, 0, 350)
+StatusBar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+StatusBar.BorderSizePixel = 0
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 6)
+StatusCorner.Parent = StatusBar
+
+local StatusText = Instance.new("TextLabel")
+StatusText.Name = "StatusText"
+StatusText.Size = UDim2.new(1, -10, 1, 0)
+StatusText.Position = UDim2.new(0, 5, 0, 0)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "Готово. Перетаскивайте за заголовок"
+StatusText.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusText.TextSize = 14
+StatusText.Font = Enum.Font.Gotham
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.Parent = StatusBar
+
+-- Собираем GUI
+StatusBar.Parent = MainFrame
+LoadButton.Parent = ButtonsFrame
+SaveButton.Parent = ButtonsFrame
+ButtonsFrame.Parent = MainFrame
+SettingsContainer.Parent = MainFrame
+CloseButton.Parent = Title
+Title.Parent = MainFrame
+MainFrame.Parent = ScreenGui
+
+-- Функции для перемещения GUI
+Title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        StatusText.Text = "Перетаскивание..."
+    end
+end)
+
+Title.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+        StatusText.Text = "Готово"
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        -- Перемещение GUI
+        if dragging and dragStart and startPos then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+        
+        -- Обработка слайдеров
+        if sliding and activeSlider then
+            local mousePos = input.Position.X
+            local sliderAbsPos = activeSlider.bg.AbsolutePosition.X
+            local sliderWidth = activeSlider.bg.AbsoluteSize.X
+            
+            -- Ограничиваем позицию мыши в пределах слайдера
+            local relativeX = math.clamp(mousePos - sliderAbsPos, 0, sliderWidth)
+            local percent = relativeX / sliderWidth
+            local value = math.floor(activeSlider.min + (activeSlider.max - activeSlider.min) * percent + 0.5)
+            value = math.clamp(value, activeSlider.min, activeSlider.max)
+            
+            activeSlider.callback(value)
+        end
+    end
+end)
+
+-- Обновление значений интерфейса
+local function updateUI()
+    SpeedBox.Text = tostring(settings.Speed)
+    JumpBox.Text = tostring(settings.JumpHeight)
+    FOVBox.Text = tostring(settings.FOV)
+    
+    SpeedLabel.Text = "Скорость: " .. settings.Speed
+    JumpLabel.Text = "Прыжок: " .. settings.JumpHeight
+    FOVLabel.Text = "FOV: " .. settings.FOV
+    
+    SpeedValue.Text = tostring(settings.Speed)
+    JumpValue.Text = tostring(settings.JumpHeight)
+    FOVValue.Text = tostring(settings.FOV)
+    
+    SpeedFill.Size = UDim2.new(settings.Speed / 100, 0, 1, 0)
+    JumpFill.Size = UDim2.new(settings.JumpHeight / 100, 0, 1, 0)
+    FOVFill.Size = UDim2.new((settings.FOV - 70) / 80, 0, 1, 0)
+end
+
+-- Применение настроек к игроку
+local function applySettings()
+    if not enabled then return end
+    
+    -- Применяем FOV к камере
+    if camera then
+        camera.FieldOfView = settings.FOV
+    end
+    
+    -- Применяем скорость и прыжок к персонажу
+    if player.Character then
+        local charHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if charHumanoid then
+            humanoid = charHumanoid
+            
+            -- Применяем скорость
+            humanoid.WalkSpeed = settings.Speed
+            
+            -- ПРАВИЛЬНОЕ ПРИМЕНЕНИЕ ВЫСОТЫ ПРЫЖКА
+            -- В современных версиях Roblox используется JumpHeight
+            -- JumpHeight работает как множитель стандартной высоты прыжка
+            -- Стандартное значение JumpHeight = 50 (это примерно 7.2 силы прыжка)
+            -- Чтобы получить реальную высоту прыжка, нужно преобразовать
+            humanoid.JumpHeight = settings.JumpHeight
+            
+            -- Для совместимости также устанавливаем JumpPower (если существует)
+            if humanoid:GetPropertyChangedSignal("JumpPower") then
+                -- Конвертируем JumpHeight в JumpPower
+                -- Примерная формула: JumpPower = JumpHeight * 0.144
+                humanoid.JumpPower = settings.JumpHeight * 0.144
+            end
+        end
+    end
+end
+
+-- Функция настройки слайдера с глобальным отслеживанием мыши
+local function setupSlider(slider, fill, valueLabel, bg, minVal, maxVal, callback)
+    local sliderData = {
+        bg = bg,
+        min = minVal,
+        max = maxVal,
+        callback = callback,
+        fill = fill,
+        valueLabel = valueLabel
+    }
+    
+    local function startSliding()
+        sliding = true
+        activeSlider = sliderData
+        StatusText.Text = "Изменение значения..."
+    end
+    
+    local function stopSliding()
+        sliding = false
+        activeSlider = nil
+        StatusText.Text = "Готово"
+    end
+    
+    -- Обработка начала перетаскивания на слайдере
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            startSliding()
+        end
+    end)
+    
+    -- Обработка начала перетаскивания на фоне слайдера
+    bg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            startSliding()
+        end
+    end)
+    
+    -- Обработка отпускания кнопки мыши на слайдере
+    slider.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            stopSliding()
+        end
+    end)
+    
+    -- Обработка отпускания кнопки мыши на фоне слайдера
+    bg.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            stopSliding()
+        end
+    end)
+    
+    -- Обновление слайдера при изменении значения
+    local function updateSlider(value)
+        local percent = (value - minVal) / (maxVal - minVal)
+        percent = math.clamp(percent, 0, 1)
+        fill.Size = UDim2.new(percent, 0, 1, 0)
+        if valueLabel then
+            valueLabel.Text = tostring(value)
+        end
+    end
+    
+    -- Возвращаем функцию для обновления слайдера
+    return updateSlider
+end
+
+-- Настройка слайдеров
+local updateSpeedSlider = setupSlider(SpeedSlider, SpeedFill, SpeedValue, SpeedBg, 1, 100, function(value)
+    settings.Speed = value
+    updateUI()
+    applySettings()
+end)
+
+local updateJumpSlider = setupSlider(JumpSlider, JumpFill, JumpValue, JumpBg, 1, 100, function(value)
+    settings.JumpHeight = value
+    updateUI()
+    applySettings()
+end)
+
+local updateFOVSlider = setupSlider(FOVSlider, FOVFill, FOVValue, FOVBg, 70, 150, function(value)
+    settings.FOV = value
+    updateUI()
+    applySettings()
+end)
+
+-- Обработчики текстовых полей
+SpeedBox.FocusLost:Connect(function()
+    local value = tonumber(SpeedBox.Text)
+    if value then
+        settings.Speed = math.clamp(value, 1, 100)
+        updateSpeedSlider(settings.Speed)
+        updateUI()
+        applySettings()
+    else
+        SpeedBox.Text = tostring(settings.Speed)
+    end
+end)
+
+JumpBox.FocusLost:Connect(function()
+    local value = tonumber(JumpBox.Text)
+    if value then
+        settings.JumpHeight = math.clamp(value, 1, 100)
+        updateJumpSlider(settings.JumpHeight)
+        updateUI()
+        applySettings()
+    else
+        JumpBox.Text = tostring(settings.JumpHeight)
+    end
+end)
+
+FOVBox.FocusLost:Connect(function()
+    local value = tonumber(FOVBox.Text)
+    if value then
+        settings.FOV = math.clamp(value, 70, 150)
+        updateFOVSlider(settings.FOV)
+        updateUI()
+        applySettings()
+    else
+        FOVBox.Text = tostring(settings.FOV)
+    end
+end)
+
+-- Кнопки сохранения/загрузки
+SaveButton.MouseButton1Click:Connect(function()
+    if saveSettings() then
+        StatusText.Text = "Настройки сохранены в JSON"
+    else
+        StatusText.Text = "Ошибка сохранения"
+    end
+end)
+
+LoadButton.MouseButton1Click:Connect(function()
+    if loadSettings() then
+        updateSpeedSlider(settings.Speed)
+        updateJumpSlider(settings.JumpHeight)
+        updateFOVSlider(settings.FOV)
+        updateUI()
+        applySettings()
+        StatusText.Text = "Настройки загружены из JSON"
+    else
+        StatusText.Text = "Ошибка загрузки"
+    end
+end)
+
+-- Кнопка закрытия
+CloseButton.MouseButton1Click:Connect(function()
+    enabled = false
+    
+    -- Восстанавливаем стандартные значения
+    if humanoid then
+        humanoid.WalkSpeed = 16
+        humanoid.JumpHeight = 50
+        if humanoid:GetPropertyChangedSignal("JumpPower") then
+            humanoid.JumpPower = 50 * 0.144
+        end
+    end
+    if camera then
+        camera.FieldOfView = 70
+    end
+    
+    -- Удаляем GUI
+    ScreenGui:Destroy()
+    
+    -- Отключаем все соединения
+    for _, connection in pairs(connections) do
+        if connection then
+            pcall(function() connection:Disconnect() end)
+        end
+    end
+end)
+
+-- Обработка глобального отпускания кнопки мыши
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+        sliding = false
+        activeSlider = nil
+        StatusText.Text = "Готово"
+    end
+end)
+
+-- Основной цикл для гарантии применения настроек
+connections.heartbeat = RunService.Heartbeat:Connect(function()
+    if enabled then
+        applySettings()
+    end
+end)
+
+-- Обработчик появления персонажа
+connections.character = player.CharacterAdded:Connect(function()
+    task.wait(1) -- Ждем загрузки персонажа
+    if enabled then
+        applySettings()
+    end
+end)
+
+-- Автозагрузка настроек
+task.spawn(function()
+    task.wait(1)
+    if loadSettings() then
+        updateSpeedSlider(settings.Speed)
+        updateJumpSlider(settings.JumpHeight)
+        updateFOVSlider(settings.FOV)
+        updateUI()
+        StatusText.Text = "Настройки загружены"
+    end
+    applySettings()
+end)
+
+-- Добавляем GUI в CoreGui
+if CoreGui:FindFirstChild("LooPMenuSP") then
+    CoreGui:FindFirstChild("LooPMenuSP"):Destroy()
+end
+ScreenGui.Parent = CoreGui
+
+-- Горячие клавиши
+connections.inputBegan = UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+print("====================================")
+print("LooP Menu SP v1.3 успешно запущен!")
+print("Папка настроек: 1qluaseting")
+print("Файл настроек: LooPMenuSP.json")
+print("RightCtrl - скрыть/показать GUI")
+print("====================================")
