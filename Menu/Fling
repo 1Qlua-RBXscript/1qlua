@@ -1,0 +1,424 @@
+--[[
+  Fling GUI Script
+  Features:
+  - Собственный GUI в CoreGui поверх всех интерфейсов
+  - Кнопка WalkFling (вкл/выкл)
+  - Кнопка AntiFling (вкл/выкл)
+  - Кнопка NoClip (вкл/выкл)
+  - Кнопка TP к игрокам (заглушка для будущей функции)
+  - Кнопка закрытия/отключения скрипта
+  - Возможность перемещения GUI
+]]
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Состояния
+local walkflinging = false
+local antifling = nil
+local noClipEnabled = false
+local noClipConnection = nil
+local GuiVisible = true
+
+-- Функции флинга
+local function enableWalkFling()
+    if walkflinging then return end
+    walkflinging = true
+    task.spawn(function()
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = game.Players.LocalPlayer
+        while walkflinging do
+            RunService.Heartbeat:Wait()
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root then
+                local vel = root.Velocity
+                root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+                
+                RunService.RenderStepped:Wait()
+                if root then
+                    root.Velocity = vel
+                end
+            end
+        end
+    end)
+end
+
+local function disableWalkFling()
+    walkflinging = false
+end
+
+local function enableAntiFling()
+    if antifling then
+        antifling:Disconnect()
+    end
+    antifling = game:GetService("RunService").Stepped:Connect(function()
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                for _, v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function disableAntiFling()
+    if antifling then
+        antifling:Disconnect()
+        antifling = nil
+    end
+end
+
+-- Функция NoClip
+local function enableNoClip()
+    if noClipEnabled then return end
+    noClipEnabled = true
+    
+    noClipConnection = RunService.Stepped:Connect(function()
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+local function disableNoClip()
+    if not noClipEnabled then return end
+    noClipEnabled = false
+    
+    if noClipConnection then
+        noClipConnection:Disconnect()
+        noClipConnection = nil
+    end
+    
+    -- Восстанавливаем коллизию
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+-- Основной GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FlingGUI"
+ScreenGui.DisplayOrder = 9999 -- Поверх всех
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+-- Основное окно
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 250, 0, 350) -- Увеличили высоту для новой кнопки
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -175)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+-- Закругление углов
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Тень
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(60, 60, 80)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+-- Заголовок (для перемещения)
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.Parent = TitleBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(1, -40, 1, 0)
+TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Fling GUI v1.1"
+TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+TitleLabel.Font = Enum.Font.SourceSans -- Менее жирный шрифт
+TitleLabel.TextSize = 16
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TitleBar
+
+-- Кнопка свернуть/развернуть
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -35, 0.5, -15)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.fromRGB(220, 220, 255)
+MinimizeButton.Font = Enum.Font.SourceSans -- Менее жирный шрифт
+MinimizeButton.TextSize = 18
+MinimizeButton.Parent = TitleBar
+
+local MinimizeCorner = Instance.new("UICorner")
+MinimizeCorner.CornerRadius = UDim.new(0, 6)
+MinimizeCorner.Parent = MinimizeButton
+
+-- Контейнер для кнопок
+local ButtonsContainer = Instance.new("Frame")
+ButtonsContainer.Name = "ButtonsContainer"
+ButtonsContainer.Size = UDim2.new(1, -20, 1, -60)
+ButtonsContainer.Position = UDim2.new(0, 10, 0, 50)
+ButtonsContainer.BackgroundTransparency = 1
+ButtonsContainer.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 8) -- Уменьшили отступ между кнопками
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = ButtonsContainer
+
+-- Функция создания стилизованной кнопки
+local function CreateButton(text, buttonColor)
+    local Button = Instance.new("TextButton")
+    Button.Name = text .. "Button"
+    Button.Size = UDim2.new(1, 0, 0, 40) -- Уменьшили высоту кнопок
+    Button.BackgroundColor3 = buttonColor
+    Button.BorderSizePixel = 0
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.SourceSans -- Менее жирный шрифт
+    Button.TextSize = 14
+    Button.AutoButtonColor = false
+    Button.Parent = ButtonsContainer
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 6)
+    ButtonCorner.Parent = Button
+    
+    local ButtonStroke = Instance.new("UIStroke")
+    ButtonStroke.Color = Color3.fromRGB(255, 255, 255, 30)
+    ButtonStroke.Thickness = 1
+    ButtonStroke.Parent = Button
+    
+    -- Анимация при наведении
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.15), {BackgroundColor3 = buttonColor:Lerp(Color3.fromRGB(255, 255, 255), 0.1)}):Play()
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.15), {BackgroundColor3 = buttonColor}):Play()
+    end)
+    
+    Button.MouseButton1Down:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {Size = UDim2.new(1, -5, 0, 38)}):Play()
+    end)
+    
+    Button.MouseButton1Up:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 40)}):Play()
+    end)
+    
+    return Button
+end
+
+-- Создаем кнопки
+local WalkFlingButton = CreateButton("WalkFling: OFF", Color3.fromRGB(220, 60, 60))
+local AntiFlingButton = CreateButton("AntiFling: OFF", Color3.fromRGB(60, 120, 220))
+local NoClipButton = CreateButton("NoClip: OFF", Color3.fromRGB(180, 100, 220))
+local TPButton = CreateButton("TP к игрокам", Color3.fromRGB(60, 180, 100))
+local CloseButton = CreateButton("Отключить скрипт", Color3.fromRGB(80, 80, 100))
+
+-- Функция для обновления состояния кнопок
+local function UpdateButtonState()
+    -- WalkFling
+    if walkflinging then
+        WalkFlingButton.Text = "WalkFling: ON"
+        WalkFlingButton.BackgroundColor3 = Color3.fromRGB(60, 220, 80)
+    else
+        WalkFlingButton.Text = "WalkFling: OFF"
+        WalkFlingButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+    end
+    
+    -- AntiFling
+    if antifling then
+        AntiFlingButton.Text = "AntiFling: ON"
+        AntiFlingButton.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    else
+        AntiFlingButton.Text = "AntiFling: OFF"
+        AntiFlingButton.BackgroundColor3 = Color3.fromRGB(60, 120, 220)
+    end
+    
+    -- NoClip
+    if noClipEnabled then
+        NoClipButton.Text = "NoClip: ON"
+        NoClipButton.BackgroundColor3 = Color3.fromRGB(220, 100, 255)
+    else
+        NoClipButton.Text = "NoClip: OFF"
+        NoClipButton.BackgroundColor3 = Color3.fromRGB(180, 100, 220)
+    end
+end
+
+-- Обработчики кнопок
+WalkFlingButton.MouseButton1Click:Connect(function()
+    if not walkflinging then
+        enableWalkFling()
+        print("WalkFling включен")
+    else
+        disableWalkFling()
+        print("WalkFling выключен")
+    end
+    UpdateButtonState()
+end)
+
+AntiFlingButton.MouseButton1Click:Connect(function()
+    if not antifling then
+        enableAntiFling()
+        print("AntiFling включен")
+    else
+        disableAntiFling()
+        print("AntiFling выключен")
+    end
+    UpdateButtonState()
+end)
+
+NoClipButton.MouseButton1Click:Connect(function()
+    if not noClipEnabled then
+        enableNoClip()
+        print("NoClip включен")
+    else
+        disableNoClip()
+        print("NoClip выключен")
+    end
+    UpdateButtonState()
+end)
+
+TPButton.MouseButton1Click:Connect(function()
+    -- Здесь будет функция телепортации к игрокам
+    print("Функция TP к игрокам (будет добавлена позже)")
+    
+    -- Временная анимация кнопки
+    local originalText = TPButton.Text
+    TPButton.Text = "Скоро..."
+    wait(1)
+    TPButton.Text = originalText
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    -- Отключаем все функции перед закрытием
+    if walkflinging then
+        disableWalkFling()
+    end
+    if antifling then
+        disableAntiFling()
+    end
+    if noClipEnabled then
+        disableNoClip()
+    end
+    
+    -- Анимация закрытия
+    TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 350)}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, 0, 0.5, -175)}):Play()
+    wait(0.3)
+    ScreenGui:Destroy()
+    print("GUI отключена")
+end)
+
+-- Функция для перемещения GUI
+local Dragging, DragInput, DragStart, StartPos
+
+local function UpdateInput(input)
+    local Delta = input.Position - DragStart
+    MainFrame.Position = UDim2.new(
+        StartPos.X.Scale, 
+        StartPos.X.Offset + Delta.X, 
+        StartPos.Y.Scale, 
+        StartPos.Y.Offset + Delta.Y
+    )
+end
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        Dragging = true
+        DragStart = input.Position
+        StartPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                Dragging = false
+            end
+        end)
+    end
+end)
+
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        DragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == DragInput and Dragging then
+        UpdateInput(input)
+    end
+end)
+
+-- Функция сворачивания/разворачивания
+local Minimized = false
+local OriginalSize = MainFrame.Size
+local OriginalPosition = MainFrame.Position
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    if not Minimized then
+        -- Сворачиваем
+        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 250, 0, 40)}):Play()
+        Minimized = true
+        MinimizeButton.Text = "+"
+        ButtonsContainer.Visible = false
+    else
+        -- Разворачиваем
+        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = OriginalSize}):Play()
+        Minimized = false
+        MinimizeButton.Text = "-"
+        ButtonsContainer.Visible = true
+    end
+end)
+
+-- Обновляем состояние кнопок при запуске
+UpdateButtonState()
+
+-- Предупреждение о безопасности
+print("╔════════════════════════════════════════╗")
+print("║         Fling GUI v1.1 Loaded         ║")
+print("╚════════════════════════════════════════╝")
+print("")
+print("📌 Функции:")
+print("   • WalkFling - Выкидывает за карту")
+print("   • AntiFling - Отключает коллизию врагов")
+print("   • NoClip - Режим полёта сквозь стены")
+print("   • TP к игрокам - (В разработке)")
+print("")
+print("⚠️  ВНИМАНИЕ: Используйте на свой страх и риск!")
+print("   Флинг может выкинуть за карту/привести к кику")
+print("")
+print("🖱️  Управление GUI:")
+print("   • Перетаскивание: За верхнюю панель")
+print("   • Сворачивание: Кнопка [-]")
+print("   • Закрытие: Кнопка 'Отключить скрипт'")
+print("")
+print("✅ Готово! GUI отображается на экране.")
