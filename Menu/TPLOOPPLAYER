@@ -2,7 +2,66 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
+
+-- Проверяем доступ к файловой системе через различные методы
+local hasFileSystem = false
+local fileSystem = {}
+
+-- Метод 1: Проверяем стандартные функции инжекторов
+if type(readfile) == "function" then
+    hasFileSystem = true
+    fileSystem.readfile = readfile
+    fileSystem.writefile = writefile
+    fileSystem.isfile = isfile
+    fileSystem.isfolder = isfolder
+    fileSystem.makefolder = makefolder
+    fileSystem.listfiles = listfiles
+    print("Файловая система: Стандартные функции доступны")
+end
+
+-- Метод 2: Проверяем через pcall на случай, если функции защищены
+if not hasFileSystem then
+    local success, _ = pcall(function()
+        return readfile and writefile
+    end)
+    if success then
+        hasFileSystem = true
+        fileSystem.readfile = readfile
+        fileSystem.writefile = writefile
+        fileSystem.isfile = isfile
+        fileSystem.isfolder = isfolder
+        fileSystem.makefolder = makefolder
+        fileSystem.listfiles = listfiles
+        print("Файловая система: Функции доступны через pcall")
+    end
+end
+
+-- Метод 3: Проверяем альтернативные пути (для некоторых инжекторов)
+if not hasFileSystem and type(getgenv) == "function" then
+    local genv = getgenv()
+    if genv and genv.writefile and genv.readfile then
+        hasFileSystem = true
+        fileSystem.readfile = genv.readfile
+        fileSystem.writefile = genv.writefile
+        fileSystem.isfile = genv.isfile or function(path) return pcall(function() genv.readfile(path) end) end
+        fileSystem.isfolder = genv.isfolder or function(path) return false end
+        fileSystem.makefolder = genv.makefolder or function(path) end
+        print("Файловая система: Функции доступны через getgenv")
+    end
+end
+
+-- Если файловая система недоступна, создаем заглушки
+if not hasFileSystem then
+    print("Файловая система: Недоступна. Функции сохранения/загрузки отключены.")
+    fileSystem.readfile = function(path) return "" end
+    fileSystem.writefile = function(path, content) end
+    fileSystem.isfile = function(path) return false end
+    fileSystem.isfolder = function(path) return false end
+    fileSystem.makefolder = function(path) end
+    fileSystem.listfiles = function(path) return {} end
+end
 
 -- Создаем основной GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -13,7 +72,7 @@ ScreenGui.ResetOnSpawn = false
 -- Основное окно
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 394, 0, 331)
+MainFrame.Size = UDim2.new(0, 450, 0, 520)
 MainFrame.Position = UDim2.new(0.146, 0, 0.3, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
@@ -41,7 +100,7 @@ Title.Name = "Title"
 Title.Size = UDim2.new(0, 200, 1, 0)
 Title.Position = UDim2.new(0.5, -100, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Loop Menu"
+Title.Text = "Advanced TP Menu"
 Title.TextColor3 = Color3.fromRGB(253, 104, 159)
 Title.TextSize = 31
 Title.Font = Enum.Font.SourceSansBold
@@ -129,7 +188,7 @@ ContentFrame.BackgroundTransparency = 1
 local SelectPlayerButton = Instance.new("TextButton")
 SelectPlayerButton.Name = "SelectPlayerButton"
 SelectPlayerButton.Size = UDim2.new(0.8, 0, 0, 40)
-SelectPlayerButton.Position = UDim2.new(0.1, 0, 0.05, 0)
+SelectPlayerButton.Position = UDim2.new(0.1, 0, 0.02, 0)
 SelectPlayerButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 SelectPlayerButton.TextColor3 = Color3.fromRGB(253, 104, 159)
 SelectPlayerButton.Text = "Выбрать игрока"
@@ -144,7 +203,7 @@ SelectPlayerCorner.Parent = SelectPlayerButton
 local SelectedPlayerLabel = Instance.new("TextLabel")
 SelectedPlayerLabel.Name = "SelectedPlayerLabel"
 SelectedPlayerLabel.Size = UDim2.new(0.8, 0, 0, 30)
-SelectedPlayerLabel.Position = UDim2.new(0.1, 0, 0.2, 0)
+SelectedPlayerLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
 SelectedPlayerLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 SelectedPlayerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 SelectedPlayerLabel.Text = "Не выбран"
@@ -159,7 +218,7 @@ SelectedPlayerCorner.Parent = SelectedPlayerLabel
 local IntervalLabel = Instance.new("TextLabel")
 IntervalLabel.Name = "IntervalLabel"
 IntervalLabel.Size = UDim2.new(0.4, 0, 0, 25)
-IntervalLabel.Position = UDim2.new(0.1, 0, 0.35, 0)
+IntervalLabel.Position = UDim2.new(0.1, 0, 0.18, 0)
 IntervalLabel.BackgroundTransparency = 1
 IntervalLabel.TextColor3 = Color3.fromRGB(253, 104, 159)
 IntervalLabel.Text = "Интервал (сек):"
@@ -170,7 +229,7 @@ IntervalLabel.TextXAlignment = Enum.TextXAlignment.Left
 local IntervalTextBox = Instance.new("TextBox")
 IntervalTextBox.Name = "IntervalTextBox"
 IntervalTextBox.Size = UDim2.new(0.4, 0, 0, 35)
-IntervalTextBox.Position = UDim2.new(0.5, 0, 0.35, 0)
+IntervalTextBox.Position = UDim2.new(0.5, 0, 0.18, 0)
 IntervalTextBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 IntervalTextBox.TextColor3 = Color3.fromRGB(253, 104, 159)
 IntervalTextBox.Text = "0.1"
@@ -183,11 +242,291 @@ local IntervalCorner = Instance.new("UICorner")
 IntervalCorner.CornerRadius = UDim.new(0, 8)
 IntervalCorner.Parent = IntervalTextBox
 
+-- Минимальная высота (запретная координата)
+local MinHeightLabel = Instance.new("TextLabel")
+MinHeightLabel.Name = "MinHeightLabel"
+MinHeightLabel.Size = UDim2.new(0.4, 0, 0, 25)
+MinHeightLabel.Position = UDim2.new(0.1, 0, 0.26, 0)
+MinHeightLabel.BackgroundTransparency = 1
+MinHeightLabel.TextColor3 = Color3.fromRGB(253, 104, 159)
+MinHeightLabel.Text = "Мин. высота (Y):"
+MinHeightLabel.TextSize = 18
+MinHeightLabel.Font = Enum.Font.SourceSansBold
+MinHeightLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local MinHeightTextBox = Instance.new("TextBox")
+MinHeightTextBox.Name = "MinHeightTextBox"
+MinHeightTextBox.Size = UDim2.new(0.4, 0, 0, 35)
+MinHeightTextBox.Position = UDim2.new(0.5, 0, 0.26, 0)
+MinHeightTextBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MinHeightTextBox.TextColor3 = Color3.fromRGB(253, 104, 159)
+MinHeightTextBox.Text = "-500"
+MinHeightTextBox.TextSize = 16
+MinHeightTextBox.Font = Enum.Font.SourceSans
+MinHeightTextBox.PlaceholderText = "-500"
+MinHeightTextBox.ClearTextOnFocus = false
+
+local MinHeightCorner = Instance.new("UICorner")
+MinHeightCorner.CornerRadius = UDim.new(0, 8)
+MinHeightCorner.Parent = MinHeightTextBox
+
+-- Раздел коррекции позиции
+local PositionCorrectionLabel = Instance.new("TextLabel")
+PositionCorrectionLabel.Name = "PositionCorrectionLabel"
+PositionCorrectionLabel.Size = UDim2.new(0.8, 0, 0, 25)
+PositionCorrectionLabel.Position = UDim2.new(0.1, 0, 0.34, 0)
+PositionCorrectionLabel.BackgroundTransparency = 1
+PositionCorrectionLabel.TextColor3 = Color3.fromRGB(253, 104, 159)
+PositionCorrectionLabel.Text = "Коррекция позиции:"
+PositionCorrectionLabel.TextSize = 18
+PositionCorrectionLabel.Font = Enum.Font.SourceSansBold
+PositionCorrectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Контейнер для контроллеров позиции
+local PositionControls = Instance.new("Frame")
+PositionControls.Name = "PositionControls"
+PositionControls.Size = UDim2.new(0.8, 0, 0, 130)
+PositionControls.Position = UDim2.new(0.1, 0, 0.39, 0)
+PositionControls.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+PositionControls.BackgroundTransparency = 0.3
+
+local PositionControlsCorner = Instance.new("UICorner")
+PositionControlsCorner.CornerRadius = UDim.new(0, 8)
+PositionControlsCorner.Parent = PositionControls
+
+-- Создаем строки для каждой оси
+-- 1. Вперед/Назад (Z-ось)
+local ForwardBackRow = Instance.new("Frame")
+ForwardBackRow.Name = "ForwardBackRow"
+ForwardBackRow.Size = UDim2.new(1, -20, 0, 30)
+ForwardBackRow.Position = UDim2.new(0, 10, 0, 10)
+ForwardBackRow.BackgroundTransparency = 1
+
+local ForwardBackLabel = Instance.new("TextLabel")
+ForwardBackLabel.Name = "ForwardBackLabel"
+ForwardBackLabel.Size = UDim2.new(0.3, 0, 1, 0)
+ForwardBackLabel.Position = UDim2.new(0, 0, 0, 0)
+ForwardBackLabel.BackgroundTransparency = 1
+ForwardBackLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ForwardBackLabel.Text = "Вперед/Назад:"
+ForwardBackLabel.TextSize = 14
+ForwardBackLabel.Font = Enum.Font.SourceSansBold
+ForwardBackLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local ForwardBackValue = Instance.new("TextBox")
+ForwardBackValue.Name = "ForwardBackValue"
+ForwardBackValue.Size = UDim2.new(0.25, 0, 1, 0)
+ForwardBackValue.Position = UDim2.new(0.3, 0, 0, 0)
+ForwardBackValue.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ForwardBackValue.TextColor3 = Color3.fromRGB(253, 104, 159)
+ForwardBackValue.Text = "0"
+ForwardBackValue.TextSize = 16
+ForwardBackValue.Font = Enum.Font.SourceSans
+ForwardBackValue.PlaceholderText = "0"
+
+local ForwardBackCorner = Instance.new("UICorner")
+ForwardBackCorner.CornerRadius = UDim.new(0, 8)
+ForwardBackCorner.Parent = ForwardBackValue
+
+local ForwardButton = Instance.new("TextButton")
+ForwardButton.Name = "ForwardButton"
+ForwardButton.Size = UDim2.new(0.15, 0, 1, 0)
+ForwardButton.Position = UDim2.new(0.6, 0, 0, 0)
+ForwardButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ForwardButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ForwardButton.Text = "↑"
+ForwardButton.TextSize = 18
+ForwardButton.Font = Enum.Font.SourceSansBold
+
+local ForwardButtonCorner = Instance.new("UICorner")
+ForwardButtonCorner.CornerRadius = UDim.new(0, 8)
+ForwardButtonCorner.Parent = ForwardButton
+
+local BackButton = Instance.new("TextButton")
+BackButton.Name = "BackButton"
+BackButton.Size = UDim2.new(0.15, 0, 1, 0)
+BackButton.Position = UDim2.new(0.8, 0, 0, 0)
+BackButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+BackButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+BackButton.Text = "↓"
+BackButton.TextSize = 18
+BackButton.Font = Enum.Font.SourceSansBold
+
+local BackButtonCorner = Instance.new("UICorner")
+BackButtonCorner.CornerRadius = UDim.new(0, 8)
+BackButtonCorner.Parent = BackButton
+
+-- 2. Влево/Вправо (X-ось)
+local LeftRightRow = Instance.new("Frame")
+LeftRightRow.Name = "LeftRightRow"
+LeftRightRow.Size = UDim2.new(1, -20, 0, 30)
+LeftRightRow.Position = UDim2.new(0, 10, 0, 50)
+LeftRightRow.BackgroundTransparency = 1
+
+local LeftRightLabel = Instance.new("TextLabel")
+LeftRightLabel.Name = "LeftRightLabel"
+LeftRightLabel.Size = UDim2.new(0.3, 0, 1, 0)
+LeftRightLabel.Position = UDim2.new(0, 0, 0, 0)
+LeftRightLabel.BackgroundTransparency = 1
+LeftRightLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+LeftRightLabel.Text = "Влево/Вправо:"
+LeftRightLabel.TextSize = 14
+LeftRightLabel.Font = Enum.Font.SourceSansBold
+LeftRightLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local LeftRightValue = Instance.new("TextBox")
+LeftRightValue.Name = "LeftRightValue"
+LeftRightValue.Size = UDim2.new(0.25, 0, 1, 0)
+LeftRightValue.Position = UDim2.new(0.3, 0, 0, 0)
+LeftRightValue.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+LeftRightValue.TextColor3 = Color3.fromRGB(253, 104, 159)
+LeftRightValue.Text = "0"
+LeftRightValue.TextSize = 16
+LeftRightValue.Font = Enum.Font.SourceSans
+LeftRightValue.PlaceholderText = "0"
+
+local LeftRightCorner = Instance.new("UICorner")
+LeftRightCorner.CornerRadius = UDim.new(0, 8)
+LeftRightCorner.Parent = LeftRightValue
+
+local RightButton = Instance.new("TextButton")
+RightButton.Name = "RightButton"
+RightButton.Size = UDim2.new(0.15, 0, 1, 0)
+RightButton.Position = UDim2.new(0.6, 0, 0, 0)
+RightButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+RightButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+RightButton.Text = "→"
+RightButton.TextSize = 18
+RightButton.Font = Enum.Font.SourceSansBold
+
+local RightButtonCorner = Instance.new("UICorner")
+RightButtonCorner.CornerRadius = UDim.new(0, 8)
+RightButtonCorner.Parent = RightButton
+
+local LeftButton = Instance.new("TextButton")
+LeftButton.Name = "LeftButton"
+LeftButton.Size = UDim2.new(0.15, 0, 1, 0)
+LeftButton.Position = UDim2.new(0.8, 0, 0, 0)
+LeftButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+LeftButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LeftButton.Text = "←"
+LeftButton.TextSize = 18
+LeftButton.Font = Enum.Font.SourceSansBold
+
+local LeftButtonCorner = Instance.new("UICorner")
+LeftButtonCorner.CornerRadius = UDim.new(0, 8)
+LeftButtonCorner.Parent = LeftButton
+
+-- 3. Вверх/Вниз (Y-ось)
+local UpDownRow = Instance.new("Frame")
+UpDownRow.Name = "UpDownRow"
+UpDownRow.Size = UDim2.new(1, -20, 0, 30)
+UpDownRow.Position = UDim2.new(0, 10, 0, 90)
+UpDownRow.BackgroundTransparency = 1
+
+local UpDownLabel = Instance.new("TextLabel")
+UpDownLabel.Name = "UpDownLabel"
+UpDownLabel.Size = UDim2.new(0.3, 0, 1, 0)
+UpDownLabel.Position = UDim2.new(0, 0, 0, 0)
+UpDownLabel.BackgroundTransparency = 1
+UpDownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+UpDownLabel.Text = "Вверх/Вниз:"
+UpDownLabel.TextSize = 14
+UpDownLabel.Font = Enum.Font.SourceSansBold
+UpDownLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local UpDownValue = Instance.new("TextBox")
+UpDownValue.Name = "UpDownValue"
+UpDownValue.Size = UDim2.new(0.25, 0, 1, 0)
+UpDownValue.Position = UDim2.new(0.3, 0, 0, 0)
+UpDownValue.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+UpDownValue.TextColor3 = Color3.fromRGB(253, 104, 159)
+UpDownValue.Text = "0"
+UpDownValue.TextSize = 16
+UpDownValue.Font = Enum.Font.SourceSans
+UpDownValue.PlaceholderText = "0"
+
+local UpDownCorner = Instance.new("UICorner")
+UpDownCorner.CornerRadius = UDim.new(0, 8)
+UpDownCorner.Parent = UpDownValue
+
+local UpButton = Instance.new("TextButton")
+UpButton.Name = "UpButton"
+UpButton.Size = UDim2.new(0.15, 0, 1, 0)
+UpButton.Position = UDim2.new(0.6, 0, 0, 0)
+UpButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+UpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+UpButton.Text = "↑"
+UpButton.TextSize = 18
+UpButton.Font = Enum.Font.SourceSansBold
+
+local UpButtonCorner = Instance.new("UICorner")
+UpButtonCorner.CornerRadius = UDim.new(0, 8)
+UpButtonCorner.Parent = UpButton
+
+local DownButton = Instance.new("TextButton")
+DownButton.Name = "DownButton"
+DownButton.Size = UDim2.new(0.15, 0, 1, 0)
+DownButton.Position = UDim2.new(0.8, 0, 0, 0)
+DownButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+DownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+DownButton.Text = "↓"
+DownButton.TextSize = 18
+DownButton.Font = Enum.Font.SourceSansBold
+
+local DownButtonCorner = Instance.new("UICorner")
+DownButtonCorner.CornerRadius = UDim.new(0, 8)
+DownButtonCorner.Parent = DownButton
+
+-- Кнопка сброса смещений
+local ResetOffsetButton = Instance.new("TextButton")
+ResetOffsetButton.Name = "ResetOffsetButton"
+ResetOffsetButton.Size = UDim2.new(0.8, 0, 0, 35)
+ResetOffsetButton.Position = UDim2.new(0.1, 0, 0.62, 0)
+ResetOffsetButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ResetOffsetButton.TextColor3 = Color3.fromRGB(253, 104, 159)
+ResetOffsetButton.Text = "Сбросить смещения"
+ResetOffsetButton.TextSize = 16
+ResetOffsetButton.Font = Enum.Font.SourceSansBold
+
+local ResetOffsetCorner = Instance.new("UICorner")
+ResetOffsetCorner.CornerRadius = UDim.new(0, 8)
+ResetOffsetCorner.Parent = ResetOffsetButton
+
+-- Кнопки сохранения/загрузки настроек
+local SaveSettingsButton = Instance.new("TextButton")
+SaveSettingsButton.Name = "SaveSettingsButton"
+SaveSettingsButton.Size = UDim2.new(0.38, 0, 0, 35)
+SaveSettingsButton.Position = UDim2.new(0.1, 0, 0.7, 0)
+SaveSettingsButton.BackgroundColor3 = Color3.fromRGB(45, 100, 180)
+SaveSettingsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveSettingsButton.Text = "Сохранить"
+SaveSettingsButton.TextSize = 16
+SaveSettingsButton.Font = Enum.Font.SourceSansBold
+
+local SaveSettingsCorner = Instance.new("UICorner")
+SaveSettingsCorner.CornerRadius = UDim.new(0, 8)
+SaveSettingsCorner.Parent = SaveSettingsButton
+
+local LoadSettingsButton = Instance.new("TextButton")
+LoadSettingsButton.Name = "LoadSettingsButton"
+LoadSettingsButton.Size = UDim2.new(0.38, 0, 0, 35)
+LoadSettingsButton.Position = UDim2.new(0.52, 0, 0.7, 0)
+LoadSettingsButton.BackgroundColor3 = Color3.fromRGB(60, 140, 80)
+LoadSettingsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadSettingsButton.Text = "Загрузить"
+LoadSettingsButton.TextSize = 16
+LoadSettingsButton.Font = Enum.Font.SourceSansBold
+
+local LoadSettingsCorner = Instance.new("UICorner")
+LoadSettingsCorner.CornerRadius = UDim.new(0, 8)
+LoadSettingsCorner.Parent = LoadSettingsButton
+
 -- Переключатель включения
 local ToggleFrame = Instance.new("Frame")
 ToggleFrame.Name = "ToggleFrame"
 ToggleFrame.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleFrame.Position = UDim2.new(0.1, 0, 0.55, 0)
+ToggleFrame.Position = UDim2.new(0.1, 0, 0.8, 0)
 ToggleFrame.BackgroundTransparency = 1
 
 local ToggleLabel = Instance.new("TextLabel")
@@ -233,7 +572,7 @@ ToggleImageButton.Image = ""
 local DisableScriptButton = Instance.new("TextButton")
 DisableScriptButton.Name = "DisableScriptButton"
 DisableScriptButton.Size = UDim2.new(0.8, 0, 0, 40)
-DisableScriptButton.Position = UDim2.new(0.1, 0, 0.8, 0)
+DisableScriptButton.Position = UDim2.new(0.1, 0, 0.9, 0)
 DisableScriptButton.BackgroundColor3 = Color3.fromRGB(213, 7, 69)
 DisableScriptButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 DisableScriptButton.Text = "Отключить скрипт"
@@ -248,7 +587,7 @@ DisableScriptCorner.Parent = DisableScriptButton
 local DropdownFrame = Instance.new("Frame")
 DropdownFrame.Name = "DropdownFrame"
 DropdownFrame.Size = UDim2.new(0.8, 0, 0, 200)
-DropdownFrame.Position = UDim2.new(0.1, 0, 0.05, 45)
+DropdownFrame.Position = UDim2.new(0.1, 0, 0.02, 45)
 DropdownFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 DropdownFrame.Visible = false
 DropdownFrame.ZIndex = 10
@@ -296,7 +635,14 @@ local startPos
 local isTeleporting = false
 local teleportConnection
 local selectedPlayer = nil
-local originalHeight = 331
+local originalHeight = 520
+
+-- Текущие смещения
+local currentOffset = {
+    ForwardBack = 0,  -- Z ось (вперед/назад)
+    LeftRight = 0,    -- X ось (влево/вправо)
+    UpDown = 0        -- Y ось (вверх/вниз)
+}
 
 -- Собираем GUI
 MinimizeText.Parent = MinimizeButton
@@ -310,14 +656,45 @@ ToggleImageButton.Parent = ToggleButton
 ToggleLabel.Parent = ToggleFrame
 ToggleButton.Parent = ToggleFrame
 
+-- Собираем строки для каждой оси
+-- 1. Вперед/Назад строка
+ForwardBackLabel.Parent = ForwardBackRow
+ForwardBackValue.Parent = ForwardBackRow
+ForwardButton.Parent = ForwardBackRow
+BackButton.Parent = ForwardBackRow
+ForwardBackRow.Parent = PositionControls
+
+-- 2. Влево/Вправо строка
+LeftRightLabel.Parent = LeftRightRow
+LeftRightValue.Parent = LeftRightRow
+RightButton.Parent = LeftRightRow
+LeftButton.Parent = LeftRightRow
+LeftRightRow.Parent = PositionControls
+
+-- 3. Вверх/Вниз строка
+UpDownLabel.Parent = UpDownRow
+UpDownValue.Parent = UpDownRow
+UpButton.Parent = UpDownRow
+DownButton.Parent = UpDownRow
+UpDownRow.Parent = PositionControls
+
+-- Выпадающий список
 SearchTextBox.Parent = DropdownFrame
 PlayersScrollingFrame.Parent = DropdownFrame
 DropdownFrame.Parent = ContentFrame
 
+-- Собираем основной интерфейс
 SelectPlayerButton.Parent = ContentFrame
 SelectedPlayerLabel.Parent = ContentFrame
 IntervalLabel.Parent = ContentFrame
 IntervalTextBox.Parent = ContentFrame
+MinHeightLabel.Parent = ContentFrame
+MinHeightTextBox.Parent = ContentFrame
+PositionCorrectionLabel.Parent = ContentFrame
+PositionControls.Parent = ContentFrame
+ResetOffsetButton.Parent = ContentFrame
+SaveSettingsButton.Parent = ContentFrame
+LoadSettingsButton.Parent = ContentFrame
 ToggleFrame.Parent = ContentFrame
 DisableScriptButton.Parent = ContentFrame
 
@@ -377,6 +754,198 @@ local function updatePlayersList(searchText)
     PlayersScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset)
 end
 
+local function updateOffsetDisplay()
+    ForwardBackValue.Text = tostring(currentOffset.ForwardBack)
+    LeftRightValue.Text = tostring(currentOffset.LeftRight)
+    UpDownValue.Text = tostring(currentOffset.UpDown)
+end
+
+local function resetOffsets()
+    currentOffset = {
+        ForwardBack = 0,
+        LeftRight = 0,
+        UpDown = 0
+    }
+    updateOffsetDisplay()
+end
+
+local function adjustOffset(axis, amount)
+    if axis == "ForwardBack" then
+        currentOffset.ForwardBack = currentOffset.ForwardBack + amount
+    elseif axis == "LeftRight" then
+        currentOffset.LeftRight = currentOffset.LeftRight + amount
+    elseif axis == "UpDown" then
+        currentOffset.UpDown = currentOffset.UpDown + amount
+    end
+    
+    updateOffsetDisplay()
+end
+
+local function parseNumber(text)
+    local num = tonumber(text)
+    if num then
+        return num
+    else
+        return 0
+    end
+end
+
+-- Функция проверки запретных координат
+local function isPositionAllowed(position)
+    local minHeight = parseNumber(MinHeightTextBox.Text)
+    if position.Y < minHeight then
+        return false
+    end
+    return true
+end
+
+-- Функции сохранения и загрузки настроек
+local function saveSettings()
+    -- Проверяем доступность файловой системы
+    if not hasFileSystem then
+        warn("Файловая система недоступна. Сохранение настроек невозможно.")
+        SelectedPlayerLabel.Text = "ФС недоступна!"
+        task.wait(2)
+        if selectedPlayer then
+            SelectedPlayerLabel.Text = selectedPlayer.Name
+        else
+            SelectedPlayerLabel.Text = "Не выбран"
+        end
+        return
+    end
+    
+    -- Создаем папку если нет
+    local folderName = "1qluaseting"
+    local success, errorMsg = pcall(function()
+        if not fileSystem.isfolder(folderName) then
+            fileSystem.makefolder(folderName)
+            print("Создана папка: " .. folderName)
+        end
+    end)
+    
+    if not success then
+        warn("Ошибка создания папки: " .. tostring(errorMsg))
+        SelectedPlayerLabel.Text = "Ошибка папки!"
+        return
+    end
+    
+    -- Создаем настройки для сохранения
+    local settings = {
+        selectedPlayerName = selectedPlayer and selectedPlayer.Name or "",
+        interval = IntervalTextBox.Text,
+        minHeight = MinHeightTextBox.Text,
+        forwardBack = currentOffset.ForwardBack,
+        leftRight = currentOffset.LeftRight,
+        upDown = currentOffset.UpDown,
+        isTeleporting = isTeleporting
+    }
+    
+    -- Сохраняем в файл
+    local fileName = folderName .. "/TPLoopPlayer.txt"
+    local jsonData = HttpService:JSONEncode(settings)
+    
+    local success, errorMsg = pcall(function()
+        fileSystem.writefile(fileName, jsonData)
+    end)
+    
+    if success then
+        print("Настройки сохранены в: " .. fileName)
+        SelectedPlayerLabel.Text = "Настройки сохранены!"
+        
+        -- Возвращаем текст через 2 секунды
+        task.wait(2)
+        if selectedPlayer then
+            SelectedPlayerLabel.Text = selectedPlayer.Name
+        else
+            SelectedPlayerLabel.Text = "Не выбран"
+        end
+    else
+        warn("Ошибка сохранения: " .. tostring(errorMsg))
+        SelectedPlayerLabel.Text = "Ошибка сохранения!"
+    end
+end
+
+local function loadSettings()
+    -- Проверяем доступность файловой системы
+    if not hasFileSystem then
+        warn("Файловая система недоступна. Загрузка настроек невозможна.")
+        SelectedPlayerLabel.Text = "ФС недоступна!"
+        task.wait(2)
+        if selectedPlayer then
+            SelectedPlayerLabel.Text = selectedPlayer.Name
+        else
+            SelectedPlayerLabel.Text = "Не выбран"
+        end
+        return
+    end
+    
+    local fileName = "1qluaseting/TPLoopPlayer.txt"
+    
+    -- Проверяем существование файла
+    local fileExists = false
+    local success, errorMsg = pcall(function()
+        fileExists = fileSystem.isfile(fileName)
+    end)
+    
+    if not success then
+        warn("Ошибка проверки файла: " .. tostring(errorMsg))
+        SelectedPlayerLabel.Text = "Ошибка проверки!"
+        return
+    end
+    
+    if not fileExists then
+        warn("Файл настроек не найден: " .. fileName)
+        SelectedPlayerLabel.Text = "Файл не найден!"
+        return
+    end
+    
+    local success, errorMsg = pcall(function()
+        local jsonData = fileSystem.readfile(fileName)
+        local settings = HttpService:JSONDecode(jsonData)
+        
+        -- Загружаем настройки
+        if settings.selectedPlayerName and settings.selectedPlayerName ~= "" then
+            -- Ищем игрока по имени
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Name == settings.selectedPlayerName then
+                    selectedPlayer = player
+                    SelectedPlayerLabel.Text = player.Name
+                    break
+                end
+            end
+        end
+        
+        IntervalTextBox.Text = tostring(settings.interval or "0.1")
+        MinHeightTextBox.Text = tostring(settings.minHeight or "-500")
+        
+        currentOffset.ForwardBack = settings.forwardBack or 0
+        currentOffset.LeftRight = settings.leftRight or 0
+        currentOffset.UpDown = settings.upDown or 0
+        updateOffsetDisplay()
+        
+        -- Если телепортация была включена, пробуем включить
+        if settings.isTeleporting and selectedPlayer and not isTeleporting then
+            toggleTeleportation()
+        end
+        
+        print("Настройки загружены из: " .. fileName)
+        SelectedPlayerLabel.Text = "Настройки загружены!"
+        
+        -- Возвращаем текст через 2 секунды
+        task.wait(2)
+        if selectedPlayer then
+            SelectedPlayerLabel.Text = selectedPlayer.Name
+        else
+            SelectedPlayerLabel.Text = "Не выбран"
+        end
+    end)
+    
+    if not success then
+        warn("Ошибка загрузки: " .. tostring(errorMsg))
+        SelectedPlayerLabel.Text = "Ошибка загрузки!"
+    end
+end
+
 local function toggleTeleportation()
     if not isTeleporting then
         -- Включаем телепортацию
@@ -394,11 +963,51 @@ local function toggleTeleportation()
             
             ToggleButton.BackgroundColor3 = Color3.fromRGB(80, 200, 120)
             
-            -- Запускаем телепортацию
+            -- Запускаем телепортацию с учетом смещений и проверки высоты
             teleportConnection = RunService.Heartbeat:Connect(function()
                 if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame
+                        -- Получаем текущие смещения из текстовых полей
+                        local forwardBack = parseNumber(ForwardBackValue.Text)
+                        local leftRight = parseNumber(LeftRightValue.Text)
+                        local upDown = parseNumber(UpDownValue.Text)
+                        
+                        -- Обновляем текущие смещения
+                        currentOffset.ForwardBack = forwardBack
+                        currentOffset.LeftRight = leftRight
+                        currentOffset.UpDown = upDown
+                        
+                        -- Получаем CFrame целевого игрока
+                        local targetCFrame = selectedPlayer.Character.HumanoidRootPart.CFrame
+                        
+                        -- Применяем смещения
+                        local offsetCFrame = targetCFrame * CFrame.new(
+                            leftRight,      -- Влево/вправо (X)
+                            upDown,         -- Вверх/вниз (Y)
+                            -forwardBack    -- Вперед/назад (Z, инвертированное)
+                        )
+                        
+                        -- Проверяем, разрешена ли позиция
+                        if isPositionAllowed(offsetCFrame.Position) then
+                            -- Телепортируемся
+                            LocalPlayer.Character.HumanoidRootPart.CFrame = offsetCFrame
+                        else
+                            -- Останавливаем телепортацию если позиция запрещена
+                            isTeleporting = false
+                            if teleportConnection then
+                                teleportConnection:Disconnect()
+                            end
+                            
+                            local tween = TweenService:Create(
+                                ToggleCircle,
+                                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+                                {Position = UDim2.new(0, 2, 0.5, -10.5)}
+                            )
+                            tween:Play()
+                            ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                            SelectedPlayerLabel.Text = "Запретная высота!"
+                            warn("Телепортация остановлена: достигнута запретная высота!")
+                        end
                     end
                 else
                     -- Если игрок вышел, останавливаем телепортацию
@@ -467,12 +1076,12 @@ end)
 MinimizeImageButton.MouseButton1Click:Connect(function()
     if not isMinimized then
         -- Сворачиваем
-        MainFrame.Size = UDim2.new(0, 394, 0, 50)
+        MainFrame.Size = UDim2.new(0, 450, 0, 50)
         ContentFrame.Visible = false
         isMinimized = true
     else
         -- Разворачиваем
-        MainFrame.Size = UDim2.new(0, 394, 0, originalHeight)
+        MainFrame.Size = UDim2.new(0, 450, 0, originalHeight)
         ContentFrame.Visible = true
         isMinimized = false
     end
@@ -510,6 +1119,64 @@ DisableScriptButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+-- Кнопки управления смещениями
+ForwardButton.MouseButton1Click:Connect(function()
+    adjustOffset("ForwardBack", 1)
+end)
+
+BackButton.MouseButton1Click:Connect(function()
+    adjustOffset("ForwardBack", -1)
+end)
+
+RightButton.MouseButton1Click:Connect(function()
+    adjustOffset("LeftRight", 1)
+end)
+
+LeftButton.MouseButton1Click:Connect(function()
+    adjustOffset("LeftRight", -1)
+end)
+
+UpButton.MouseButton1Click:Connect(function()
+    adjustOffset("UpDown", 1)
+end)
+
+DownButton.MouseButton1Click:Connect(function()
+    adjustOffset("UpDown", -1)
+end)
+
+-- Кнопка сброса смещений
+ResetOffsetButton.MouseButton1Click:Connect(function()
+    resetOffsets()
+end)
+
+-- Кнопки сохранения/загрузки настроек
+SaveSettingsButton.MouseButton1Click:Connect(function()
+    saveSettings()
+end)
+
+LoadSettingsButton.MouseButton1Click:Connect(function()
+    loadSettings()
+end)
+
+-- Обработка ввода в текстовые поля смещений
+ForwardBackValue.FocusLost:Connect(function()
+    currentOffset.ForwardBack = parseNumber(ForwardBackValue.Text)
+end)
+
+LeftRightValue.FocusLost:Connect(function()
+    currentOffset.LeftRight = parseNumber(LeftRightValue.Text)
+end)
+
+UpDownValue.FocusLost:Connect(function()
+    currentOffset.UpDown = parseNumber(UpDownValue.Text)
+end)
+
+-- Обработка ввода минимальной высоты
+MinHeightTextBox.FocusLost:Connect(function()
+    local num = parseNumber(MinHeightTextBox.Text)
+    MinHeightTextBox.Text = tostring(num)
+end)
+
 -- Обновление списка игроков при подключении/отключении
 Players.PlayerAdded:Connect(function()
     if DropdownFrame.Visible then
@@ -530,10 +1197,39 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Инициализация списка игроков
+-- Инициализация
 updatePlayersList("")
+resetOffsets()
+
+-- Автозагрузка настроек при старте (если доступна файловая система)
+if hasFileSystem then
+    local fileName = "1qluaseting/TPLoopPlayer.txt"
+    local fileExists = pcall(function()
+        return fileSystem.isfile(fileName)
+    end)
+    
+    if fileExists then
+        print("Обнаружен файл настроек, загружаю...")
+        task.wait(1)  -- Даем время на загрузку игроков
+        loadSettings()
+    end
+end
 
 -- Делаем GUI всегда поверх других
 ScreenGui.DisplayOrder = 999
 
-print("Loop Menu GUI загружен!")
+print("Advanced Teleport Menu загружен!")
+print("Функции:")
+print("- Выбор игрока для следования")
+print("- Настройка интервала телепортации")
+print("- Защита от телепортации на низкие высоты")
+print("- Коррекция позиции по осям X, Y, Z")
+print("- Сохранение и загрузка настроек")
+print("- Сброс всех смещений")
+print("- Включение/отключение телепортации")
+
+if hasFileSystem then
+    print("Файловая система доступна")
+else
+    print("Файловая система НЕДОСТУПНА - сохранение отключено")
+end
