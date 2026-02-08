@@ -145,6 +145,36 @@ FarmGroup2:AddButton({
 })
 
 
+FarmGroup2:AddParagraph({
+    Title = "Телепортировать обьекты",
+    Content = "Можно сделать что бы подвижные обьекты реально телепортировались",
+    TextWrapped = true
+})
+
+FarmGroup2:AddButton({
+    Title = "ObjTp Menu",
+    Description = "Телепортировать обьекты",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/TPOBJECK'),true))()
+    end
+})
+
+
+FarmGroup2:AddParagraph({
+    Title = "Запустить любую анимацию в игре ",
+    Content = "И их видно будет реально",
+    TextWrapped = true
+})
+
+FarmGroup2:AddButton({
+    Title = "Animation Menu",
+    Description = "анимацию",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/animation'),true))()
+    end
+})
+
+
 
 PlayerGroup:AddButton({
     Title = "Полёт (V)",
@@ -207,6 +237,22 @@ PlayerGroup:AddButton({
     Description = "Улучшает визуальные эффекты игры",
     Callback = function()
         loadstring(game:HttpGet(('https://pastebin.com/raw/1XA5qM3D'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Запустить прыжок",
+    Description = "Можно запустить прыжок даже где его нет",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/F/JampAP'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Ожидания убийства (G)",
+    Description = "Он будет телепортировать назад в игрока которого ты нажмешь пока он не умрет",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/F/waitkill'),true))()
     end
 })
 
