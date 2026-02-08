@@ -80,7 +80,7 @@ FarmGroup:AddButton({
     Title = "LoopTPplayer Menu",
     Description = "Телепортироваться к игроку!",
     Callback = function()
-        loadstring(game:HttpGet(('https://github.com/1Qlua-RBXscript/1qlua/blob/main/Menu/TPLOOPPLAYER'),true))()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/TPLOOPPLAYER'),true))()
     end
 })
 
