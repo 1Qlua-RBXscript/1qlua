@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -22,93 +21,135 @@ local faceTarget = false
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TeleportGUI"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 999999 -- Максимальный приоритет
+ScreenGui.DisplayOrder = 999999
 ScreenGui.Parent = game:GetService("CoreGui")
 
 -- Основной фрейм
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 550)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MainFrame.Size = UDim2.new(0, 394, 0, 331)
+MainFrame.Position = UDim2.new(0.146, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
--- Скругление углов
+-- Скругление углов основного окна
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
 
--- Тень
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(60, 60, 80)
-UIStroke.Thickness = 2
-UIStroke.Parent = MainFrame
+-- Верхняя панель
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 50)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
 
--- Заголовок (для перемещения)
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 40)
-TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = MainFrame
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 8)
+TopBarCorner.Parent = TopBar
 
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
-TitleCorner.Parent = TitleBar
+-- Иконка
+local Icon = Instance.new("ImageLabel")
+Icon.Name = "Icon"
+Icon.Size = UDim2.new(0, 22, 0, 22)
+Icon.Position = UDim2.new(0, 15, 0.5, -11)
+Icon.BackgroundTransparency = 1
+Icon.Image = "rbxassetid://7733774602"
+Icon.ImageColor3 = Color3.fromRGB(253, 104, 159)
+Icon.Parent = TopBar
 
+-- Декоративная полоска
+local DecorativeLine = Instance.new("Frame")
+DecorativeLine.Name = "DecorativeLine"
+DecorativeLine.Size = UDim2.new(0, 5, 0, 16)
+DecorativeLine.Position = UDim2.new(0, 42, 0.5, -8)
+DecorativeLine.BackgroundColor3 = Color3.fromRGB(253, 104, 159)
+DecorativeLine.BorderSizePixel = 0
+DecorativeLine.Parent = TopBar
+
+local LineCorner = Instance.new("UICorner")
+LineCorner.CornerRadius = UDim.new(1, 0)
+LineCorner.Parent = DecorativeLine
+
+-- Заголовок
 local TitleText = Instance.new("TextLabel")
 TitleText.Name = "TitleText"
-TitleText.Size = UDim2.new(1, -80, 1, 0)
-TitleText.Position = UDim2.new(0, 15, 0, 0)
+TitleText.Size = UDim2.new(0, 200, 1, 0)
+TitleText.Position = UDim2.new(0, 55, 0, 0)
 TitleText.BackgroundTransparency = 1
-TitleText.Text = "Teleport GUI"
-TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleText.Font = Enum.Font.GothamBold
-TitleText.TextSize = 18
+TitleText.Text = "LoopTP Menu"
+TitleText.TextColor3 = Color3.fromRGB(253, 104, 159)
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.TextSize = 31
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
-TitleText.Parent = TitleBar
+TitleText.Parent = TopBar
 
--- Кнопка закрытия
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -40, 0.5, -15)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-CloseButton.BorderSizePixel = 0
-CloseButton.Text = "X"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
-CloseButton.Parent = TitleBar
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseButton
-
--- Кнопка сворачивания
-local MinimizeButton = Instance.new("TextButton")
+-- Кнопка "Свернуть"
+local MinimizeButton = Instance.new("Frame")
 MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(1, -80, 0.5, -15)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+MinimizeButton.Size = UDim2.new(0, 30, 0, 31)
+MinimizeButton.Position = UDim2.new(1, -70, 0.5, -15.5)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(239, 239, 239)
 MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Text = "_"
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextSize = 16
-MinimizeButton.Parent = TitleBar
+MinimizeButton.Parent = TopBar
 
 local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 6)
+MinimizeCorner.CornerRadius = UDim.new(0, 8)
 MinimizeCorner.Parent = MinimizeButton
+
+local MinimizeText = Instance.new("TextLabel")
+MinimizeText.Name = "MinimizeText"
+MinimizeText.Size = UDim2.new(1, 0, 1, 0)
+MinimizeText.BackgroundTransparency = 1
+MinimizeText.Text = "-"
+MinimizeText.TextColor3 = Color3.fromRGB(253, 104, 159)
+MinimizeText.Font = Enum.Font.SourceSansBold
+MinimizeText.TextSize = 20
+MinimizeText.Parent = MinimizeButton
+
+local MinimizeButtonClick = Instance.new("ImageButton")
+MinimizeButtonClick.Name = "MinimizeButtonClick"
+MinimizeButtonClick.Size = UDim2.new(1, 0, 1, 0)
+MinimizeButtonClick.BackgroundTransparency = 1
+MinimizeButtonClick.Parent = MinimizeButton
+
+-- Кнопка "Закрыть"
+local CloseButton = Instance.new("Frame")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 30, 0, 31)
+CloseButton.Position = UDim2.new(1, -35, 0.5, -15.5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(213, 7, 69)
+CloseButton.BorderSizePixel = 0
+CloseButton.Parent = TopBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
+
+local CloseText = Instance.new("TextLabel")
+CloseText.Name = "CloseText"
+CloseText.Size = UDim2.new(1, 0, 1, 0)
+CloseText.BackgroundTransparency = 1
+CloseText.Text = "X"
+CloseText.TextColor3 = Color3.fromRGB(253, 104, 159)
+CloseText.Font = Enum.Font.SourceSansBold
+CloseText.TextSize = 18
+CloseText.Parent = CloseButton
+
+local CloseButtonClick = Instance.new("ImageButton")
+CloseButtonClick.Name = "CloseButtonClick"
+CloseButtonClick.Size = UDim2.new(1, 0, 1, 0)
+CloseButtonClick.BackgroundTransparency = 1
+CloseButtonClick.Parent = CloseButton
 
 -- Область контента
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, 0, 1, -40)
-ContentFrame.Position = UDim2.new(0, 0, 0, 40)
+ContentFrame.Size = UDim2.new(1, -20, 1, -70)
+ContentFrame.Position = UDim2.new(0, 10, 0, 60)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = MainFrame
 
@@ -118,13 +159,13 @@ ScrollingFrame.Name = "ScrollingFrame"
 ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
 ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.BorderSizePixel = 0
-ScrollingFrame.ScrollBarThickness = 5
-ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 100)
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 800) -- Будет обновляться
+ScrollingFrame.ScrollBarThickness = 4
+ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(253, 104, 159)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 800)
 ScrollingFrame.Parent = ContentFrame
 
 local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 15)
+UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = ScrollingFrame
 
@@ -132,8 +173,8 @@ UIListLayout.Parent = ScrollingFrame
 local function createGroupbox(title, position, size)
     local Groupbox = Instance.new("Frame")
     Groupbox.Name = "Groupbox_" .. title
-    Groupbox.Size = size or UDim2.new(0.95, 0, 0, 0) -- Высота будет автоматическая
-    Groupbox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    Groupbox.Size = size or UDim2.new(1, 0, 0, 0)
+    Groupbox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     Groupbox.BorderSizePixel = 0
     Groupbox.LayoutOrder = position == "Left" and 1 or 2
     
@@ -142,7 +183,7 @@ local function createGroupbox(title, position, size)
     GroupboxCorner.Parent = Groupbox
     
     local GroupboxStroke = Instance.new("UIStroke")
-    GroupboxStroke.Color = Color3.fromRGB(60, 60, 80)
+    GroupboxStroke.Color = Color3.fromRGB(253, 104, 159)
     GroupboxStroke.Thickness = 1
     GroupboxStroke.Parent = Groupbox
     
@@ -152,9 +193,9 @@ local function createGroupbox(title, position, size)
     TitleLabel.Position = UDim2.new(0, 10, 0, 0)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Text = title
-    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.Font = Enum.Font.GothamSemibold
-    TitleLabel.TextSize = 16
+    TitleLabel.TextColor3 = Color3.fromRGB(253, 104, 159)
+    TitleLabel.Font = Enum.Font.SourceSansBold
+    TitleLabel.TextSize = 18
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.Parent = Groupbox
     
@@ -166,7 +207,7 @@ local function createGroupbox(title, position, size)
     ContentContainer.Parent = Groupbox
     
     local ContainerListLayout = Instance.new("UIListLayout")
-    ContainerListLayout.Padding = UDim.new(0, 10)
+    ContainerListLayout.Padding = UDim.new(0, 8)
     ContainerListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     ContainerListLayout.Parent = ContentContainer
     
@@ -181,11 +222,11 @@ local function createGroupbox(title, position, size)
     return Groupbox, ContentContainer
 end
 
--- Функция для создания Toggle
+-- Функция для создания Toggle (переработанная под новый дизайн)
 local function createToggle(parent, title, defaultValue, callback)
     local ToggleContainer = Instance.new("Frame")
     ToggleContainer.Name = "ToggleContainer_" .. title
-    ToggleContainer.Size = UDim2.new(1, 0, 0, 30)
+    ToggleContainer.Size = UDim2.new(1, 0, 0, 28)
     ToggleContainer.BackgroundTransparency = 1
     ToggleContainer.LayoutOrder = #parent:GetChildren()
     
@@ -195,16 +236,16 @@ local function createToggle(parent, title, defaultValue, callback)
     ToggleLabel.BackgroundTransparency = 1
     ToggleLabel.Text = title
     ToggleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    ToggleLabel.Font = Enum.Font.Gotham
+    ToggleLabel.Font = Enum.Font.SourceSans
     ToggleLabel.TextSize = 14
     ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
     ToggleLabel.Parent = ToggleContainer
     
     local ToggleButton = Instance.new("TextButton")
     ToggleButton.Name = "ToggleButton"
-    ToggleButton.Size = UDim2.new(0, 50, 0, 25)
-    ToggleButton.Position = UDim2.new(1, -50, 0.5, -12.5)
-    ToggleButton.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 80)
+    ToggleButton.Size = UDim2.new(0, 50, 0, 24)
+    ToggleButton.Position = UDim2.new(1, -50, 0.5, -12)
+    ToggleButton.BackgroundColor3 = defaultValue and Color3.fromRGB(253, 104, 159) or Color3.fromRGB(60, 60, 60)
     ToggleButton.BorderSizePixel = 0
     ToggleButton.Text = ""
     ToggleButton.Parent = ToggleContainer
@@ -215,8 +256,8 @@ local function createToggle(parent, title, defaultValue, callback)
     
     local ToggleIndicator = Instance.new("Frame")
     ToggleIndicator.Name = "ToggleIndicator"
-    ToggleIndicator.Size = UDim2.new(0, 21, 0, 21)
-    ToggleIndicator.Position = defaultValue and UDim2.new(1, -23, 0.5, -10.5) or UDim2.new(0, 2, 0.5, -10.5)
+    ToggleIndicator.Size = UDim2.new(0, 20, 0, 20)
+    ToggleIndicator.Position = defaultValue and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
     ToggleIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     ToggleIndicator.BorderSizePixel = 0
     ToggleIndicator.Parent = ToggleButton
@@ -233,13 +274,13 @@ local function createToggle(parent, title, defaultValue, callback)
         local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         
         if toggleState then
-            local tween1 = TweenService:Create(ToggleButton, tweenInfo, {BackgroundColor3 = Color3.fromRGB(0, 170, 255)})
-            local tween2 = TweenService:Create(ToggleIndicator, tweenInfo, {Position = UDim2.new(1, -23, 0.5, -10.5)})
+            local tween1 = TweenService:Create(ToggleButton, tweenInfo, {BackgroundColor3 = Color3.fromRGB(253, 104, 159)})
+            local tween2 = TweenService:Create(ToggleIndicator, tweenInfo, {Position = UDim2.new(1, -22, 0.5, -10)})
             tween1:Play()
             tween2:Play()
         else
-            local tween1 = TweenService:Create(ToggleButton, tweenInfo, {BackgroundColor3 = Color3.fromRGB(60, 60, 80)})
-            local tween2 = TweenService:Create(ToggleIndicator, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -10.5)})
+            local tween1 = TweenService:Create(ToggleButton, tweenInfo, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)})
+            local tween2 = TweenService:Create(ToggleIndicator, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -10)})
             tween1:Play()
             tween2:Play()
         end
@@ -255,11 +296,11 @@ local function createToggle(parent, title, defaultValue, callback)
         Set = function(value)
             toggleState = value
             if value then
-                ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                ToggleIndicator.Position = UDim2.new(1, -23, 0.5, -10.5)
+                ToggleButton.BackgroundColor3 = Color3.fromRGB(253, 104, 159)
+                ToggleIndicator.Position = UDim2.new(1, -22, 0.5, -10)
             else
-                ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-                ToggleIndicator.Position = UDim2.new(0, 2, 0.5, -10.5)
+                ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                ToggleIndicator.Position = UDim2.new(0, 2, 0.5, -10)
             end
         end,
         Get = function()
@@ -268,42 +309,42 @@ local function createToggle(parent, title, defaultValue, callback)
     }
 end
 
--- Функция для создания Slider
+-- Функция для создания Slider (переработанная под новый дизайн)
 local function createSlider(parent, title, min, max, defaultValue, suffix, callback)
     local SliderContainer = Instance.new("Frame")
     SliderContainer.Name = "SliderContainer_" .. title
-    SliderContainer.Size = UDim2.new(1, 0, 0, 60)
+    SliderContainer.Size = UDim2.new(1, 0, 0, 55)
     SliderContainer.BackgroundTransparency = 1
     SliderContainer.LayoutOrder = #parent:GetChildren()
     
     local SliderLabel = Instance.new("TextLabel")
     SliderLabel.Name = "SliderLabel"
-    SliderLabel.Size = UDim2.new(1, 0, 0, 20)
+    SliderLabel.Size = UDim2.new(1, 0, 0, 18)
     SliderLabel.BackgroundTransparency = 1
     SliderLabel.Text = title
     SliderLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    SliderLabel.Font = Enum.Font.Gotham
+    SliderLabel.Font = Enum.Font.SourceSans
     SliderLabel.TextSize = 14
     SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
     SliderLabel.Parent = SliderContainer
     
     local ValueLabel = Instance.new("TextLabel")
     ValueLabel.Name = "ValueLabel"
-    ValueLabel.Size = UDim2.new(0, 60, 0, 20)
+    ValueLabel.Size = UDim2.new(0, 60, 0, 18)
     ValueLabel.Position = UDim2.new(1, -60, 0, 0)
     ValueLabel.BackgroundTransparency = 1
     ValueLabel.Text = tostring(defaultValue) .. (suffix or "")
-    ValueLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
-    ValueLabel.Font = Enum.Font.GothamSemibold
+    ValueLabel.TextColor3 = Color3.fromRGB(253, 104, 159)
+    ValueLabel.Font = Enum.Font.SourceSansBold
     ValueLabel.TextSize = 14
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
     ValueLabel.Parent = SliderContainer
     
     local SliderTrack = Instance.new("Frame")
     SliderTrack.Name = "SliderTrack"
-    SliderTrack.Size = UDim2.new(1, 0, 0, 5)
-    SliderTrack.Position = UDim2.new(0, 0, 0, 30)
-    SliderTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    SliderTrack.Size = UDim2.new(1, 0, 0, 6)
+    SliderTrack.Position = UDim2.new(0, 0, 0, 32)
+    SliderTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     SliderTrack.BorderSizePixel = 0
     SliderTrack.Parent = SliderContainer
     
@@ -314,7 +355,7 @@ local function createSlider(parent, title, min, max, defaultValue, suffix, callb
     local SliderFill = Instance.new("Frame")
     SliderFill.Name = "SliderFill"
     SliderFill.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0)
-    SliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(253, 104, 159)
     SliderFill.BorderSizePixel = 0
     SliderFill.Parent = SliderTrack
     
@@ -324,8 +365,8 @@ local function createSlider(parent, title, min, max, defaultValue, suffix, callb
     
     local SliderButton = Instance.new("TextButton")
     SliderButton.Name = "SliderButton"
-    SliderButton.Size = UDim2.new(0, 20, 0, 20)
-    SliderButton.Position = UDim2.new((defaultValue - min) / (max - min), -10, 0.5, -10)
+    SliderButton.Size = UDim2.new(0, 18, 0, 18)
+    SliderButton.Position = UDim2.new((defaultValue - min) / (max - min), -9, 0.5, -9)
     SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     SliderButton.BorderSizePixel = 0
     SliderButton.Text = ""
@@ -345,7 +386,7 @@ local function createSlider(parent, title, min, max, defaultValue, suffix, callb
         
         local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local tween1 = TweenService:Create(SliderFill, tweenInfo, {Size = UDim2.new((clampedValue - min) / (max - min), 0, 1, 0)})
-        local tween2 = TweenService:Create(SliderButton, tweenInfo, {Position = UDim2.new((clampedValue - min) / (max - min), -10, 0.5, -10)})
+        local tween2 = TweenService:Create(SliderButton, tweenInfo, {Position = UDim2.new((clampedValue - min) / (max - min), -9, 0.5, -9)})
         tween1:Play()
         tween2:Play()
         
@@ -396,7 +437,7 @@ local function createSlider(parent, title, min, max, defaultValue, suffix, callb
     }
 end
 
--- Функция для создания Dropdown
+-- Функция для создания Dropdown (переработанная под новый дизайн)
 local function createDropdown(parent, title, values, defaultValue, callback)
     local DropdownContainer = Instance.new("Frame")
     DropdownContainer.Name = "DropdownContainer_" .. title
@@ -411,20 +452,20 @@ local function createDropdown(parent, title, values, defaultValue, callback)
     DropdownLabel.BackgroundTransparency = 1
     DropdownLabel.Text = title
     DropdownLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    DropdownLabel.Font = Enum.Font.Gotham
+    DropdownLabel.Font = Enum.Font.SourceSans
     DropdownLabel.TextSize = 14
     DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
     DropdownLabel.Parent = DropdownContainer
     
     local DropdownButton = Instance.new("TextButton")
     DropdownButton.Name = "DropdownButton"
-    DropdownButton.Size = UDim2.new(0, 120, 0, 30)
-    DropdownButton.Position = UDim2.new(1, -120, 0, 0)
-    DropdownButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    DropdownButton.Size = UDim2.new(0, 100, 0, 28)
+    DropdownButton.Position = UDim2.new(1, -100, 0, 1)
+    DropdownButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     DropdownButton.BorderSizePixel = 0
     DropdownButton.Text = defaultValue
     DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    DropdownButton.Font = Enum.Font.Gotham
+    DropdownButton.Font = Enum.Font.SourceSans
     DropdownButton.TextSize = 14
     DropdownButton.Parent = DropdownContainer
     
@@ -434,9 +475,9 @@ local function createDropdown(parent, title, values, defaultValue, callback)
     
     local DropdownList = Instance.new("Frame")
     DropdownList.Name = "DropdownList"
-    DropdownList.Size = UDim2.new(0, 120, 0, 0)
-    DropdownList.Position = UDim2.new(1, -120, 1, 5)
-    DropdownList.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    DropdownList.Size = UDim2.new(0, 100, 0, 0)
+    DropdownList.Position = UDim2.new(1, -100, 1, 2)
+    DropdownList.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     DropdownList.BorderSizePixel = 0
     DropdownList.Visible = false
     DropdownList.ZIndex = 5
@@ -455,7 +496,7 @@ local function createDropdown(parent, title, values, defaultValue, callback)
     local isOpen = false
     
     local function updateDropdownSize()
-        DropdownList.Size = UDim2.new(0, 120, 0, #values * 32)
+        DropdownList.Size = UDim2.new(0, 100, 0, #values * 28)
     end
     
     local function closeDropdown()
@@ -477,13 +518,13 @@ local function createDropdown(parent, title, values, defaultValue, callback)
     for _, value in ipairs(values) do
         local OptionButton = Instance.new("TextButton")
         OptionButton.Name = "Option_" .. value
-        OptionButton.Size = UDim2.new(1, -10, 0, 30)
-        OptionButton.Position = UDim2.new(0, 5, 0, 0)
-        OptionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+        OptionButton.Size = UDim2.new(1, -4, 0, 26)
+        OptionButton.Position = UDim2.new(0, 2, 0, 0)
+        OptionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         OptionButton.BorderSizePixel = 0
         OptionButton.Text = value
         OptionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        OptionButton.Font = Enum.Font.Gotham
+        OptionButton.Font = Enum.Font.SourceSans
         OptionButton.TextSize = 14
         OptionButton.ZIndex = 6
         OptionButton.Parent = DropdownList
@@ -497,11 +538,11 @@ local function createDropdown(parent, title, values, defaultValue, callback)
         end)
         
         OptionButton.MouseEnter:Connect(function()
-            OptionButton.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+            OptionButton.BackgroundColor3 = Color3.fromRGB(253, 104, 159)
         end)
         
         OptionButton.MouseLeave:Connect(function()
-            OptionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+            OptionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         end)
     end
     
@@ -510,7 +551,7 @@ local function createDropdown(parent, title, values, defaultValue, callback)
     DropdownButton.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         DropdownList.Visible = isOpen
-        DropdownContainer.Size = isOpen and UDim2.new(1, 0, 0, 30 + DropdownList.AbsoluteSize.Y + 5) or UDim2.new(1, 0, 0, 30)
+        DropdownContainer.Size = isOpen and UDim2.new(1, 0, 0, 30 + DropdownList.AbsoluteSize.Y + 2) or UDim2.new(1, 0, 0, 30)
     end)
     
     DropdownContainer.Parent = parent
@@ -527,11 +568,11 @@ local function createDropdown(parent, title, values, defaultValue, callback)
     }
 end
 
--- Функция для создания Keybind
+-- Функция для создания Keybind (переработанная под новый дизайн)
 local function createKeybind(parent, title, defaultKey, callback)
     local KeybindContainer = Instance.new("Frame")
     KeybindContainer.Name = "KeybindContainer_" .. title
-    KeybindContainer.Size = UDim2.new(1, 0, 0, 30)
+    KeybindContainer.Size = UDim2.new(1, 0, 0, 28)
     KeybindContainer.BackgroundTransparency = 1
     KeybindContainer.LayoutOrder = #parent:GetChildren()
     
@@ -541,20 +582,20 @@ local function createKeybind(parent, title, defaultKey, callback)
     KeybindLabel.BackgroundTransparency = 1
     KeybindLabel.Text = title
     KeybindLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    KeybindLabel.Font = Enum.Font.Gotham
+    KeybindLabel.Font = Enum.Font.SourceSans
     KeybindLabel.TextSize = 14
     KeybindLabel.TextXAlignment = Enum.TextXAlignment.Left
     KeybindLabel.Parent = KeybindContainer
     
     local KeybindButton = Instance.new("TextButton")
     KeybindButton.Name = "KeybindButton"
-    KeybindButton.Size = UDim2.new(0, 80, 0, 30)
-    KeybindButton.Position = UDim2.new(1, -80, 0, 0)
-    KeybindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    KeybindButton.Size = UDim2.new(0, 80, 0, 26)
+    KeybindButton.Position = UDim2.new(1, -80, 0, 1)
+    KeybindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     KeybindButton.BorderSizePixel = 0
     KeybindButton.Text = tostring(defaultKey):gsub("Enum.KeyCode.", "")
     KeybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    KeybindButton.Font = Enum.Font.Gotham
+    KeybindButton.Font = Enum.Font.SourceSans
     KeybindButton.TextSize = 14
     KeybindButton.Parent = KeybindContainer
     
@@ -568,7 +609,7 @@ local function createKeybind(parent, title, defaultKey, callback)
     KeybindButton.MouseButton1Click:Connect(function()
         listening = true
         KeybindButton.Text = "..."
-        KeybindButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        KeybindButton.BackgroundColor3 = Color3.fromRGB(253, 104, 159)
     end)
     
     UserInputService.InputBegan:Connect(function(input)
@@ -576,7 +617,7 @@ local function createKeybind(parent, title, defaultKey, callback)
             listening = false
             currentKey = input.KeyCode
             KeybindButton.Text = tostring(input.KeyCode):gsub("Enum.KeyCode.", "")
-            KeybindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            KeybindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             
             if callback then
                 callback(input.KeyCode)
@@ -597,20 +638,20 @@ local function createKeybind(parent, title, defaultKey, callback)
     }
 end
 
--- Создаем групбоксы
-local TeleportGroup, TeleportContainer = createGroupbox("Телепортация", "Left", UDim2.new(0.95, 0, 0, 150))
+-- Создаем групбоксы с новым дизайном
+local TeleportGroup, TeleportContainer = createGroupbox("Телепортация", "Left", UDim2.new(1, 0, 0, 140))
 TeleportGroup.Parent = ScrollingFrame
 
-local OffsetGroup, OffsetContainer = createGroupbox("Настройка координат", "Right", UDim2.new(0.95, 0, 0, 200))
+local OffsetGroup, OffsetContainer = createGroupbox("Настройка координат", "Right", UDim2.new(1, 0, 0, 180))
 OffsetGroup.Parent = ScrollingFrame
 
-local ModeGroup, ModeContainer = createGroupbox("Моды", "Left", UDim2.new(0.95, 0, 0, 200))
+local ModeGroup, ModeContainer = createGroupbox("Моды", "Left", UDim2.new(1, 0, 0, 180))
 ModeGroup.Parent = ScrollingFrame
 
-local KeybindGroup, KeybindContainer = createGroupbox("Контролер кнопки", "Right", UDim2.new(0.95, 0, 0, 100))
+local KeybindGroup, KeybindContainer = createGroupbox("Контролер кнопки", "Right", UDim2.new(1, 0, 0, 100))
 KeybindGroup.Parent = ScrollingFrame
 
--- Создаем элементы управления
+-- Создаем элементы управления с новым дизайном
 local teleportToggle = createToggle(TeleportContainer, "Включить тп", false, function(value)
     teleportEnabled = value
     
@@ -662,13 +703,13 @@ local keybindButton = createKeybind(KeybindContainer, "Кнопка вклуче
     createNotification("Keybind", "Key set to: " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
 end)
 
--- Функция для уведомлений
+-- Функция для уведомлений (переработанная под новый дизайн)
 function createNotification(title, message, duration)
     local Notification = Instance.new("Frame")
     Notification.Name = "Notification"
-    Notification.Size = UDim2.new(0, 300, 0, 80)
-    Notification.Position = UDim2.new(1, -320, 1, -100)
-    Notification.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    Notification.Size = UDim2.new(0, 280, 0, 70)
+    Notification.Position = UDim2.new(1, -300, 1, -90)
+    Notification.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Notification.BorderSizePixel = 0
     Notification.ZIndex = 1000000
     Notification.Parent = ScreenGui
@@ -678,28 +719,28 @@ function createNotification(title, message, duration)
     NotifCorner.Parent = Notification
     
     local NotifStroke = Instance.new("UIStroke")
-    NotifStroke.Color = Color3.fromRGB(0, 170, 255)
+    NotifStroke.Color = Color3.fromRGB(253, 104, 159)
     NotifStroke.Thickness = 2
     NotifStroke.Parent = Notification
     
     local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Size = UDim2.new(1, -20, 0, 30)
+    TitleLabel.Size = UDim2.new(1, -20, 0, 25)
     TitleLabel.Position = UDim2.new(0, 10, 0, 5)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Text = title
-    TitleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
-    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextColor3 = Color3.fromRGB(253, 104, 159)
+    TitleLabel.Font = Enum.Font.SourceSansBold
     TitleLabel.TextSize = 16
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.Parent = Notification
     
     local MessageLabel = Instance.new("TextLabel")
-    MessageLabel.Size = UDim2.new(1, -20, 1, -40)
-    MessageLabel.Position = UDim2.new(0, 10, 0, 35)
+    MessageLabel.Size = UDim2.new(1, -20, 1, -35)
+    MessageLabel.Position = UDim2.new(0, 10, 0, 30)
     MessageLabel.BackgroundTransparency = 1
     MessageLabel.Text = message
     MessageLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MessageLabel.Font = Enum.Font.Gotham
+    MessageLabel.Font = Enum.Font.SourceSans
     MessageLabel.TextSize = 14
     MessageLabel.TextXAlignment = Enum.TextXAlignment.Left
     MessageLabel.TextYAlignment = Enum.TextYAlignment.Top
@@ -708,14 +749,14 @@ function createNotification(title, message, duration)
     
     task.spawn(function()
         task.wait(duration or 3)
-        local tween = TweenService:Create(Notification, TweenInfo.new(0.5), {Position = UDim2.new(1, -320, 1, 100)})
+        local tween = TweenService:Create(Notification, TweenInfo.new(0.5), {Position = UDim2.new(1, -300, 1, 100)})
         tween:Play()
         tween.Completed:Wait()
         Notification:Destroy()
     end)
 end
 
--- Функции для телепортации (из оригинального скрипта)
+-- Функции для телепортации (остаются без изменений)
 local function updatePlayerList()
     playerList = {}
     for _, player in pairs(Players:GetPlayers()) do
@@ -876,7 +917,7 @@ local function updateInput(input)
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
-TitleBar.InputBegan:Connect(function(input)
+TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
@@ -890,7 +931,7 @@ TitleBar.InputBegan:Connect(function(input)
     end
 end)
 
-TitleBar.InputChanged:Connect(function(input)
+TopBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
@@ -906,18 +947,20 @@ end)
 local isMinimized = false
 local originalSize = MainFrame.Size
 
-MinimizeButton.MouseButton1Click:Connect(function()
+MinimizeButtonClick.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
-        MainFrame:TweenSize(UDim2.new(0, 450, 0, 40), "Out", "Quad", 0.3, true)
-        MinimizeButton.Text = "□"
+        MainFrame:TweenSize(UDim2.new(0, 394, 0, 50), "Out", "Quad", 0.3, true)
+        ContentFrame.Visible = false
+        MinimizeText.Text = "+"
     else
         MainFrame:TweenSize(originalSize, "Out", "Quad", 0.3, true)
-        MinimizeButton.Text = "_"
+        ContentFrame.Visible = true
+        MinimizeText.Text = "-"
     end
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
+CloseButtonClick.MouseButton1Click:Connect(function()
     if teleportLoop then
         task.cancel(teleportLoop)
         teleportLoop = nil
@@ -925,20 +968,21 @@ CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-CloseButton.MouseEnter:Connect(function()
-    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+-- Эффекты при наведении на кнопки
+MinimizeButtonClick.MouseEnter:Connect(function()
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
 end)
 
-CloseButton.MouseLeave:Connect(function()
-    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+MinimizeButtonClick.MouseLeave:Connect(function()
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(239, 239, 239)
 end)
 
-MinimizeButton.MouseEnter:Connect(function()
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+CloseButtonClick.MouseEnter:Connect(function()
+    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 80)
 end)
 
-MinimizeButton.MouseLeave:Connect(function()
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+CloseButtonClick.MouseLeave:Connect(function()
+    CloseButton.BackgroundColor3 = Color3.fromRGB(213, 7, 69)
 end)
 
 -- Обновление размера ScrollingFrame
@@ -956,5 +1000,5 @@ end)
 -- Создаем уведомление о загрузке
 task.spawn(function()
     task.wait(0.5)
-    createNotification("Teleport GUI", "GUI loaded successfully! Press " .. tostring(teleportKeybind):gsub("Enum.KeyCode.", "") .. " to toggle teleport", 5)
-end)
+    createNotification("Loop Menu", "GUI loaded successfully! Press " .. tostring(teleportKeybind):gsub("Enum.KeyCode.", "") .. " to toggle teleport", 5)
+end) 
