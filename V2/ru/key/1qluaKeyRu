@@ -1,5 +1,5 @@
 
- local LibraryUrl = "https://raw.githubusercontent.com/Vovabro46/trash/refs/heads/main/Test.lua"
+ local LibraryUrl = "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/labar"
 local Success, Library = pcall(function()
     return loadstring(game:HttpGet(LibraryUrl))()
 end)
@@ -70,6 +70,21 @@ FarmGroup:AddButton({
 })
 
 
+FarmGroup:AddParagraph({
+    Title = "Безконечное Тп к игроков ",
+    Content = "авто телепорт к игроку которого выбераешь",
+    TextWrapped = true
+})
+
+FarmGroup:AddButton({
+    Title = "LoopTPplayer Menu",
+    Description = "Телепортироваться к игроку!",
+    Callback = function()
+        loadstring(game:HttpGet(('https://github.com/1Qlua-RBXscript/1qlua/blob/main/Menu/TPLOOPPLAYER'),true))()
+    end
+})
+
+
 local FarmGroup2 = GeneralPage:Groupbox("Основное", "Right", "7733774602", "true")
 
 
@@ -115,6 +130,19 @@ FarmGroup2:AddButton({
     end
 })
 
+FarmGroup2:AddParagraph({
+    Title = "Замена текстур",
+    Content = "Можно сделать скин ченджер на любую игру",
+    TextWrapped = true
+})
+
+FarmGroup2:AddButton({
+    Title = "Texture Menu",
+    Description = "Замена текстур",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/Texture'),true))()
+    end
+})
 
 
 
