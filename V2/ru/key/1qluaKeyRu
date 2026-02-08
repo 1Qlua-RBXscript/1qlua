@@ -84,6 +84,33 @@ FarmGroup:AddButton({
     end
 })
 
+FarmGroup:AddParagraph({
+    Title = "Бот который идет к ближйшему игроку",
+    Content = "авто бот к игроку которого выбераешь",
+    TextWrapped = true
+})
+
+FarmGroup:AddButton({
+    Title = "AutoWalk Menu",
+    Description = "авто бот к игроку которого выбераешь",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/AutoWalk'),true))()
+    end
+})
+
+FarmGroup:AddParagraph({
+    Title = "Ты сможешь телепортироваться по обьектом по названию",
+    Content = "делать фармилки",
+    TextWrapped = true
+})
+
+FarmGroup:AddButton({
+    Title = "TPpart Menu",
+    Description = "Ты сможешь телепортироваться по обьектом по названию",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/TPpart'),true))()
+    end
+})
 
 local FarmGroup2 = GeneralPage:Groupbox("Основное", "Right", "7733774602", "true")
 
@@ -253,6 +280,14 @@ PlayerGroup:AddButton({
     Description = "Он будет телепортировать назад в игрока которого ты нажмешь пока он не умрет",
     Callback = function()
         loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/F/waitkill'),true))()
+    end
+})
+
+PlayerGroup:AddButton({
+    Title = "Анти скорость (P)",
+    Description = "Будет телепортировать обратно когда вас выкидывают",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Menu/F/AntiSpeed'),true))()
     end
 })
 
