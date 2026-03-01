@@ -1279,5 +1279,3 @@ if scrollingFrame then
     scrollingFrame.CanvasSize = UDim2.new(0,0,0,0)
     scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 end
-
-print("✅ ESP PRO 2.8 загружен! Кнопка 'Цвет' работает, скелет должен появляться после респавна.")
