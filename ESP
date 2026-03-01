@@ -1,25 +1,16 @@
---[[
-    ESP PRO 2.8 – АБСОЛЮТНО РАБОЧАЯ ВЕРСИЯ
-    ✅ Исправлены все ошибки
-    ✅ Добавлена отладка для скелета
-]]
 
--- Сервисы Roblox
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Удаляем старый GUI
 pcall(function() 
     local old = CoreGui:FindFirstChild("ESPMenu")
     if old then old:Destroy() end
 end)
 
--- ============================
--- ГЛОБАЛЬНЫЕ НАСТРОЙКИ
--- ============================
+
 local settings = {
     ShowName = true,
     ShowHealth = true,
@@ -33,24 +24,15 @@ local settings = {
     ShowSkeleton = false
 }
 
--- ============================
--- ПЕРЕМЕННЫЕ
--- ============================
 local espData = {}
 local playerRows = {}
 local nextRowOrder = 2
 local screenGui, mainFrame, scrollingFrame
 
--- ============================
--- ПРЕДВАРИТЕЛЬНОЕ ОБЪЯВЛЕНИЕ ФУНКЦИЙ
--- ============================
 local updateSkeleton, refreshAllESP, updateESP, createESP, removeESP
 local removeAllESP, toggleESP, setESPColor, toggleAllESP
 local createGlobalSettingsPanel, createPlayerRow, createColorPicker
 
--- ============================
--- ОПРЕДЕЛЕНИЕ ФУНКЦИЙ
--- ============================
 
 updateSkeleton = function(player)
     print("🦴 updateSkeleton для", player.Name, "ShowSkeleton =", settings.ShowSkeleton)
