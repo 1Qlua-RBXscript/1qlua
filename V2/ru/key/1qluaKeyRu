@@ -7,6 +7,74 @@ if not Success or not Library then
     return warn("Error loading UI library!") 
 end
 
+
+-- Функция для создания папки без ключа
+local function createNoKeyFolder()
+    -- Проверяем доступные методы записи файлов
+    local canWrite = false
+    local writeMethods = {
+        writefile,
+        makefolder,
+        saveinstance
+    }
+    
+    for _, method in pairs(writeMethods) do
+        if type(method) == "function" then
+            canWrite = true
+            break
+        end
+    end
+    
+    if not canWrite then
+        Compkiller.newNotify().new({
+            Title = "Ошибка",
+            Content = "Ваш эксплойт не поддерживает запись файлов",
+            Duration = 5,
+            Icon = "rbxassetid://120245531583106"
+        })
+        return
+    end
+    
+    -- Пытаемся создать папку
+    local success, err = pcall(function()
+        -- Проверяем разные возможные пути
+        local paths = {
+            "1qluaNoRuKey",
+            "workspace/1qluaNoRuKey",
+            "exploit/1qluaNoRuKey",
+            "bin/1qluaNoRuKey"
+        }
+        
+        local created = false
+        for _, path in ipairs(paths) do
+            if not created then
+                pcall(function()
+                    makefolder(path)
+                    created = true
+                    writefile(path.."/README.txt", "Эта папка создана для входа без ключа")
+                end)
+            end
+        end
+        
+        if not created then
+            error("Не удалось создать папку ни в одной из возможных директорий")
+        end
+    end)
+    
+    if success then
+
+    else
+        Compkiller.newNotify().new({
+            Title = "Ошибка",
+            Content = "Не удалось создать папку: "..tostring(err),
+            Duration = 5,
+            Icon = "rbxassetid://120245531583106"
+        })
+    end
+end
+
+createNoKeyFolder()
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -53,6 +121,8 @@ FarmGroup:AddButton({
         loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIM'),true))()
     end
 })
+
+
 
 
 FarmGroup:AddParagraph({
