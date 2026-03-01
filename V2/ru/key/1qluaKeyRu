@@ -41,6 +41,35 @@ FarmGroup:AddButton({
 
 
 FarmGroup:AddParagraph({
+    Title = "Айм на игрока!",
+    Content = "ставит камеру на игрока",
+    TextWrapped = true
+})
+
+FarmGroup:AddButton({
+    Title = "Aim Menu",
+    Description = "ставит игрока на ближайшего игрока на правою кнопку",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/AIM'),true))()
+    end
+})
+
+
+FarmGroup:AddParagraph({
+    Title = "Esp ",
+    Content = "Подсветка игрока ",
+    TextWrapped = true
+})
+
+FarmGroup:AddButton({
+    Title = "ESP Menu",
+    Description = "Подсвечивает всех игроков",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/ESP'),true))()
+    end
+})
+
+FarmGroup:AddParagraph({
     Title = "Fling игроков",
     Content = "Выкидывать игроков за карту!",
     TextWrapped = true
