@@ -22,3 +22,4 @@ loadstring(game:HttpGet(ScriptURL))()
 
 
 loadstring(game:HttpGet('https://pastebin.com/raw/6MRGQLXu'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Roblox'))()
