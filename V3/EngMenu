@@ -1,8 +1,4 @@
---[[
-    Custom Character Panel with Sliders and User-Defined Buttons
-    Панель появляется снизу по центру экрана.
-    Слайдеры работают правильно.
-]]
+
 
 -- Wait for game to load
 if not game:IsLoaded() then game.Loaded:Wait() end
@@ -148,7 +144,7 @@ if UI:FindFirstChild("Toggle") then UI.Toggle:Destroy() end
 -- Настраиваем панель: снизу по центру
 characterPanel.Parent = UI
 characterPanel.Visible = true
-characterPanel.Position = UDim2.new(0.5, -290, 1, -150)  -- снизу, отступ 150px от низа
+characterPanel.Position = UDim2.new(0.5, 0, 1, -120)  -- снизу, отступ 150px от низа
 characterPanel.Size = UDim2.new(0, 581, 0, 246)
 characterPanel.BackgroundTransparency = 0
 characterPanel.Title.TextTransparency = 0
