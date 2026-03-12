@@ -1,0 +1,6 @@
+
+if _G.CharacterPanel then
+    _G.CharacterPanel.Visible = false
+else
+    warn("Character panel not found")
+end
