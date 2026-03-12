@@ -1,6 +1,3 @@
---[[
-    Sirius – Custom Bottom Menu Edition (финальная версия)
-]]
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 
@@ -335,6 +332,24 @@ local function start()
         script2 = function() 
         
         loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/EngMenu"))()
+        
+         end
+    })
+
+    addCustomButton("Example", {
+        image1 = 9134755504,
+        image2 = 14385992605,
+        color1 = Color3.fromRGB(170, 37, 46),
+        color2 = Color3.fromRGB(0, 170, 127),
+        script1 = function() 
+
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/ENDV2SCRIPT"))()
+
+         end,
+
+        script2 = function() 
+        
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/key/RuV2"))()
         
          end
     })
