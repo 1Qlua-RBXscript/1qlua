@@ -1,0 +1,401 @@
+--[[
+    Custom Character Panel with Sliders and User-Defined Buttons
+    Панель появляется снизу по центру экрана.
+    Слайдеры работают правильно.
+]]
+
+-- Wait for game to load
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local coreGui = game:GetService("CoreGui")
+local players = game:GetService("Players")
+local runService = game:GetService("RunService")
+local tweenService = game:GetService("TweenService")
+local userInputService = game:GetService("UserInputService")
+local localPlayer = players.LocalPlayer
+local camera = workspace.CurrentCamera
+local mouse = localPlayer:GetMouse()
+
+-- ========== НАСТРОЙКА ПОЛЬЗОВАТЕЛЬСКИХ КНОПОК ==========
+-- Каждая кнопка содержит:
+--   name        : string (название, отображается при наведении)
+--   image       : string (rbxassetid://...)
+--   color       : Color3
+--   scriptOn    : function (выполняется при включении)
+--   scriptOff   : function (выполняется при выключении)
+local customButtons = {
+    {
+        name = "Super Jump",
+        image = "rbxassetid://9134762943", -- иконка (пример)
+        color = Color3.fromRGB(49, 88, 193),
+        scriptOn = function()
+            local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = 200
+            end
+        end,
+        scriptOff = function()
+            local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = 50
+            end
+        end
+    },
+    {
+        name = "Infinite Jump",
+        image = "rbxassetid://9134755504",
+        color = Color3.fromRGB(170, 37, 46),
+        scriptOn = function()
+            if _G.InfiniteJumpConn then _G.InfiniteJumpConn:Disconnect() end
+            _G.InfiniteJumpConn = userInputService.JumpRequest:Connect(function()
+                local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        end,
+        scriptOff = function()
+            if _G.InfiniteJumpConn then
+                _G.InfiniteJumpConn:Disconnect()
+                _G.InfiniteJumpConn = nil
+            end
+        end
+    }
+    -- Добавьте свои кнопки по аналогии
+}
+
+-- ========== СЛАЙДЕРЫ (из Sirius) ==========
+local sliders = {
+    {
+        name = "player speed",
+        color = Color3.fromRGB(44, 153, 93),
+        values = {0, 300},
+        default = 16,
+        value = 16,
+        active = false,
+        callback = function(value)
+            local character = localPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = value
+            end
+        end,
+    },
+    {
+        name = "jump power",
+        color = Color3.fromRGB(59, 126, 184),
+        values = {0, 350},
+        default = 50,
+        value = 50,
+        active = false,
+        callback = function(value)
+            local character = localPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if character then
+                if humanoid.UseJumpPower then
+                    humanoid.JumpPower = value
+                else
+                    humanoid.JumpHeight = value
+                end
+            end
+        end,
+    },
+    {
+        name = "flight speed",
+        color = Color3.fromRGB(177, 45, 45),
+        values = {1, 25},
+        default = 3,
+        value = 3,
+        active = false,
+        callback = function(value) end, -- можно подключить к полёту
+    },
+    {
+        name = "field of view",
+        color = Color3.fromRGB(198, 178, 75),
+        values = {45, 120},
+        default = 70,
+        value = 70,
+        active = false,
+        callback = function(value)
+            tweenService:Create(camera, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), { FieldOfView = value }):Play()
+        end,
+    },
+}
+
+-- ========== ЗАГРУЗКА ИНТЕРФЕЙСА ==========
+local guiParent = gethui and gethui() or coreGui
+local UI = game:GetObjects('rbxassetid://14183548964')[1]  -- ресурс Sirius
+UI.Name = "CharacterPanel"
+UI.Parent = guiParent
+
+local characterPanel = UI:FindFirstChild("Character")
+if not characterPanel then
+    warn("Character panel not found in asset")
+    return
+end
+
+-- Удаляем всё лишнее
+for _, child in ipairs(UI:GetChildren()) do
+    if child ~= characterPanel and child:IsA("Frame") then
+        child:Destroy()
+    end
+end
+if UI:FindFirstChild("Notifications") then UI.Notifications:Destroy() end
+if UI:FindFirstChild("Toasts") then UI.Toasts:Destroy() end
+if UI:FindFirstChild("SmartBar") then UI.SmartBar:Destroy() end
+if UI:FindFirstChild("Toggle") then UI.Toggle:Destroy() end
+
+-- Настраиваем панель: снизу по центру
+characterPanel.Parent = UI
+characterPanel.Visible = true
+characterPanel.Position = UDim2.new(0.5, -290, 1, -150)  -- снизу, отступ 150px от низа
+characterPanel.Size = UDim2.new(0, 581, 0, 246)
+characterPanel.BackgroundTransparency = 0
+characterPanel.Title.TextTransparency = 0
+characterPanel.Icon.ImageTransparency = 0
+characterPanel.UIStroke.Transparency = 0.95
+characterPanel.Shadow.ImageTransparency = 0.7
+
+-- Делаем панель перетаскиваемой
+do
+    local dragging = false
+    local dragStart, panelPos
+
+    characterPanel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            panelPos = characterPanel.Position
+        end
+    end)
+
+    characterPanel.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    characterPanel.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            characterPanel.Position = UDim2.new(panelPos.X.Scale, panelPos.X.Offset + delta.X, panelPos.Y.Scale, panelPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- ========== СОЗДАНИЕ КНОПОК ==========
+local grid = characterPanel.Interactions.Grid
+for _, child in ipairs(grid:GetChildren()) do
+    if child:IsA("Frame") and child.Name ~= "Template" then
+        child:Destroy()
+    end
+end
+grid.Template.Visible = false
+
+for i, btnData in ipairs(customButtons) do
+    local newBtn = grid.Template:Clone()
+    newBtn.Name = btnData.name
+    newBtn.Parent = grid
+    newBtn.BackgroundColor3 = btnData.color
+    newBtn.UIStroke.Color = btnData.color
+    newBtn.Icon.Image = btnData.image
+    newBtn.Visible = true
+
+    -- Начальное состояние (выключено)
+    newBtn.BackgroundTransparency = 0.55
+    newBtn.UIStroke.Transparency = 0.4
+    newBtn.Icon.ImageTransparency = 0.5
+
+    local isOn = false
+
+    newBtn.MouseEnter:Connect(function()
+        characterPanel.Interactions.ActionsTitle.Text = string.upper(btnData.name)
+        if isOn then return end
+        tweenService:Create(newBtn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.4}):Play()
+        tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.6}):Play()
+    end)
+
+    newBtn.MouseLeave:Connect(function()
+        if isOn then return end
+        tweenService:Create(newBtn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.55}):Play()
+        tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.4}):Play()
+    end)
+
+    grid.MouseLeave:Connect(function()
+        characterPanel.Interactions.ActionsTitle.Text = "PLAYER ACTIONS"
+    end)
+
+    newBtn.Interact.MouseButton1Click:Connect(function()
+        isOn = not isOn
+        if isOn then
+            pcall(btnData.scriptOn)
+            tweenService:Create(newBtn, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.1}):Play()
+            tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {Transparency = 1}):Play()
+            tweenService:Create(newBtn.Icon, TweenInfo.new(0.45, Enum.EasingStyle.Quint), {ImageTransparency = 0.1}):Play()
+        else
+            pcall(btnData.scriptOff)
+            tweenService:Create(newBtn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.55}):Play()
+            tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.4}):Play()
+            tweenService:Create(newBtn.Icon, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {ImageTransparency = 0.5}):Play()
+        end
+    end)
+end
+
+-- ========== СОЗДАНИЕ СЛАЙДЕРОВ ==========
+local slidersContainer = characterPanel.Interactions.Sliders
+slidersContainer.Template.Visible = false
+
+-- Функция обновления слайдера (исправленная)
+local function updateSlider(data, setValue)
+    local sliderFrame = data.object.Interact
+    local sliderPos = sliderFrame.AbsolutePosition.X
+    local sliderSize = sliderFrame.AbsoluteSize.X
+    local relative
+
+    if setValue then
+        setValue = math.clamp(setValue, data.values[1], data.values[2])
+        relative = (setValue - data.values[1]) / (data.values[2] - data.values[1])
+    else
+        local mouseX = mouse.X
+        relative = (mouseX - sliderPos) / sliderSize
+        relative = math.clamp(relative, 0, 1)
+    end
+
+    data.object.Progress.Size = UDim2.new(relative, 0, 1, 0)
+
+    local value = data.values[1] + (data.values[2] - data.values[1]) * relative
+    value = math.floor(value + 0.5)
+    data.object.Information.Text = value .. " " .. data.name
+    data.value = value
+
+    if data.callback and not setValue then
+        data.callback(value)
+    elseif setValue then
+        data.callback(value)
+    end
+end
+
+-- Создаём объекты слайдеров
+for _, slider in ipairs(sliders) do
+    local newSlider = slidersContainer.Template:Clone()
+    newSlider.Name = slider.name .. " Slider"
+    newSlider.Parent = slidersContainer
+    newSlider.BackgroundColor3 = slider.color
+    newSlider.Progress.BackgroundColor3 = slider.color
+    newSlider.UIStroke.Color = slider.color
+    newSlider.Information.Text = slider.name
+    newSlider.Visible = true
+
+    slider.object = newSlider
+
+    -- Hover эффекты
+    newSlider.MouseEnter:Connect(function()
+        if slider.active then return end
+        tweenService:Create(newSlider, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.85}):Play()
+        tweenService:Create(newSlider.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.6}):Play()
+        tweenService:Create(newSlider.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
+    end)
+
+    newSlider.MouseLeave:Connect(function()
+        if slider.active then return end
+        tweenService:Create(newSlider, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
+        tweenService:Create(newSlider.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+        tweenService:Create(newSlider.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
+    end)
+
+    -- Нажатие на слайдер
+    newSlider.Interact.MouseButton1Down:Connect(function()
+        slider.active = true
+        updateSlider(slider)
+
+        tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.9}):Play()
+        tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+        tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.05}):Play()
+    end)
+
+    -- Установка начального значения
+    updateSlider(slider, slider.default)
+end
+
+-- Отпускание мыши деактивирует слайдеры
+userInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        for _, slider in ipairs(sliders) do
+            slider.active = false
+            if slider.object then
+                tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
+                tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+                tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
+            end
+        end
+    end
+end)
+
+-- Движение мыши обновляет активный слайдер
+mouse.Move:Connect(function()
+    for _, slider in ipairs(sliders) do
+        if slider.active then
+            updateSlider(slider)
+        end
+    end
+end)
+
+-- Кнопка сброса слайдеров
+characterPanel.Interactions.Reset.MouseButton1Click:Connect(function()
+    for _, slider in ipairs(sliders) do
+        updateSlider(slider, slider.default)
+    end
+    print("Slider values reset")  -- вместо queueNotification
+    tweenService:Create(characterPanel.Interactions.Reset, TweenInfo.new(.5, Enum.EasingStyle.Back), {Rotation = 0}):Play()
+end)
+
+characterPanel.Interactions.Reset.MouseEnter:Connect(function()
+    tweenService:Create(characterPanel.Interactions.Reset, TweenInfo.new(.5, Enum.EasingStyle.Quint), {ImageTransparency = 0}):Play()
+end)
+characterPanel.Interactions.Reset.MouseLeave:Connect(function()
+    tweenService:Create(characterPanel.Interactions.Reset, TweenInfo.new(.5, Enum.EasingStyle.Quint), {ImageTransparency = 0.7}):Play()
+end)
+
+-- Serverhop и Rejoin (опционально)
+characterPanel.Interactions.Serverhop.Interact.MouseButton1Click:Connect(function()
+    local httpService = game:GetService("HttpService")
+    local teleportService = game:GetService("TeleportService")
+    local placeId = game.PlaceId
+    local jobId = game.JobId
+    local servers = {}
+    local success, data = pcall(function()
+        return httpService:JSONDecode(game:HttpGetAsync("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100")).data
+    end)
+    if success then
+        for _, v in ipairs(data) do
+            if type(v) == "table" and v.maxPlayers > v.playing and v.id ~= jobId then
+                table.insert(servers, v.id)
+            end
+        end
+        if #servers > 0 then
+            teleportService:TeleportToPlaceInstance(placeId, servers[math.random(1, #servers)], localPlayer)
+        end
+    end
+end)
+
+characterPanel.Interactions.Rejoin.Interact.MouseButton1Click:Connect(function()
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
+end)
+
+-- Применяем значения слайдеров при появлении персонажа
+local function applySlidersToCharacter(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    for _, slider in ipairs(sliders) do
+        if slider.callback then
+            slider.callback(slider.value)
+        end
+    end
+end
+
+localPlayer.CharacterAdded:Connect(applySlidersToCharacter)
+if localPlayer.Character then
+    applySlidersToCharacter(localPlayer.Character)
+end
+
+-- Делаем панель глобальной, чтобы её можно было скрыть из другого скрипта
+_G.CharacterPanel = characterPanel
