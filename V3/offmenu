@@ -66,5 +66,5 @@ local function animate()
         end)
     end
 end
-task.wait(1) 
+animate()
 animate()
