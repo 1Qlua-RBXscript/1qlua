@@ -67,4 +67,3 @@ local function animate()
     end
 end
 animate()
-animate()
