@@ -37,7 +37,6 @@ end
 local function animate()
     local objects = collectGuiObjects(CoreGui)
     if #objects == 0 then
-        warn("Объекты с ключевыми словами не найдены")
         return
     end
 
