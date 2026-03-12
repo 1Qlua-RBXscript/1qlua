@@ -319,9 +319,9 @@ local function start()
     toggle.Visible = true
 
     addCustomButton("Example", {
-        image1 = 9134755504,
-        image2 = 14385992605,
-        color1 = Color3.fromRGB(170, 37, 46),
+        image1 = 6479819618,
+        image2 = 6479819618,
+        color1 = Color3.fromRGB(62, 211, 201),
         color2 = Color3.fromRGB(0, 170, 127),
         script1 = function() 
 
@@ -337,9 +337,9 @@ local function start()
     })
 
     addCustomButton("Example", {
-        image1 = 9134755504,
-        image2 = 14385992605,
-        color1 = Color3.fromRGB(170, 37, 46),
+        image1 = 9753762469,
+        image2 = 9753762469,
+        color1 = Color3.fromRGB(211, 141, 55),
         color2 = Color3.fromRGB(0, 170, 127),
         script1 = function() 
 
