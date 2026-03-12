@@ -21,26 +21,31 @@ local mouse = localPlayer:GetMouse()
 --   scriptOff   : function (выполняется при выключении)
 local customButtons = {
     {
-        name = "Super Jump",
-        image = "rbxassetid://9134762943", -- иконка (пример)
-        color = Color3.fromRGB(49, 88, 193),
+        name = "Noclip",
+        image = "rbxassetid://6479819618", -- иконка (пример)
+        color = Color3.fromRGB(193, 49, 83),
         scriptOn = function()
-            local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.JumpPower = 200
-            end
+             loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/Noclip11"))()
         end,
         scriptOff = function()
-            local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.JumpPower = 50
-            end
+              loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/Noclip1"))()
+        end
+    },
+    {
+        name = "Day / night",
+        image = "rbxassetid://11887653877", -- иконка (пример)
+        color = Color3.fromRGB(193, 110, 55),
+        scriptOn = function()
+              game:GetService("Lighting").ClockTime = 12
+        end,
+        scriptOff = function()
+             game:GetService("Lighting").ClockTime = 0
         end
     },
     {
         name = "Infinite Jump",
         image = "rbxassetid://9134755504",
-        color = Color3.fromRGB(170, 37, 46),
+        color = Color3.fromRGB(33, 193, 131),
         scriptOn = function()
             if _G.InfiniteJumpConn then _G.InfiniteJumpConn:Disconnect() end
             _G.InfiniteJumpConn = userInputService.JumpRequest:Connect(function()
@@ -57,7 +62,6 @@ local customButtons = {
             end
         end
     }
-    -- Добавьте свои кнопки по аналогии
 }
 
 -- ========== СЛАЙДЕРЫ (из Sirius) ==========
