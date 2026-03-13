@@ -3,6 +3,7 @@ _G.WRDESPBoxes    = _G.WRDESPBoxes    == nil and true  or _G.WRDESPBoxes
 _G.WRDESPTeamColors = _G.WRDESPTeamColors == nil and true or _G.WRDESPTeamColors
 _G.WRDESPTracers  = _G.WRDESPTracers  == nil and true or _G.WRDESPTracers
 _G.WRDESPNames    = _G.WRDESPNames    == nil and true  or _G.WRDESPNames
+
 if not _G.WRDESPLoaded then
     local ESP = {
         Enabled = true,
@@ -10,7 +11,7 @@ if not _G.WRDESPLoaded then
         BoxShift = CFrame.new(0,-1.5,0),
         BoxSize = Vector3.new(4,6,0),
         Color = Color3.fromRGB(255,170,0),
-        FaceCamera = true,
+        FaceCamera = false,
         Names = true,
         TeamColor = true,
         Thickness = 2,
@@ -329,8 +330,12 @@ if not _G.WRDESPLoaded then
 
     _G.WRDESP = ESP
     _G.WRDESPLoaded = true
-end
-if _G.WRDESP then
+    if _G.WRDESPEnabled then
+        ESP:Enable()
+    else
+        ESP:Disable()
+    end
+else
     _G.WRDESPEnabled = not _G.WRDESPEnabled
     if _G.WRDESPEnabled then
         _G.WRDESP:Enable()
