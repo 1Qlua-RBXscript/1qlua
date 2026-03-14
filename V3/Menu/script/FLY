@@ -1,7 +1,7 @@
 
 local SpeedKey = Enum.KeyCode.LeftControl  
 
-_G.FlightSpeed = 600
+_G.FlightSpeed = 100
 _G.SpeedKeyMultiplier = 3
 _G.FlightAcceleration = 4
 _G.TurnSpeed = 16
