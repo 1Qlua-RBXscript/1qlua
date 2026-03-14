@@ -1,367 +1,474 @@
-
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local coreGui = game:GetService("CoreGui")
-local httpService = game:GetService("HttpService")
-local lighting = game:GetService("Lighting")
 local players = game:GetService("Players")
 local runService = game:GetService("RunService")
-local guiService = game:GetService("GuiService")
-local statsService = game:GetService("Stats")
-local starterGui = game:GetService("StarterGui")
-local teleportService = game:GetService("TeleportService")
 local tweenService = game:GetService("TweenService")
-local userInputService = game:GetService('UserInputService')
-local gameSettings = UserSettings():GetService("UserGameSettings")
-
-local camera = workspace.CurrentCamera
+local userInputService = game:GetService("UserInputService")
 local localPlayer = players.LocalPlayer
+local camera = workspace.CurrentCamera
 local mouse = localPlayer:GetMouse()
-local smartBarOpen = true
-local debounce = false
-local checkingForKey = true
-local oldVolume = gameSettings.MasterVolume
 
-local siriusValues = {
-    siriusVersion = "1.26",
-    siriusName = "Sirius",
-    interfaceAsset = 14183548964,
-    actions = {},
-}
-
-local siriusSettings = {
+local customButtons = {
     {
-        name = 'Keybinds',
-        color = Color3.new(0.0941176, 0.686275, 0.509804),
-        categorySettings = {
-            {
-                name = 'Toggle smartBar',
-                settingType = 'Key',
-                current = "K",
-                id = 'smartbar'
-            },
-        }
+        name = "Noclip",
+        image = "rbxassetid://6479819618",
+        color = Color3.fromRGB(33, 193, 131),
+        scriptOn = function()
+             loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/Noclip11"))()
+        end,
+        scriptOff = function()
+              loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/Noclip1"))()
+        end
+    },
+    {
+        name = "Esp",
+        image = "rbxassetid://135902940840625",
+        color = Color3.fromRGB(94, 170, 193),
+        scriptOn = function()
+             loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/ESP"))()
+        end,
+        scriptOff = function()
+              loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/ESP"))()
+        end
+    },
+    {
+        name = "Fly",
+        image = "rbxassetid://9134755504",
+        color = Color3.fromRGB(184, 60, 193),
+        scriptOn = function()
+             loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/FLY"))()
+        end,
+        scriptOff = function()
+              _G.DisableFly()
+        end
+    },
+    {
+        name = "Infinite Jump",
+        image = "rbxassetid://113429706896542",
+        color = Color3.fromRGB(193, 49, 83),
+        scriptOn = function()
+            if _G.InfiniteJumpConn then _G.InfiniteJumpConn:Disconnect() end
+            _G.InfiniteJumpConn = userInputService.JumpRequest:Connect(function()
+                local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        end,
+        scriptOff = function()
+            if _G.InfiniteJumpConn then
+                _G.InfiniteJumpConn:Disconnect()
+                _G.InfiniteJumpConn = nil
+            end
+        end
+    },
+    {
+        name = "Day / night",
+        image = "rbxassetid://11887653877",
+        color = Color3.fromRGB(193, 110, 55),
+        scriptOn = function()
+              game:GetService("Lighting").ClockTime = 12
+        end,
+        scriptOff = function()
+             game:GetService("Lighting").ClockTime = 0
+        end
     }
 }
 
+local sliders = {
+    {
+        name = "player speed",
+        color = Color3.fromRGB(44, 153, 93),
+        values = {0, 300},
+        default = 16,
+        value = 16,
+        active = false,
+        callback = function(value)
+            local character = localPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = value
+            end
+        end,
+    },
+    {
+        name = "jump power",
+        color = Color3.fromRGB(59, 126, 184),
+        values = {0, 350},
+        default = 50,
+        value = 50,
+        active = false,
+        callback = function(value)
+            local character = localPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if character then
+                if humanoid.UseJumpPower then
+                    humanoid.JumpPower = value
+                else
+                    humanoid.JumpHeight = value
+                end
+            end
+        end,
+    },
+    {
+        name = "flight speed",
+        color = Color3.fromRGB(177, 45, 45),
+        values = {1, 1000},
+        default = 100,
+        value = 100,
+        active = false,
+        callback = function(value)
+        _G.FlightSpeed = value
+         end,
+    },
+    {
+        name = "field of view",
+        color = Color3.fromRGB(198, 178, 75),
+        values = {45, 120},
+        default = 70,
+        value = 70,
+        active = false,
+        callback = function(value)
+            tweenService:Create(camera, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), { FieldOfView = value }):Play()
+        end,
+    },
+}
+
 local guiParent = gethui and gethui() or coreGui
-local sirius = guiParent:FindFirstChild("Sirius")
-if sirius then sirius:Destroy() end
-
-local UI = game:GetObjects('rbxassetid://'..siriusValues.interfaceAsset)[1]
-UI.Name = siriusValues.siriusName
+local UI = game:GetObjects('rbxassetid://14183548964')[1]
+UI.Name = "CharacterPanel"
 UI.Parent = guiParent
-UI.Enabled = false
-UI.DisplayOrder = 100  -- высокий приоритет отображения
 
-local notificationContainer = UI.Notifications
-local smartBar = UI.SmartBar
-local toggle = UI.Toggle
-local toastsContainer = UI.Toasts
+local characterPanel = UI:FindFirstChild("Character")
+if not characterPanel then
+    return
+end
 
 for _, child in ipairs(UI:GetChildren()) do
-    if child:IsA("Frame") and child.Name ~= "SmartBar" and child.Name ~= "Notifications" and child.Name ~= "Toasts" and child.Name ~= "Toggle" then
+    if child ~= characterPanel and child:IsA("Frame") then
+        child:Destroy()
+    end
+end
+if UI:FindFirstChild("Notifications") then UI.Notifications:Destroy() end
+if UI:FindFirstChild("Toasts") then UI.Toasts:Destroy() end
+if UI:FindFirstChild("SmartBar") then UI.SmartBar:Destroy() end
+if UI:FindFirstChild("Toggle") then UI.Toggle:Destroy() end
+
+characterPanel.Parent = UI
+characterPanel.Visible = true
+characterPanel.Position = UDim2.new(0.5, 0, 1, -120)
+characterPanel.Size = UDim2.new(0, 581, 0, 246)
+characterPanel.BackgroundTransparency = 0
+characterPanel.Title.TextTransparency = 0
+characterPanel.Icon.ImageTransparency = 0
+characterPanel.UIStroke.Transparency = 0.95
+characterPanel.Shadow.ImageTransparency = 0.7
+
+do
+    local dragging = false
+    local dragStart = Vector2.new()
+    local panelPosUDim = nil
+    local panelSize = Vector2.new()
+
+    characterPanel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            panelPosUDim = characterPanel.Position
+            panelSize = Vector2.new(characterPanel.AbsoluteSize.X, characterPanel.AbsoluteSize.Y)
+        end
+    end)
+
+    characterPanel.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    characterPanel.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            local viewport = camera.ViewportSize
+            local currentAbsX = panelPosUDim.X.Scale * viewport.X + panelPosUDim.X.Offset
+            local currentAbsY = panelPosUDim.Y.Scale * viewport.Y + panelPosUDim.Y.Offset
+            local newAbsX = currentAbsX + delta.X
+            local newAbsY = currentAbsY + delta.Y
+            local newOffsetX = newAbsX - panelPosUDim.X.Scale * viewport.X
+            local newOffsetY = newAbsY - panelPosUDim.Y.Scale * viewport.Y
+
+            characterPanel.Position = UDim2.new(panelPosUDim.X.Scale, newOffsetX, panelPosUDim.Y.Scale, newOffsetY)
+        end
+    end)
+end
+
+local grid = characterPanel.Interactions.Grid
+for _, child in ipairs(grid:GetChildren()) do
+    if child:IsA("Frame") and child.Name ~= "Template" then
         child:Destroy()
     end
 end
 
-for _, btn in ipairs(smartBar.Buttons:GetChildren()) do
-    if btn:IsA("Frame") then btn:Destroy() end
+local gridScroller = Instance.new("ScrollingFrame")
+gridScroller.Name = "Scroller"
+gridScroller.Size = UDim2.new(1, 0, 1, 0)
+gridScroller.Position = UDim2.new(0, 0, 0, 0)
+gridScroller.BackgroundTransparency = 1
+gridScroller.ScrollBarThickness = 4
+gridScroller.ScrollingDirection = Enum.ScrollingDirection.Y
+gridScroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+gridScroller.Parent = grid
+
+local gridContainer = Instance.new("Frame")
+gridContainer.Name = "Container"
+gridContainer.Size = UDim2.new(1, 0, 0, 0) -- полная ширина родителя
+gridContainer.Position = UDim2.new(0.01, 0.01, 0.01, 0.01)
+gridContainer.BackgroundTransparency = 1
+gridContainer.AutomaticSize = Enum.AutomaticSize.Y
+gridContainer.Parent = gridScroller
+
+local gridPadding = Instance.new("UIPadding")
+gridPadding.Parent = gridContainer
+gridPadding.PaddingRight = UDim.new(0, gridScroller.ScrollBarThickness + 8)
+
+local gridLayout = grid:FindFirstChildOfClass("UIGridLayout")
+if gridLayout then
+    local newGridLayout = gridLayout:Clone()
+    newGridLayout.Parent = gridContainer
+    newGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    newGridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    gridLayout:Destroy()
 end
+grid.Template.Visible = false
+local function updateGridCanvas()
+    gridScroller.CanvasSize = UDim2.new(0, 0, 0, gridContainer.AbsoluteSize.Y)
+end
+gridContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateGridCanvas)
 
-local buttonContainer = smartBar.Buttons
-buttonContainer:ClearAllChildren()
-buttonContainer.ZIndex = 100  -- высокий ZIndex для контейнера
-
-local layout = Instance.new("UIListLayout")
-layout.FillDirection = Enum.FillDirection.Horizontal
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-layout.VerticalAlignment = Enum.VerticalAlignment.Center
-layout.Padding = UDim.new(0, 8)
-layout.Parent = buttonContainer
-
-local padding = Instance.new("UIPadding")
-padding.PaddingLeft = UDim.new(0, 10)
-padding.PaddingRight = UDim.new(0, 10)
-padding.Parent = buttonContainer
-
-function addCustomButton(name, config)
-    assert(name and type(name) == "string")
-    assert(config and type(config) == "table")
-    assert(config.image1 and config.image2)
-    assert(config.color1 and config.color2)
-    assert(config.script1 and config.script2)
-
-    local button = Instance.new("Frame")
-    button.Name = name
-    button.Size = UDim2.new(0, 36, 0, 36)
-    button.BackgroundColor3 = config.color1
-    button.BackgroundTransparency = 0
-    button.ZIndex = 1010  -- выше контейнера
-    button.Parent = buttonContainer
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = config.color1
-    stroke.Thickness = 1.5
-    stroke.Transparency = 0
-    stroke.ZIndex = 1011
-    stroke.Parent = button
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Rotation = 50
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.new(0.1,0.1,0.1)),
-        ColorSequenceKeypoint.new(1, config.color1)
-    })
-    gradient.Parent = button
-
-    local icon = Instance.new("ImageLabel")
-    icon.Name = "Icon"
-    icon.Size = UDim2.new(0, 20, 0, 20)
-    icon.AnchorPoint = Vector2.new(0.5,0.5)
-    icon.Position = UDim2.new(0.5,0,0.5,0)
-    icon.BackgroundTransparency = 1
-    icon.Image = "rbxassetid://" .. config.image1
-    icon.ImageTransparency = 0.5
-    icon.ZIndex = 1012
-    icon.Parent = button
-
-    local interact = Instance.new("TextButton")
-    interact.Name = "Interact"
-    interact.Size = UDim2.new(1,0,1,0)
-    interact.BackgroundTransparency = 1
-    interact.Text = ""
-    interact.ZIndex = 1013
-    interact.Parent = button
-
-    local currentState = 1
-
-    local function updateButton()
-        if currentState == 1 then
-            tweenService:Create(button, TweenInfo.new(0.3), { BackgroundColor3 = config.color1 }):Play()
-            tweenService:Create(stroke, TweenInfo.new(0.3), { Color = config.color1 }):Play()
-            gradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.new(0.1,0.1,0.1)),
-                ColorSequenceKeypoint.new(1, config.color1)
-            })
-            icon.Image = "rbxassetid://" .. config.image1
+for i, btnData in ipairs(customButtons) do
+    local newBtn = grid.Template:Clone()
+    newBtn.Name = btnData.name
+    newBtn.Parent = gridContainer
+    newBtn.BackgroundColor3 = btnData.color
+    newBtn.UIStroke.Color = btnData.color
+    newBtn.Icon.Image = btnData.image
+    newBtn.Visible = true
+    newBtn.BackgroundTransparency = 0.55
+    newBtn.UIStroke.Transparency = 0.4
+    newBtn.Icon.ImageTransparency = 0.5
+    
+    local isOn = false
+    
+    newBtn.MouseEnter:Connect(function()
+        characterPanel.Interactions.ActionsTitle.Text = string.upper(btnData.name)
+        if isOn then return end
+        tweenService:Create(newBtn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.4}):Play()
+        tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.6}):Play()
+    end)
+    
+    newBtn.MouseLeave:Connect(function()
+        if isOn then return end
+        tweenService:Create(newBtn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.55}):Play()
+        tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.4}):Play()
+    end)
+    
+    grid.MouseLeave:Connect(function()
+        characterPanel.Interactions.ActionsTitle.Text = "PLAYER ACTIONS"
+    end)
+    
+    newBtn.Interact.MouseButton1Click:Connect(function()
+        isOn = not isOn
+        if isOn then
+            pcall(btnData.scriptOn)
+            tweenService:Create(newBtn, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.1}):Play()
+            tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {Transparency = 1}):Play()
+            tweenService:Create(newBtn.Icon, TweenInfo.new(0.45, Enum.EasingStyle.Quint), {ImageTransparency = 0.1}):Play()
         else
-            tweenService:Create(button, TweenInfo.new(0.3), { BackgroundColor3 = config.color2 }):Play()
-            tweenService:Create(stroke, TweenInfo.new(0.3), { Color = config.color2 }):Play()
-            gradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.new(0.1,0.1,0.1)),
-                ColorSequenceKeypoint.new(1, config.color2)
-            })
-            icon.Image = "rbxassetid://" .. config.image2
+            pcall(btnData.scriptOff)
+            tweenService:Create(newBtn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.55}):Play()
+            tweenService:Create(newBtn.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.4}):Play()
+            tweenService:Create(newBtn.Icon, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {ImageTransparency = 0.5}):Play()
         end
+    end)
+end
+updateGridCanvas()
+
+local slidersContainer = characterPanel.Interactions.Sliders
+for _, child in ipairs(slidersContainer:GetChildren()) do
+    if child:IsA("Frame") and child.Name ~= "Template" then
+        child:Destroy()
     end
-
-    interact.MouseButton1Click:Connect(function()
-        if debounce then return end
-        currentState = currentState == 1 and 2 or 1
-        updateButton()
-        local scriptToRun = (currentState == 1) and config.script1 or config.script2
-        if type(scriptToRun) == "string" then
-            loadstring(scriptToRun)()
-        elseif type(scriptToRun) == "function" then
-            scriptToRun()
-        end
-        tweenService:Create(button, TweenInfo.new(0.1), { Size = UDim2.new(0,32,0,32) }):Play()
-        task.wait(0.1)
-        tweenService:Create(button, TweenInfo.new(0.2), { Size = UDim2.new(0,36,0,36) }):Play()
-    end)
-
-    interact.MouseEnter:Connect(function()
-        if debounce then return end
-        tweenService:Create(button, TweenInfo.new(0.3), { BackgroundTransparency = 0.2 }):Play()
-        tweenService:Create(stroke, TweenInfo.new(0.3), { Transparency = 1 }):Play()
-        tweenService:Create(icon, TweenInfo.new(0.2), { ImageTransparency = 0 }):Play()
-    end)
-
-    interact.MouseLeave:Connect(function()
-        if debounce then return end
-        tweenService:Create(button, TweenInfo.new(0.3), { BackgroundTransparency = 0 }):Play()
-        tweenService:Create(stroke, TweenInfo.new(0.3), { Transparency = 0 }):Play()
-        tweenService:Create(icon, TweenInfo.new(0.2), { ImageTransparency = 0.5 }):Play()
-    end)
-
-    table.insert(siriusValues.actions, { name = name, button = button, config = config })
-    layout:ApplyLayout()
-    return button
 end
 
-local function checkTools()
-    task.wait(0.03)
-    if localPlayer.Backpack and localPlayer.Character then
-        if localPlayer.Backpack:FindFirstChildOfClass('Tool') or localPlayer.Character:FindFirstChildOfClass('Tool') then
-            return true
-        end
-    end
-    return false
-end
+local slidersScroller = Instance.new("ScrollingFrame")
+slidersScroller.Name = "Scroller"
+slidersScroller.Size = UDim2.new(1.2, 0, 1, 0)
+slidersScroller.Position = UDim2.new(-0.1, 0, 0, 0)
+slidersScroller.BackgroundTransparency = 1
+slidersScroller.ScrollBarThickness = 4
+slidersScroller.ScrollingDirection = Enum.ScrollingDirection.Y
+slidersScroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+slidersScroller.Parent = slidersContainer
 
-local function openSmartBar()
-    smartBarOpen = true
-    smartBar.Visible = true
-    smartBar.BackgroundTransparency = 1
-    smartBar.UIStroke.Transparency = 1
-    smartBar.Shadow.ImageTransparency = 1
-    smartBar.Position = UDim2.new(0.5, 0, 1.05, 0)
-    smartBar.Size = UDim2.new(0, 531, 0, 64)
-    toggle.Rotation = 180
-    if checkTools() then
-        toggle.Position = UDim2.new(0.5,0,1,-68)
+local slidersContainerFrame = Instance.new("Frame")
+slidersContainerFrame.Name = "Container"
+slidersContainerFrame.Size = UDim2.new(1, 0, 0, 0)
+slidersContainerFrame.Position = UDim2.new(0, 0, 0.02, 0)
+slidersContainerFrame.BackgroundTransparency = 1
+slidersContainerFrame.AutomaticSize = Enum.AutomaticSize.Y
+slidersContainerFrame.Parent = slidersScroller
+
+local slidersPadding = Instance.new("UIPadding")
+slidersPadding.Parent = slidersContainerFrame
+slidersPadding.PaddingRight = UDim.new(0, slidersScroller.ScrollBarThickness + -8)
+
+local slidersLayout = slidersContainer:FindFirstChildOfClass("UIListLayout")
+if slidersLayout then
+    local newSlidersLayout = slidersLayout:Clone()
+    newSlidersLayout.Parent = slidersContainerFrame
+    slidersLayout:Destroy()
+end
+slidersContainer.Template.Visible = false
+
+local function updateSlidersCanvas()
+    slidersScroller.CanvasSize = UDim2.new(0, 0, 0, slidersContainerFrame.AbsoluteSize.Y)
+end
+slidersContainerFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSlidersCanvas)
+
+local function updateSlider(data, setValue)
+    local sliderFrame = data.object.Interact
+    local sliderPos = sliderFrame.AbsolutePosition.X
+    local sliderSize = sliderFrame.AbsoluteSize.X
+    local relative
+    if setValue then
+        setValue = math.clamp(setValue, data.values[1], data.values[2])
+        relative = (setValue - data.values[1]) / (data.values[2] - data.values[1])
     else
-        toggle.Position = UDim2.new(0.5,0,1,-5)
+        local mouseX = mouse.X
+        relative = (mouseX - sliderPos) / sliderSize
+        relative = math.clamp(relative, 0, 1)
     end
-    for _, btn in ipairs(buttonContainer:GetChildren()) do
-        if btn:IsA("Frame") then
-            btn.BackgroundTransparency = 1
-            if btn:FindFirstChild("UIStroke") then btn.UIStroke.Transparency = 1 end
-            if btn:FindFirstChild("Icon") then btn.Icon.ImageTransparency = 1 end
-        end
+    data.object.Progress.Size = UDim2.new(relative, 0, 1, 0)
+    local value = data.values[1] + (data.values[2] - data.values[1]) * relative
+    value = math.floor(value + 0.5)
+    data.object.Information.Text = value .. " " .. data.name
+    data.value = value
+    if data.callback and not setValue then
+        data.callback(value)
+    elseif setValue then
+        data.callback(value)
     end
-    tweenService:Create(smartBar, TweenInfo.new(0.7, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5, 0, 1, -12) }):Play()
-    tweenService:Create(toastsContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5, 0, 1, -110) }):Play()
-    tweenService:Create(toggle, TweenInfo.new(0.7, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5, 0, 1, -85) }):Play()
-    tweenService:Create(smartBar, TweenInfo.new(0.6, Enum.EasingStyle.Quint), { Size = UDim2.new(0,581,0,70) }):Play()
-    tweenService:Create(smartBar, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { BackgroundTransparency = 0 }):Play()
-    tweenService:Create(smartBar.Shadow, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { ImageTransparency = 0.7 }):Play()
-    tweenService:Create(smartBar.UIStroke, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { Transparency = 0.95 }):Play()
-    tweenService:Create(toggle, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { ImageTransparency = 0 }):Play()
-    for _, btn in ipairs(buttonContainer:GetChildren()) do
-        if btn:IsA("Frame") then
-            tweenService:Create(btn, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { Size = UDim2.new(0, 36, 0, 36) }):Play()
-            tweenService:Create(btn, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { BackgroundTransparency = 0 }):Play()
-            if btn:FindFirstChild("UIStroke") then
-                tweenService:Create(btn.UIStroke, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { Transparency = 0 }):Play()
-            end
-            if btn:FindFirstChild("Icon") then
-                tweenService:Create(btn.Icon, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { ImageTransparency = 0 }):Play()
-            end
-        end
-        task.wait(0.03)
-    end
-    task.delay(0.9, function()
-        if smartBarOpen then
-            for _, btn in ipairs(buttonContainer:GetChildren()) do
-                if btn:IsA("Frame") then
-                    btn.BackgroundTransparency = 0
-                    if btn:FindFirstChild("UIStroke") then btn.UIStroke.Transparency = 0 end
-                    if btn:FindFirstChild("Icon") then btn.Icon.ImageTransparency = 0 end
-                end
-            end
-        end
-    end)
 end
 
-local function closeSmartBar()
-    smartBarOpen = false
-    for _, btn in ipairs(buttonContainer:GetChildren()) do
-        if btn:IsA("Frame") then
-            tweenService:Create(btn, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { BackgroundTransparency = 1 }):Play()
-            if btn:FindFirstChild("UIStroke") then
-                tweenService:Create(btn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Transparency = 1 }):Play()
-            end
-            if btn:FindFirstChild("Icon") then
-                tweenService:Create(btn.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { ImageTransparency = 1 }):Play()
-            end
-        end
-    end
-    tweenService:Create(smartBar, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { BackgroundTransparency = 1 }):Play()
-    tweenService:Create(smartBar.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Transparency = 1 }):Play()
-    tweenService:Create(smartBar.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quint), { ImageTransparency = 1 }):Play()
-    tweenService:Create(smartBar, TweenInfo.new(0.5, Enum.EasingStyle.Back), { Size = UDim2.new(0,531,0,64) }):Play()
-    tweenService:Create(smartBar, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5, 0,1, 73) }):Play()
-    if checkTools() then
-        tweenService:Create(toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5,0,1,-68) }):Play()
-        tweenService:Create(toastsContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5,0,1,-90) }):Play()
-        tweenService:Create(toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Rotation = 180 }):Play()
-    else
-        tweenService:Create(toastsContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5,0,1,-28) }):Play()
-        tweenService:Create(toggle, TweenInfo.new(0.45, Enum.EasingStyle.Quint), { Position = UDim2.new(0.5,0,1,-5) }):Play()
-        tweenService:Create(toggle, TweenInfo.new(0.7, Enum.EasingStyle.Quint), { Rotation = 180 }):Play()
-    end
-    task.delay(0.6, function()
-        if not smartBarOpen then smartBar.Visible = false end
+for _, slider in ipairs(sliders) do
+    local newSlider = slidersContainer.Template:Clone()
+    newSlider.Name = slider.name .. " Slider"
+    newSlider.Parent = slidersContainerFrame
+    newSlider.BackgroundColor3 = slider.color
+    newSlider.Progress.BackgroundColor3 = slider.color
+    newSlider.UIStroke.Color = slider.color
+    newSlider.Information.Text = slider.name
+    newSlider.Visible = true
+    slider.object = newSlider
+    
+    newSlider.MouseEnter:Connect(function()
+        if slider.active then return end
+        tweenService:Create(newSlider, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.85}):Play()
+        tweenService:Create(newSlider.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.6}):Play()
+        tweenService:Create(newSlider.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
     end)
+    
+    newSlider.MouseLeave:Connect(function()
+        if slider.active then return end
+        tweenService:Create(newSlider, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
+        tweenService:Create(newSlider.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+        tweenService:Create(newSlider.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
+    end)
+    
+    newSlider.Interact.MouseButton1Down:Connect(function()
+        slider.active = true
+        updateSlider(slider)
+        tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.9}):Play()
+        tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+        tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.05}):Play()
+    end)
+    
+    updateSlider(slider, slider.default)
 end
+updateSlidersCanvas()
 
-toggle.MouseButton1Click:Connect(function()
-    if smartBarOpen then closeSmartBar() else openSmartBar() end
-end)
-
-userInputService.InputBegan:Connect(function(input, processed)
-    if not UI.Enabled then return end
-    local toggleKey = "K"
-    for _, cat in ipairs(siriusSettings) do
-        for _, set in ipairs(cat.categorySettings) do
-            if set.id == "smartbar" and set.current then
-                toggleKey = set.current
-                break
+userInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        for _, slider in ipairs(sliders) do
+            slider.active = false
+            if slider.object then
+                tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
+                tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+                tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
             end
         end
-    end
-    if input.KeyCode == Enum.KeyCode[toggleKey] and not processed and not debounce then
-        if smartBarOpen then closeSmartBar() else openSmartBar() end
     end
 end)
 
-local function queueNotification(Title, Description, Image)
-    print("Notification:", Title, Description)
-end
-
-local function start()
-    UI.Enabled = true
-    notificationContainer.Visible = true
-    toastsContainer.Visible = true
-    smartBar.Visible = true
-    toggle.Visible = true
-
-    addCustomButton("Example", {
-        image1 = 6479819618,
-        image2 = 6479819618,
-        color1 = Color3.fromRGB(62, 211, 201),
-        color2 = Color3.fromRGB(0, 170, 127),
-        script1 = function() 
-
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/offmenu"))()
-
-         end,
-
-        script2 = function() 
-        
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/EngMenu"))()
-        
-         end
-    })
-
-    addCustomButton("Example", {
-        image1 = 9753762469,
-        image2 = 9753762469,
-        color1 = Color3.fromRGB(211, 141, 55),
-        color2 = Color3.fromRGB(0, 170, 127),
-        script1 = function() 
-
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/ENDV2SCRIPT"))()
-
-         end,
-
-        script2 = function() 
-        
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/ru/key/RuV2"))()
-        
-         end
-    })
-
-    task.spawn(function()
-        while UI.Enabled do
-            if smartBar and smartBar:FindFirstChild("Time") then
-                smartBar.Time.Text = os.date("%H") .. ":" .. os.date("%M")
-            end
-            task.wait(1)
+mouse.Move:Connect(function()
+    for _, slider in ipairs(sliders) do
+        if slider.active then
+            updateSlider(slider)
         end
+    end
+end)
+
+characterPanel.Interactions.Reset.MouseButton1Click:Connect(function()
+    for _, slider in ipairs(sliders) do
+        updateSlider(slider, slider.default)
+    end
+    tweenService:Create(characterPanel.Interactions.Reset, TweenInfo.new(.5, Enum.EasingStyle.Back), {Rotation = 0}):Play()
+end)
+
+characterPanel.Interactions.Reset.MouseEnter:Connect(function()
+    tweenService:Create(characterPanel.Interactions.Reset, TweenInfo.new(.5, Enum.EasingStyle.Quint), {ImageTransparency = 0}):Play()
+end)
+characterPanel.Interactions.Reset.MouseLeave:Connect(function()
+    tweenService:Create(characterPanel.Interactions.Reset, TweenInfo.new(.5, Enum.EasingStyle.Quint), {ImageTransparency = 0.7}):Play()
+end)
+
+characterPanel.Interactions.Serverhop.Interact.MouseButton1Click:Connect(function()
+    local httpService = game:GetService("HttpService")
+    local teleportService = game:GetService("TeleportService")
+    local placeId = game.PlaceId
+    local jobId = game.JobId
+    local servers = {}
+    local success, data = pcall(function()
+        return httpService:JSONDecode(game:HttpGetAsync("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100")).data
     end)
+    if success then
+        for _, v in ipairs(data) do
+            if type(v) == "table" and v.maxPlayers > v.playing and v.id ~= jobId then
+                table.insert(servers, v.id)
+            end
+        end
+        if #servers > 0 then
+            teleportService:TeleportToPlaceInstance(placeId, servers[math.random(1, #servers)], localPlayer)
+        end
+    end
+end)
+
+characterPanel.Interactions.Rejoin.Interact.MouseButton1Click:Connect(function()
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
+end)
+
+local function applySlidersToCharacter(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    for _, slider in ipairs(sliders) do
+        if slider.callback then
+            slider.callback(slider.value)
+        end
+    end
 end
 
-start()
+localPlayer.CharacterAdded:Connect(applySlidersToCharacter)
+if localPlayer.Character then
+    applySlidersToCharacter(localPlayer.Character)
+end
+
+_G.CharacterPanel = characterPanel
