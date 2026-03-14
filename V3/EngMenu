@@ -33,8 +33,19 @@ local customButtons = {
         end
     },
     {
-        name = "Infinite Jump",
+        name = "Fly",
         image = "rbxassetid://9134755504",
+        color = Color3.fromRGB(184, 60, 193),
+        scriptOn = function()
+             loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V3/Menu/script/FLY"))()
+        end,
+        scriptOff = function()
+              _G.DisableFly()
+        end
+    },
+    {
+        name = "Infinite Jump",
+        image = "rbxassetid://113429706896542",
         color = Color3.fromRGB(193, 49, 83),
         scriptOn = function()
             if _G.InfiniteJumpConn then _G.InfiniteJumpConn:Disconnect() end
@@ -64,7 +75,6 @@ local customButtons = {
         end
     }
 }
-
 local sliders = {
     {
         name = "player speed",
@@ -72,13 +82,9 @@ local sliders = {
         values = {0, 300},
         default = 16,
         value = 16,
+        enabled = false,
         active = false,
         callback = function(value)
-            local character = localPlayer.Character
-            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = value
-            end
         end,
     },
     {
@@ -87,27 +93,22 @@ local sliders = {
         values = {0, 350},
         default = 50,
         value = 50,
+        enabled = false,
         active = false,
         callback = function(value)
-            local character = localPlayer.Character
-            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-            if character then
-                if humanoid.UseJumpPower then
-                    humanoid.JumpPower = value
-                else
-                    humanoid.JumpHeight = value
-                end
-            end
         end,
     },
     {
         name = "flight speed",
         color = Color3.fromRGB(177, 45, 45),
-        values = {1, 25},
-        default = 3,
-        value = 3,
+        values = {1, 1000},
+        default = 100,
+        value = 100,
+        enabled = false,
         active = false,
-        callback = function(value) end,
+        callback = function(value)
+            _G.FlightSpeed = value
+        end,
     },
     {
         name = "field of view",
@@ -115,12 +116,40 @@ local sliders = {
         values = {45, 120},
         default = 70,
         value = 70,
+        enabled = false,
         active = false,
         callback = function(value)
             tweenService:Create(camera, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), { FieldOfView = value }):Play()
         end,
     },
 }
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+
+        local character = localPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        
+        for _, slider in ipairs(sliders) do
+            if slider.enabled then
+                if slider.name == "player speed" and humanoid then
+                    humanoid.WalkSpeed = slider.value
+                elseif slider.name == "jump power" and humanoid then
+                    if humanoid.UseJumpPower then
+                        humanoid.JumpPower = slider.value
+                    else
+                        humanoid.JumpHeight = slider.value
+                    end
+                elseif slider.name == "flight speed" then
+                    _G.FlightSpeed = slider.value
+                elseif slider.name == "field of view" then
+                    camera.FieldOfView = slider.value
+                end
+            end
+        end
+    end
+end)
 
 local guiParent = gethui and gethui() or coreGui
 local UI = game:GetObjects('rbxassetid://14183548964')[1]
@@ -208,7 +237,7 @@ gridScroller.Parent = grid
 
 local gridContainer = Instance.new("Frame")
 gridContainer.Name = "Container"
-gridContainer.Size = UDim2.new(1, 0, 0, 0) -- полная ширина родителя
+gridContainer.Size = UDim2.new(1, 0, 0, 0) 
 gridContainer.Position = UDim2.new(0.01, 0.01, 0.01, 0.01)
 gridContainer.BackgroundTransparency = 1
 gridContainer.AutomaticSize = Enum.AutomaticSize.Y
@@ -359,14 +388,14 @@ for _, slider in ipairs(sliders) do
     slider.object = newSlider
     
     newSlider.MouseEnter:Connect(function()
-        if slider.active then return end
+        if slider.enabled then return end
         tweenService:Create(newSlider, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.85}):Play()
         tweenService:Create(newSlider.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.6}):Play()
         tweenService:Create(newSlider.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.2}):Play()
     end)
     
     newSlider.MouseLeave:Connect(function()
-        if slider.active then return end
+        if slider.enabled then return end
         tweenService:Create(newSlider, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
         tweenService:Create(newSlider.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
         tweenService:Create(newSlider.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
@@ -374,10 +403,11 @@ for _, slider in ipairs(sliders) do
     
     newSlider.Interact.MouseButton1Down:Connect(function()
         slider.active = true
-        updateSlider(slider)
-        tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.9}):Play()
-        tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
-        tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.05}):Play()
+        if not slider.enabled then
+            tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.9}):Play()
+            tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+            tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.05}):Play()
+        end
     end)
     
     updateSlider(slider, slider.default)
@@ -387,11 +417,13 @@ updateSlidersCanvas()
 userInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         for _, slider in ipairs(sliders) do
-            slider.active = false
-            if slider.object then
-                tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
-                tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
-                tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
+            if slider.active then
+                slider.enabled = true
+                slider.active = false
+                
+                tweenService:Create(slider.object, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
+                tweenService:Create(slider.object.UIStroke, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Transparency = 0.8}):Play()
+                tweenService:Create(slider.object.Information, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
             end
         end
     end
@@ -443,19 +475,5 @@ end)
 characterPanel.Interactions.Rejoin.Interact.MouseButton1Click:Connect(function()
     game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
 end)
-
-local function applySlidersToCharacter(character)
-    local humanoid = character:WaitForChild("Humanoid")
-    for _, slider in ipairs(sliders) do
-        if slider.callback then
-            slider.callback(slider.value)
-        end
-    end
-end
-
-localPlayer.CharacterAdded:Connect(applySlidersToCharacter)
-if localPlayer.Character then
-    applySlidersToCharacter(localPlayer.Character)
-end
 
 _G.CharacterPanel = characterPanel
