@@ -1,0 +1,220 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local vim = game:GetService("VirtualInputManager")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local FILE_NAME = "triggerbot_v3_config.json"
+
+local Settings = {
+    Enabled = true,
+    Radius = 20, 
+    OnlyHead = false,
+    BlacklistedUsers = {}
+}
+
+local function SaveData()
+    local data = {Radius = Settings.Radius, BlacklistedUsers = Settings.BlacklistedUsers}
+    writefile(FILE_NAME, HttpService:JSONEncode(data))
+end
+
+local function LoadData()
+    if isfile(FILE_NAME) then
+        local s, r = pcall(function() return HttpService:JSONDecode(readfile(FILE_NAME)) end)
+        if s and r then
+            Settings.Radius = r.Radius or 20
+            Settings.BlacklistedUsers = r.BlacklistedUsers or {}
+        end
+    end
+end
+LoadData()
+
+local AllHitboxes = {"HitboxBody", "HitboxBodySmall", "HitboxHead", "HitboxHeadSmall", "HumanoidRootPart", "PhysicalHitboxHead"}
+local HeadHitboxes = {"HitboxHead", "HitboxHeadSmall", "PhysicalHitboxHead"}
+local isLeftClicking = false
+
+local function GetHiddenFolder()
+    if gethui then return gethui() end
+    return game:GetService("CoreGui"):FindFirstChild("RobloxGui") or game:GetService("CoreGui")
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = HttpService:GenerateGUID(false)
+ScreenGui.Parent = GetHiddenFolder()
+
+local StatusDot = Instance.new("Frame")
+StatusDot.Name = "StatusDot"
+StatusDot.Size = UDim2.new(0, 12, 0, 12)
+StatusDot.Position = UDim2.new(1, -40, 0, 10) -- Смещена чуть левее
+StatusDot.BackgroundColor3 = Settings.Enabled and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+StatusDot.BorderSizePixel = 0
+StatusDot.Parent = ScreenGui
+Instance.new("UICorner").Parent = StatusDot
+
+local HeadDot = Instance.new("Frame")
+HeadDot.Name = "HeadDot"
+HeadDot.Size = UDim2.new(0, 12, 0, 12)
+HeadDot.Position = UDim2.new(1, -20, 0, 10)
+HeadDot.BackgroundColor3 = Settings.OnlyHead and Color3.new(0, 0.5, 1) or Color3.new(0.3, 0.3, 0.3)
+HeadDot.BorderSizePixel = 0
+HeadDot.Parent = ScreenGui
+Instance.new("UICorner").Parent = HeadDot
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 260, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+
+local RadiusInput = Instance.new("TextBox")
+RadiusInput.Size = UDim2.new(1, -20, 0, 30)
+RadiusInput.Position = UDim2.new(0, 10, 0, 10)
+RadiusInput.PlaceholderText = "Radius: "..Settings.Radius
+RadiusInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+RadiusInput.TextColor3 = Color3.new(1, 1, 1)
+RadiusInput.Parent = MainFrame
+RadiusInput.FocusLost:Connect(function()
+    local val = tonumber(RadiusInput.Text)
+    if val then Settings.Radius = val SaveData() end
+    RadiusInput.PlaceholderText = "Radius: "..Settings.Radius
+    RadiusInput.Text = ""
+end)
+
+local SearchInput = Instance.new("TextBox")
+SearchInput.Size = UDim2.new(1, -20, 0, 30)
+SearchInput.Position = UDim2.new(0, 10, 0, 45)
+SearchInput.PlaceholderText = "Search..."
+SearchInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SearchInput.TextColor3 = Color3.new(1, 1, 1)
+SearchInput.Parent = MainFrame
+
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Size = UDim2.new(1, -20, 1, -90)
+Scroll.Position = UDim2.new(0, 10, 0, 80)
+Scroll.BackgroundTransparency = 1
+Scroll.ScrollBarThickness = 2
+Scroll.Parent = MainFrame
+Instance.new("UIListLayout").Parent = Scroll
+
+local function UpdateList(filter)
+    for _, v in pairs(Scroll:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p == LocalPlayer then continue end
+        if filter and not p.Name:lower():find(filter:lower()) then continue end
+        
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(1, 0, 0, 35)
+        f.BackgroundTransparency = 1
+        f.Parent = Scroll
+        
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1, -60, 1, 0)
+        l.Text = p.Name
+        l.TextColor3 = Color3.new(1, 1, 1)
+        l.BackgroundTransparency = 1
+        l.TextXAlignment = "Left"
+        l.Parent = f
+        
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, 50, 0, 25)
+        b.Position = UDim2.new(1, -55, 0.5, -12)
+        local isOff = Settings.BlacklistedUsers[tostring(p.UserId)]
+        b.Text = isOff and "OFF" or "ON"
+        b.BackgroundColor3 = isOff and Color3.new(0.6, 0, 0) or Color3.new(0, 0.6, 0)
+        b.Parent = f
+        
+        b.MouseButton1Click:Connect(function()
+            local id = tostring(p.UserId)
+            Settings.BlacklistedUsers[id] = not Settings.BlacklistedUsers[id] or nil
+            SaveData()
+            UpdateList(SearchInput.Text)
+        end)
+    end
+end
+SearchInput:GetPropertyChangedSignal("Text"):Connect(function() UpdateList(SearchInput.Text) end)
+local function IsPlayerVisible(targetChar, targetPart)
+    local origin = Camera.CFrame.Position
+    local direction = (targetPart.Position - origin)
+    
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    params.IgnoreWater = true
+
+    local currentOrigin = origin
+    local currentDirection = direction
+    
+    for i = 1, 5 do 
+        local result = workspace:Raycast(currentOrigin, currentDirection, params)
+        if not result then return true end 
+        local hit = result.Instance
+        if hit:IsDescendantOf(targetChar) or hit == targetPart then return true end
+        
+        if hit.CanCollide == false then
+            table.insert(params.FilterDescendantsInstances, hit)
+        else
+            return false
+        end
+    end
+    return false
+end
+
+UserInputService.InputBegan:Connect(function(i, gp)
+    if gp and not (i.KeyCode == Enum.KeyCode.Q or i.KeyCode == Enum.KeyCode.Z or i.KeyCode == Enum.KeyCode.P) then return end
+    if i.KeyCode == Enum.KeyCode.Q then
+        Settings.Enabled = not Settings.Enabled
+        StatusDot.BackgroundColor3 = Settings.Enabled and Color3.new(0,1,0) or Color3.new(1,0,0)
+    elseif i.KeyCode == Enum.KeyCode.Z then
+        Settings.OnlyHead = not Settings.OnlyHead
+        HeadDot.BackgroundColor3 = Settings.OnlyHead and Color3.new(0, 0.5, 1) or Color3.new(0.3, 0.3, 0.3)
+    elseif i.KeyCode == Enum.KeyCode.P then
+        MainFrame.Visible = not MainFrame.Visible
+        if MainFrame.Visible then UpdateList() end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not Settings.Enabled then
+        if isLeftClicking then vim:SendMouseButtonEvent(0, 0, 0, false, game, 1) isLeftClicking = false end
+        return
+    end
+
+    local center = Camera.ViewportSize / 2
+    local activeHitboxes = Settings.OnlyHead and HeadHitboxes or AllHitboxes
+    local targetFound = false
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and not Settings.BlacklistedUsers[tostring(p.UserId)] then
+            for _, name in pairs(activeHitboxes) do
+                local part = p.Character:FindFirstChild(name)
+                if part then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                        if dist <= Settings.Radius and IsPlayerVisible(p.Character, part) then
+                            targetFound = true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        if targetFound then break end
+    end
+
+    local m = UserInputService:GetMouseLocation()
+    if targetFound then
+        if not isLeftClicking then
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 1)
+            isLeftClicking = true
+        end
+    else
+        if isLeftClicking then
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 1)
+            isLeftClicking = false
+        end
+    end
+end)
