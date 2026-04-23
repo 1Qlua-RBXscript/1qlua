@@ -1,0 +1,171 @@
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local Config = {
+    AimbotKey = Enum.KeyCode.K,
+    MenuKey = Enum.KeyCode.P,
+    SaveFile = "Aimbot_Ignored.json",
+    Ignored = {},
+    AimbotActive = false
+}
+
+local function SaveData()
+    if writefile then
+        writefile(Config.SaveFile, HttpService:JSONEncode(Config.Ignored))
+    end
+end
+
+local function LoadData()
+    if isfile and isfile(Config.SaveFile) then
+        local success, data = pcall(function() return HttpService:JSONDecode(readfile(Config.SaveFile)) end)
+        if success then Config.Ignored = data end
+    end
+end
+LoadData()
+
+local function GetClosestPlayer()
+    local closest = nil
+    local dist = math.huge
+    local mousePos = UIS:GetMouseLocation()
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and not Config.Ignored[p.Name] then
+            local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if onScreen then
+                local magnitude = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                if magnitude < dist then
+                    closest = p
+                    dist = magnitude
+                end
+            end
+        end
+    end
+    return closest
+end
+
+RunService.RenderStepped:Connect(function()
+    if Config.AimbotActive then
+        local target = GetClosestPlayer()
+        if target and target.Character then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
+        end
+    end
+end)
+
+local function GetGuiParent()
+    if gethui then return gethui() end
+    if game:GetService("CoreGui"):FindFirstChild("RobloxGui") then return game:GetService("CoreGui").RobloxGui end
+    return LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local function GenerateName()
+    local n = ""
+    for i = 1, 12 do n = n .. string.char(math.random(97, 122)) end
+    return n
+end
+
+local MainGui = Instance.new("ScreenGui")
+MainGui.Name = GenerateName()
+MainGui.Parent = GetGuiParent()
+
+local Frame = Instance.new("Frame")
+Frame.Name = "ControlPanel"
+Frame.Size = UDim2.new(0, 180, 0, 250)
+Frame.Position = UDim2.new(1, -200, 0.5, -125)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 0
+Frame.Visible = false
+Frame.Parent = MainGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = Frame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "Мать шлюха v1"
+Title.TextColor3 = Color3.fromRGB(255, 215, 0) 
+Title.BackgroundColor3 = Color3.fromRGB(241,156,187) 
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.Parent = Frame
+local TCorner = Instance.new("UICorner")
+TCorner.Parent = Title
+
+-- Список игроков
+local List = Instance.new("ScrollingFrame")
+List.Size = UDim2.new(0.9, 0, 0.75, 0)
+List.Position = UDim2.new(0.05, 0, 0.15, 0)
+List.BackgroundTransparency = 1
+List.CanvasSize = UDim2.new(0, 0, 0, 0)
+List.ScrollBarThickness = 2
+List.Parent = Frame
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 5)
+Layout.Parent = List
+
+local function UpdateList()
+    for _, child in pairs(List:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, -5, 0, 25)
+            btn.Text = p.Name
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 12
+            
+            if Config.Ignored[p.Name] then
+                btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+                btn.Text = p.Name .. " [OFF]"
+            else
+                btn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+                btn.Text = p.Name .. " [ON]"
+            end
+            
+            btn.TextColor3 = Color3.new(1, 1, 1)
+            btn.Parent = List
+            
+            local bCorner = Instance.new("UICorner")
+            bCorner.CornerRadius = UDim.new(0, 4)
+            bCorner.Parent = btn
+
+            btn.MouseButton1Click:Connect(function()
+                if Config.Ignored[p.Name] then
+                    Config.Ignored[p.Name] = nil
+                else
+                    Config.Ignored[p.Name] = true
+                end
+                SaveData()
+                UpdateList()
+            end)
+        end
+    end
+    List.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y)
+end
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Config.AimbotKey then
+        Config.AimbotActive = true
+    elseif input.KeyCode == Config.MenuKey then
+        Frame.Visible = not Frame.Visible
+        if Frame.Visible then UpdateList() end
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Config.AimbotKey then
+        Config.AimbotActive = false
+    end
+end)
+
+Players.PlayerAdded:Connect(UpdateList)
+Players.PlayerRemoving:Connect(UpdateList)
