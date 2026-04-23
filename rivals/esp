@@ -1,0 +1,103 @@
+
+getgenv().SkeletonConfig = {
+    Enabled = true,
+    ShowTeam = true,
+    Color = Color3.fromRGB(241,156,187),
+    Thickness = 1.5,
+    MaxDistance = 1000 
+}
+
+local settings = getgenv().SkeletonConfig
+local plrs = game:GetService("Players")
+local plr = plrs.LocalPlayer
+local runService = game:GetService("RunService")
+
+if getgenv().ESP_Storage then
+    for _, playerLines in pairs(getgenv().ESP_Storage) do
+        for _, line in pairs(playerLines) do line:Remove() end
+    end
+end
+getgenv().ESP_Storage = {}
+local storage = getgenv().ESP_Storage
+
+local Bones = {
+    R15 = {
+        {"UpperTorso", "Head"}, {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"},
+        {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"UpperTorso", "LowerTorso"},
+        {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LowerTorso", "RightUpperLeg"},
+        {"RightUpperLeg", "RightLowerLeg"}
+    },
+    R6 = {
+        {"Torso", "Head"}, {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
+        {"Torso", "Left Leg"}, {"Torso", "Right Leg"}
+    }
+}
+
+local function makeLine()
+    local l = Drawing.new("Line")
+    l.Visible = false
+    l.Color = settings.Color
+    l.Thickness = settings.Thickness
+    l.Transparency = 1
+    return l
+end
+
+local function addESP(p)
+    if p == plr then return end
+    local lines = {}
+    for i = 1, 15 do table.insert(lines, makeLine()) end
+    storage[p] = lines
+end
+
+local connection
+connection = runService.RenderStepped:Connect(function()
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    
+    for player, lines in pairs(storage) do
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if settings.Enabled and char and hum and root and hum.Health > 0 then
+            local dist = (root.Position - camera.CFrame.Position).Magnitude
+            if dist > settings.MaxDistance or (not settings.ShowTeam and player.Team == plr.Team) then
+                for _, l in pairs(lines) do l.Visible = false end
+                continue
+            end
+
+            local rig = hum.RigType == Enum.HumanoidRigType.R15 and Bones.R15 or Bones.R6
+            
+            for i, bone in ipairs(rig) do
+                local a, b = char:FindFirstChild(bone[1]), char:FindFirstChild(bone[2])
+                if a and b then
+                    local posA, visA = camera:WorldToViewportPoint(a.Position)
+                    local posB, visB = camera:WorldToViewportPoint(b.Position)
+                    
+                    if visA and visB then
+                        lines[i].Visible = true
+                        lines[i].From = Vector2.new(posA.X, posA.Y)
+                        lines[i].To = Vector2.new(posB.X, posB.Y)
+                    else
+                        lines[i].Visible = false
+                    end
+                else
+                    if lines[i] then lines[i].Visible = false end
+                end
+            end
+            
+            for i = #rig + 1, #lines do lines[i].Visible = false end
+        else
+            for _, l in pairs(lines) do l.Visible = false end
+        end
+    end
+end)
+
+for _, p in pairs(plrs:GetPlayers()) do addESP(p) end
+plrs.PlayerAdded:Connect(addESP)
+plrs.PlayerRemoving:Connect(function(p)
+    if storage[p] then
+        for _, l in pairs(storage[p]) do l:Remove() end
+        storage[p] = nil
+    end
+end)
