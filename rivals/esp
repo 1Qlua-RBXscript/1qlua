@@ -3,30 +3,12 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = gethui and gethui() or game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService") 
+local HttpService = game:GetService("HttpService")
 
+local SETTINGS_FILE = "esp_settings.json"
 local BLACKLIST_FILE = "esp_blacklist.json"
-
-local function saveBlacklist()
-    if not writefile then return end
-    local data = HttpService:JSONEncode(Blacklist)
-    writefile(BLACKLIST_FILE, data)
-end
-local function loadBlacklist()
-    if not readfile then return end
-    local success, data = pcall(readfile, BLACKLIST_FILE)
-    if success and data and data ~= "" then
-        local decoded = HttpService:JSONDecode(data)
-        if type(decoded) == "table" then
-            for k, v in pairs(decoded) do
-                Blacklist[tonumber(k)] = v
-            end
-        end
-    end
-end
-
 local Config = {
-    Enabled = true, 
+    Enabled = false,
     HeadImage = "rbxassetid://138895356591238",
     HeadScale = 1,
     Thickness = 1,
@@ -41,9 +23,83 @@ local Config = {
 
 local Blacklist = {}
 local Storage = {}
+
 local COLOR_ON = Color3.fromRGB(0, 134, 9)
 local COLOR_OFF = Color3.fromRGB(206, 131, 188)
+local function saveSettings()
+    if not writefile then 
+        return 
+    end
+    if not Config then
+        return
+    end
+    local settings = {
+        Enabled = Config.Enabled,
+        HeadImage = Config.HeadImage,
+        HeadScale = Config.HeadScale,
+        Thickness = Config.Thickness,
+        MaxDist = Config.MaxDist,
+        Colors = {
+            Head = { Config.Colors.Head.R * 255, Config.Colors.Head.G * 255, Config.Colors.Head.B * 255 },
+            Torso = { Config.Colors.Torso.R * 255, Config.Colors.Torso.G * 255, Config.Colors.Torso.B * 255 },
+            Arms = { Config.Colors.Arms.R * 255, Config.Colors.Arms.G * 255, Config.Colors.Arms.B * 255 },
+            Legs = { Config.Colors.Legs.R * 255, Config.Colors.Legs.G * 255, Config.Colors.Legs.B * 255 }
+        }
+    }
+    local data = HttpService:JSONEncode(settings)
+    local success, err = pcall(writefile, SETTINGS_FILE, data)
+    if not success then
+    end
+end
+
+local function loadSettings()
+    if not readfile then 
+        return 
+    end
+    local success, data = pcall(readfile, SETTINGS_FILE)
+    if success and data and data ~= "" then
+        local loaded = HttpService:JSONDecode(data)
+        if type(loaded) == "table" then
+            Config.Enabled = loaded.Enabled
+            Config.HeadImage = loaded.HeadImage or Config.HeadImage
+            Config.HeadScale = loaded.HeadScale or 1
+            Config.Thickness = loaded.Thickness or 1
+            Config.MaxDist = loaded.MaxDist or 1500
+            if loaded.Colors then
+                if loaded.Colors.Head then Config.Colors.Head = Color3.fromRGB(unpack(loaded.Colors.Head)) end
+                if loaded.Colors.Torso then Config.Colors.Torso = Color3.fromRGB(unpack(loaded.Colors.Torso)) end
+                if loaded.Colors.Arms then Config.Colors.Arms = Color3.fromRGB(unpack(loaded.Colors.Arms)) end
+                if loaded.Colors.Legs then Config.Colors.Legs = Color3.fromRGB(unpack(loaded.Colors.Legs)) end
+            end
+        end
+    else
+    end
+end
+
+local function saveBlacklist()
+    if not writefile then return end
+    local data = HttpService:JSONEncode(Blacklist)
+    local success, err = pcall(writefile, BLACKLIST_FILE, data)
+    if not success then
+    end
+end
+
+local function loadBlacklist()
+    if not readfile then return end
+    local success, data = pcall(readfile, BLACKLIST_FILE)
+    if success and data and data ~= "" then
+        local decoded = HttpService:JSONDecode(data)
+        if type(decoded) == "table" then
+            for k, v in pairs(decoded) do
+                Blacklist[tonumber(k) or k] = v
+            end
+        end
+    end
+end
+
+loadSettings()
 loadBlacklist()
+
 local SkeletonStudioConfig = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local UICorner = Instance.new("UICorner")
@@ -112,10 +168,9 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -254, 0.5, -163)
 MainFrame.Size = UDim2.new(0, 508, 0, 327)
 MainFrame.Active = true
-MainFrame.Visible = false 
+MainFrame.Visible = false
 UICorner.Parent = MainFrame
 
--- ДОБАВЛЕНА ОБВОДКА И ГРАДИЕНТ
 local UIStroke = Instance.new("UIStroke", MainFrame)
 UIStroke.Thickness = 2
 UIStroke.Color = Color3.new(1, 1, 1)
@@ -308,7 +363,8 @@ Legs.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Legs.Position = UDim2.new(0.081, 10, 0.833, 0)
 Legs.Size = UDim2.new(0.113, 0, 0.075, 0)
 Legs.Font = Enum.Font.GothamBold
-Legs.Text = "255,179,226"
+Legs.Text = string.format("%d,%d,%d", 
+    Config.Colors.Legs.R * 255, Config.Colors.Legs.G * 255, Config.Colors.Legs.B * 255)
 Legs.TextColor3 = Color3.fromRGB(255, 255, 255)
 Legs.TextSize = 11
 UICorner_12.Parent = Legs
@@ -318,7 +374,8 @@ Arm.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Arm.Position = UDim2.new(0.252, 10, 0.417, -7)
 Arm.Size = UDim2.new(0.113, 0, 0.075, 0)
 Arm.Font = Enum.Font.GothamBold
-Arm.Text = "255,179,226"
+Arm.Text = string.format("%d,%d,%d",
+    Config.Colors.Arms.R * 255, Config.Colors.Arms.G * 255, Config.Colors.Arms.B * 255)
 Arm.TextColor3 = Color3.fromRGB(255, 255, 255)
 Arm.TextSize = 11
 UICorner_13.Parent = Arm
@@ -328,7 +385,8 @@ Torso_2.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Torso_2.Position = UDim2.new(0.252, 10, 0.594, -7)
 Torso_2.Size = UDim2.new(0.113, 0, 0.075, 0)
 Torso_2.Font = Enum.Font.GothamBold
-Torso_2.Text = "255,179,226"
+Torso_2.Text = string.format("%d,%d,%d",
+    Config.Colors.Torso.R * 255, Config.Colors.Torso.G * 255, Config.Colors.Torso.B * 255)
 Torso_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Torso_2.TextSize = 11
 UICorner_14.Parent = Torso_2
@@ -338,7 +396,7 @@ Head_2.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Head_2.Position = UDim2.new(0.081, 10, 0.227, -35)
 Head_2.Size = UDim2.new(0.113, 0, 0.075, 0)
 Head_2.Font = Enum.Font.GothamBold
-Head_2.Text = "138895356591238"
+Head_2.Text = Config.HeadImage:match("(%d+)") or "138895356591238"
 Head_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Head_2.TextSize = 11
 UICorner_15.Parent = Head_2
@@ -402,7 +460,7 @@ RunService.RenderStepped:Connect(function(deltaTime)
     UIGradient.Rotation = currentRotation
 end)
 
-
+-- [[ ДРАГГИНГ ОКНА ]]
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -426,6 +484,7 @@ MenuBind.MouseButton1Click:Connect(function()
     Config.Enabled = not Config.Enabled
     MenuBind.Text = "Enabled: " .. tostring(Config.Enabled)
     indicator.BackgroundColor3 = Config.Enabled and COLOR_ON or COLOR_OFF
+    saveSettings()
 end)
 
 local function setupColorInput(inputBox, key, visualFrames)
@@ -435,6 +494,7 @@ local function setupColorInput(inputBox, key, visualFrames)
             local color = Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b))
             Config.Colors[key] = color
             for _, f in pairs(visualFrames) do f.BackgroundColor3 = color end
+            saveSettings()
         end
     end)
 end
@@ -444,18 +504,27 @@ setupColorInput(Arm, "Arms", {arm, arm_2})
 setupColorInput(Torso_2, "Torso", {Torso})
 
 Head_2.FocusLost:Connect(function()
-    local txt = Head_2.Text
-    if txt and txt ~= "" then
+    local txt = Head_2.Text:match("%d+")
+    if txt then
         Config.HeadImage = "rbxassetid://" .. txt
         Head.Image = Config.HeadImage
         decorations_2.Image = Config.HeadImage
         decorations_4.Image = Config.HeadImage
-        for _, assets in pairs(Storage) do assets.HeadImg.Image = Config.HeadImage end
+        for _, assets in pairs(Storage) do 
+            if assets.HeadImg then assets.HeadImg.Image = Config.HeadImage end
+        end
+        saveSettings()
     end
 end)
 
-TextBox.FocusLost:Connect(function() Config.HeadScale = tonumber(TextBox.Text) or 1 end)
-TextBox_2.FocusLost:Connect(function() Config.Thickness = tonumber(TextBox_2.Text) or 1 end)
+TextBox.FocusLost:Connect(function() 
+    Config.HeadScale = tonumber(TextBox.Text) or 1
+    saveSettings()
+end)
+TextBox_2.FocusLost:Connect(function() 
+    Config.Thickness = tonumber(TextBox_2.Text) or 1
+    saveSettings()
+end)
 
 local function UpdatePlayerList()
     for _, p in pairs(Players:GetPlayers()) do
@@ -469,7 +538,6 @@ local function UpdatePlayerList()
             card:FindFirstChild("Username").Text = "@" .. p.Name
             card:FindFirstChild("DisplayName").Text = p.DisplayName
             
-            -- Безопасная загрузка картинки
             task.spawn(function()
                 local s, img = pcall(function()
                     return Players:GetUserThumbnailAsync(uid, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
@@ -486,7 +554,6 @@ local function UpdatePlayerList()
             card.MouseButton1Click:Connect(function()
                 Blacklist[uid] = not Blacklist[uid]
                 pInd.BackgroundColor3 = Blacklist[uid] and COLOR_OFF or COLOR_ON
-                -- СОХРАНЯЕМ ИЗМЕНЕНИЯ В ФАЙЛ
                 saveBlacklist()
             end)
             
@@ -500,8 +567,12 @@ Players.PlayerRemoving:Connect(function(p)
     local card = PlayerList:FindFirstChild(tostring(p.UserId))
     if card then card:Destroy() end
     if Storage[p] then
-        Storage[p].HeadImg:Destroy()
-        for _, l in pairs(Storage[p].Lines) do l:Remove() end
+        if Storage[p].HeadImg then Storage[p].HeadImg:Destroy() end
+        if Storage[p].AvatarImg then Storage[p].AvatarImg:Destroy() end
+        if Storage[p].HpText then Storage[p].HpText:Remove() end
+        if Storage[p].HpBarBg then Storage[p].HpBarBg:Remove() end
+        if Storage[p].HpBarFill then Storage[p].HpBarFill:Remove() end
+        for _, l in pairs(Storage[p].Lines or {}) do l:Remove() end
         Storage[p] = nil
     end
 end)
@@ -522,12 +593,50 @@ local Bones = {
 
 local function addESP(p)
     if p == Players.LocalPlayer then return end
-    local assets = { Lines = {}, HeadImg = Instance.new("ImageLabel", SkeletonStudioConfig) }
+    local assets = { 
+        Lines = {}, 
+        HeadImg = Instance.new("ImageLabel", SkeletonStudioConfig),
+        AvatarImg = Instance.new("ImageLabel", SkeletonStudioConfig),
+        HpText = Drawing.new("Text"),
+        HpBarBg = Drawing.new("Square"),
+        HpBarFill = Drawing.new("Square")
+    }
     assets.HeadImg.BackgroundTransparency = 1
     assets.HeadImg.AnchorPoint = Vector2.new(0.5, 0.5)
     assets.HeadImg.Image = Config.HeadImage
     assets.HeadImg.Visible = false
     assets.HeadImg.ZIndex = 100
+    
+    assets.AvatarImg.BackgroundTransparency = 1
+    assets.AvatarImg.AnchorPoint = Vector2.new(0.5, 0.5)
+    assets.AvatarImg.Size = UDim2.new(0, 50, 0, 50)
+    assets.AvatarImg.Visible = false
+    assets.AvatarImg.ZIndex = 90
+    task.spawn(function()
+        local s, img = pcall(function()
+            return Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        end)
+        if s and img and assets.AvatarImg then
+            assets.AvatarImg.Image = img
+        end
+    end)
+    
+    assets.HpText.Visible = false
+    assets.HpText.Color = Color3.fromRGB(255, 255, 255)
+    assets.HpText.Outline = true
+    assets.HpText.OutlineColor = Color3.new(0,0,0)
+    assets.HpText.Size = 14
+    assets.HpText.Center = true
+    
+    assets.HpBarBg.Visible = false
+    assets.HpBarBg.Color = Color3.fromRGB(40, 40, 40)
+    assets.HpBarBg.Filled = true
+    assets.HpBarBg.Thickness = 1
+    assets.HpBarBg.Transparency = 0.1
+    
+    assets.HpBarFill.Visible = false
+    assets.HpBarFill.Filled = true
+    assets.HpBarFill.Thickness = 0
     
     for i = 1, 12 do
         local l = Drawing.new("Line")
@@ -541,6 +650,11 @@ end
 
 for _, p in pairs(Players:GetPlayers()) do addESP(p) end
 Players.PlayerAdded:Connect(addESP)
+
+local AVATAR_OFFSET = Vector3.new(0, -2.5, 0)
+local HP_OFFSET = Vector3.new(0, 9, 0)
+local BAR_WIDTH = 60
+local BAR_HEIGHT = 1
 
 RunService.RenderStepped:Connect(function()
     local cam = workspace.CurrentCamera
@@ -558,6 +672,55 @@ RunService.RenderStepped:Connect(function()
                 assets.HeadImg.Size = UDim2.new(0, hSize, 0, hSize)
                 assets.HeadImg.Position = UDim2.new(0, headPos.X, 0, headPos.Y)
                 assets.HeadImg.Visible = true
+                
+                local rootPart = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+                if rootPart then
+                    local footPos = rootPart.Position + AVATAR_OFFSET
+                    local footPosVec, footOnScreen = cam:WorldToViewportPoint(footPos)
+                    if footOnScreen then
+                        local avatarSize = (1500 / dist) * Config.HeadScale
+                        assets.AvatarImg.Size = UDim2.new(0, avatarSize, 0, avatarSize)
+                        assets.AvatarImg.Position = UDim2.new(0, footPosVec.X, 0, footPosVec.Y)
+                        assets.AvatarImg.Visible = true
+                        
+                        local hpPos = footPos + HP_OFFSET
+                        local hpVec, hpOn = cam:WorldToViewportPoint(hpPos)
+                        if hpOn then
+                            local healthPercent = hum.Health / hum.MaxHealth
+                            local barColor = Color3.fromRGB(255 - 255 * healthPercent, 255 * healthPercent, 0)
+                            local textX = hpVec.X 
+                            local textY = hpVec.Y
+                            assets.HpText.Text = string.format("%.0f%%", healthPercent * 100)
+                            assets.HpText.Position = Vector2.new(textX, textY)
+                            assets.HpText.Visible = true
+                            
+                            local barX = textX - BAR_WIDTH/2
+                            local barY = textY + 16
+                            assets.HpBarBg.Position = Vector2.new(barX, barY)
+                            assets.HpBarBg.Size = Vector2.new(BAR_WIDTH, BAR_HEIGHT)
+                            assets.HpBarBg.Visible = true
+                            
+                            assets.HpBarFill.Position = Vector2.new(barX, barY)
+                            assets.HpBarFill.Size = Vector2.new(BAR_WIDTH * healthPercent, BAR_HEIGHT)
+                            assets.HpBarFill.Color = barColor
+                            assets.HpBarFill.Visible = true
+                        else
+                            assets.HpText.Visible = false
+                            assets.HpBarBg.Visible = false
+                            assets.HpBarFill.Visible = false
+                        end
+                    else
+                        assets.AvatarImg.Visible = false
+                        assets.HpText.Visible = false
+                        assets.HpBarBg.Visible = false
+                        assets.HpBarFill.Visible = false
+                    end
+                else
+                    assets.AvatarImg.Visible = false
+                    assets.HpText.Visible = false
+                    assets.HpBarBg.Visible = false
+                    assets.HpBarFill.Visible = false
+                end
                 
                 local rig = hum.RigType == Enum.HumanoidRigType.R15 and Bones.R15 or Bones.R6
                 for i, bone in ipairs(rig) do
@@ -577,10 +740,18 @@ RunService.RenderStepped:Connect(function()
                 end
             else
                 assets.HeadImg.Visible = false
+                assets.AvatarImg.Visible = false
+                assets.HpText.Visible = false
+                assets.HpBarBg.Visible = false
+                assets.HpBarFill.Visible = false
                 for _, l in pairs(assets.Lines) do l.Visible = false end
             end
         else
             assets.HeadImg.Visible = false
+            assets.AvatarImg.Visible = false
+            assets.HpText.Visible = false
+            assets.HpBarBg.Visible = false
+            assets.HpBarFill.Visible = false
             for _, l in pairs(assets.Lines) do l.Visible = false end
         end
     end
