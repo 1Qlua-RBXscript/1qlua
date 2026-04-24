@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Config = {
     AimActive = false,
-    MenuOpen = true,
+    MenuOpen = false,  
     Smoothness = 1,
     FOVRadius = 300,
     AimKey = Enum.KeyCode.K,
@@ -196,7 +196,6 @@ local function UpdateList()
         Indicator.Size = UDim2.new(0, 7, 0, 20)
         Indicator.Position = UDim2.new(0.92, 0, 0.2, 0)
         
-        -- Проверка статуса из загруженной базы
         local isOff = Blacklist[pId] == true
         Indicator.BackgroundColor3 = isOff and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
         Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 5)
