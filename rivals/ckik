@@ -1,6 +1,8 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local vim = game:GetService("VirtualInputManager")
@@ -65,7 +67,7 @@ UpdateDots()
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(1, -240, 0.5, -190)
+MainFrame.Position = UDim2.new(1, -450, 0.5, -190)
 MainFrame.Size = UDim2.new(0, 220, 0, 400)
 MainFrame.BorderSizePixel = 0
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
