@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -6,7 +5,6 @@ local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-
 local Config = {
     AimActive = false,
     MenuOpen = true,
@@ -23,14 +21,32 @@ local BindingTarget = nil
 
 local function Save()
     if writefile then
-        writefile(Config.FileName, HttpService:JSONEncode({
-            Blacklist = Blacklist, 
-            Mode = Config.Mode,
-            AimKey = Config.AimKey.Name,
-            MenuKey = Config.MenuKey.Name
-        }))
+        local success, err = pcall(function()
+            writefile(Config.FileName, HttpService:JSONEncode({
+                Blacklist = Blacklist, 
+                Mode = Config.Mode,
+                AimKey = Config.AimKey.Name,
+                MenuKey = Config.MenuKey.Name
+            }))
+        end)
     end
 end
+
+local function Load()
+    if isfile and isfile(Config.FileName) then
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(readfile(Config.FileName))
+        end)
+        if success and result then
+            Blacklist = result.Blacklist or {}
+            Config.Mode = result.Mode or Config.Mode
+            if result.AimKey then Config.AimKey = Enum.KeyCode[result.AimKey] end
+            if result.MenuKey then Config.MenuKey = Enum.KeyCode[result.MenuKey] end
+        end
+    end
+end
+
+Load()
 
 local AimbotMenuGui = Instance.new("ScreenGui")
 AimbotMenuGui.Name = "AimbotMenuGui"
@@ -41,7 +57,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = AimbotMenuGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(1, -240, 0.5, -200) -- Появление справа
+MainFrame.Position = UDim2.new(1, -240, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 220, 0, 400)
 MainFrame.BorderSizePixel = 0
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
@@ -67,18 +83,16 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-local Stroke = Instance.new("UIStroke")
+local Stroke = Instance.new("UIStroke", MainFrame)
 Stroke.Thickness = 2
 Stroke.Color = Color3.fromRGB(255, 255, 255)
 Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-Stroke.Parent = MainFrame
 
-local Gradient = Instance.new("UIGradient")
+local Gradient = Instance.new("UIGradient", Stroke)
 Gradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 25)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 162, 233))
 }
-Gradient.Parent = Stroke
 
 task.spawn(function()
     local rot = 0
@@ -102,7 +116,7 @@ AddImg(UDim2.new(0.827, 3, 0.01, -2), "138895356591238")
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold -- ЖИРНЫЙ ТЕКСТ
+Title.Font = Enum.Font.GothamBold
 Title.Text = "1Qlua_Aim"
 Title.TextColor3 = Color3.fromRGB(200, 200, 200)
 Title.TextSize = 16
@@ -119,7 +133,7 @@ local function CreateBtn(text, pos, size)
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     btn.Position = pos
     btn.Size = size
-    btn.Font = Enum.Font.GothamBold -- ЖИРНЫЙ ТЕКСТ
+    btn.Font = Enum.Font.GothamBold
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.TextSize = 13
     btn.Text = text
@@ -136,13 +150,13 @@ PlayerList.BackgroundTransparency = 1
 PlayerList.Position = UDim2.new(0, 10, 0, 120)
 PlayerList.Size = UDim2.new(1, -20, 1, -130)
 PlayerList.ScrollBarThickness = 0
-local Layout = Instance.new("UIListLayout", PlayerList)
-Layout.Padding = UDim.new(0, 5)
+Instance.new("UIListLayout", PlayerList).Padding = UDim.new(0, 5)
 
 local function UpdateList()
     for _, v in pairs(PlayerList:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
     for _, p in pairs(Players:GetPlayers()) do
         if p == LocalPlayer then continue end
+        local pId = tostring(p.UserId)
         
         local Card = Instance.new("TextButton", PlayerList)
         Card.Size = UDim2.new(1, 0, 0, 35)
@@ -150,15 +164,11 @@ local function UpdateList()
         Card.Text = ""
         Instance.new("UICorner", Card)
 
-        -- ИСПРАВЛЕННЫЕ АВАТАРКИ (ПОЛУЧЕНИЕ РЕАЛЬНОГО ФОТО)
         local Icon = Instance.new("ImageLabel", Card)
         Icon.Size = UDim2.new(0, 25, 0, 25)
         Icon.Position = UDim2.new(0, 5, 0, 5)
-        Icon.BackgroundColor3 = Color3.fromRGB(30,30,30)
-        
         task.spawn(function()
-            local content, isReady = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-            Icon.Image = content
+            Icon.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
         end)
         Instance.new("UICorner", Icon).CornerRadius = UDim.new(0, 5)
 
@@ -167,7 +177,7 @@ local function UpdateList()
         DName.Position = UDim2.new(0.16, 0, 0.13, 0)
         DName.Size = UDim2.new(0.6, 0, 0, 20)
         DName.TextColor3 = Color3.fromRGB(200, 200, 200)
-        DName.Font = Enum.Font.GothamBold -- ЖИРНЫЙ
+        DName.Font = Enum.Font.GothamBold
         DName.TextXAlignment = "Left"
         DName.BackgroundTransparency = 1
         DName.TextSize = 14
@@ -185,13 +195,15 @@ local function UpdateList()
         local Indicator = Instance.new("Frame", Card)
         Indicator.Size = UDim2.new(0, 7, 0, 20)
         Indicator.Position = UDim2.new(0.92, 0, 0.2, 0)
-        Indicator.BackgroundColor3 = Blacklist[tostring(p.UserId)] and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
+        
+        -- Проверка статуса из загруженной базы
+        local isOff = Blacklist[pId] == true
+        Indicator.BackgroundColor3 = isOff and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
         Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 5)
 
         Card.MouseButton1Click:Connect(function()
-            local id = tostring(p.UserId)
-            Blacklist[id] = not Blacklist[id]
-            Indicator.BackgroundColor3 = Blacklist[id] and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
+            Blacklist[pId] = not Blacklist[pId]
+            Indicator.BackgroundColor3 = Blacklist[pId] and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
             Save()
         end)
     end
