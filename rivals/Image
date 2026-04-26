@@ -1,0 +1,40 @@
+
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local imageList = {
+    "rbxassetid://94766523133977",
+    "rbxassetid://90282088641639",
+    "rbxassetid://138895356591238",
+    "rbxassetid://78068916519899",
+}
+local randomImage = imageList[math.random(1, #imageList)]
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RandomIntroEffect"
+screenGui.Parent = CoreGui
+screenGui.IgnoreGuiInset = true 
+
+local imageLabel = Instance.new("ImageLabel")
+imageLabel.Name = "MainImage"
+imageLabel.Size = UDim2.new(1, 0, 1, 0)
+imageLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+imageLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+imageLabel.BackgroundTransparency = 1
+imageLabel.Image = randomImage 
+imageLabel.Parent = screenGui
+
+local duration = 0.25
+local tweenInfo = TweenInfo.new(
+    duration, 
+    Enum.EasingStyle.Quart, 
+    Enum.EasingDirection.In
+)
+local goals = {
+    Size = UDim2.new(0, 0, 0, 0),
+    ImageTransparency = 1
+}
+
+local tween = TweenService:Create(imageLabel, tweenInfo, goals)
+tween:Play()
+tween.Completed:Connect(function()
+    screenGui:Destroy()
+end)
