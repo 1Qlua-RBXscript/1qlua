@@ -2,6 +2,7 @@ local scripts = {
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/rivals/aim",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/rivals/ckik",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/rivals/esp",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/rivals/Image",
 }
 
 for i, url in ipairs(scripts) do
