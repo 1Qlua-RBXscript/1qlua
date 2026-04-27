@@ -1,1 +1,113 @@
+Position = UDim2.new(0, 5, 0, 5)
+        task.spawn(function()
+            Icon.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        end)
+        Instance.new("UICorner", Icon).CornerRadius = UDim.new(0, 5)
 
+        local DName = Instance.new("TextLabel", Card)
+        DName.Text = p.DisplayName
+        DName.Position = UDim2.new(0.16, 0, 0.13, 0)
+        DName.Size = UDim2.new(0.6, 0, 0, 20)
+        DName.TextColor3 = Color3.fromRGB(200, 200, 200)
+        DName.Font = "GothamBold"
+        DName.TextSize = 14
+        DName.TextXAlignment = "Left"
+        DName.BackgroundTransparency = 1
+
+        local Indicator = Instance.new("Frame", Card)
+        Indicator.Size = UDim2.new(0, 7, 0, 20)
+        Indicator.Position = UDim2.new(0.92, 0, 0.2, 0)
+        local isOff = Settings.BlacklistedUsers[tostring(p.UserId)]
+        Indicator.BackgroundColor3 = isOff and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
+        Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 5)
+
+        Card.MouseButton1Click:Connect(function()
+            local id = tostring(p.UserId)
+            Settings.BlacklistedUsers[id] = not Settings.BlacklistedUsers[id] or nil
+            Indicator.BackgroundColor3 = Settings.BlacklistedUsers[id] and Color3.fromRGB(206, 131, 188) or Color3.fromRGB(0, 134, 9)
+            SaveData()
+        end)
+    end
+end
+SearchInput:GetPropertyChangedSignal("Text"):Connect(function() UpdateList(SearchInput.Text) end)
+
+local isLeftClicking = false
+
+local function IsPlayerVisible(targetChar, targetPart)
+    local origin = Camera.CFrame.Position
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+
+    local result = workspace:Raycast(origin, targetPart.Position - origin, params)
+    return result and (result.Instance:IsDescendantOf(targetChar) or result.Instance == targetPart)
+end
+
+UserInputService.InputBegan:Connect(function(i, gp)
+    if gp then return end
+    if i.KeyCode == Settings.ToggleKey then
+        Settings.Enabled = not Settings.Enabled
+        UpdateDots()
+        if not Settings.Enabled then
+            if MainFrame.Visible then
+                MainFrame.Visible = false
+                Settings.MenuOpen = false
+            end
+        end
+    elseif i.KeyCode == Settings.HeadKey then
+        Settings.OnlyHead = not Settings.OnlyHead
+        HeadToggle.Text = "Head Only: "..(Settings.OnlyHead and "ON" or "OFF")
+        UpdateDots()
+    elseif i.KeyCode == Settings.MenuKey then
+        Settings.MenuOpen = not Settings.MenuOpen
+        MainFrame.Visible = Settings.MenuOpen
+        if Settings.MenuOpen then UpdateList() end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not Settings.Enabled then
+        if isLeftClicking then
+            vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+            isLeftClicking = false
+        end
+        return
+    end
+
+    local center = Camera.ViewportSize / 2
+    local activeHitboxes = Settings.OnlyHead and HeadHitboxes or AllHitboxes
+    local targetFound = false
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and not Settings.BlacklistedUsers[tostring(p.UserId)] then
+            local hitboxContainer = p.Character:FindFirstChild("Hitbox")
+            if hitboxContainer then
+                for _, name in pairs(activeHitboxes) do
+                    local part = hitboxContainer:FindFirstChild(name)
+                    if part then
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                        if onScreen then
+                            local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                            if dist <= Settings.Radius and IsPlayerVisible(p.Character, part) then
+                                targetFound = true
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if targetFound then break end
+    end
+
+    local m = UserInputService:GetMouseLocation()
+    if targetFound then
+        if not isLeftClicking then
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 1)
+            isLeftClicking = true
+        end
+    elseif isLeftClicking then
+        vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 1)
+        isLeftClicking = false
+    end
+end)
