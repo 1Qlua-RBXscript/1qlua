@@ -239,22 +239,39 @@ UserInputService.InputBegan:Connect(function(input, proc)
     end
 end)
 
+local CurrentTarget = nil
+
 RunService.RenderStepped:Connect(function()
     local isAiming = (Config.Mode == "Clamp" and UserInputService:IsKeyDown(Config.AimKey)) or (Config.Mode == "sticking" and Config.AimActive)
+    
     if isAiming then
-        local target, dist = nil, Config.FOVRadius
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and not Blacklist[tostring(p.UserId)] then
-                local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                if vis then
-                    local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                    if mag < dist then dist = mag target = p end
+        if CurrentTarget then
+            if not CurrentTarget.Character or not CurrentTarget.Character:FindFirstChild("Head") or CurrentTarget.Parent ~= Players or Blacklist[tostring(CurrentTarget.UserId)] then
+                CurrentTarget = nil
+            end
+        end
+
+        if not CurrentTarget then
+            local dist = Config.FOVRadius
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and not Blacklist[tostring(p.UserId)] then
+                    local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                    if vis then
+                        local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
+                        if mag < dist then 
+                            dist = mag 
+                            CurrentTarget = p
+                        end
+                    end
                 end
             end
         end
-        if target then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Character.Head.Position), Config.Smoothness)
+
+        if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Head") then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, CurrentTarget.Character.Head.Position), Config.Smoothness)
         end
+    else
+        CurrentTarget = nil
     end
 end)
 
