@@ -1,0 +1,165 @@
+local player = game:GetService("Players").LocalPlayer
+local runService = game:GetService("RunService")
+local workspace = game:GetService("Workspace")
+
+local UI_SPEED = 1.5
+local WORLD_SPEED = 3
+local TRACER_SPEED = 100
+local ROT_SPEED = 45
+local ASSET_ID = "rbxassetid://138895356591238"
+local FACES = Enum.NormalId:GetEnumItems()
+
+local mainGui = player.PlayerGui:WaitForChild("MainGui")
+local mainFrame = mainGui:WaitForChild("MainFrame")
+local fighterInterfaces = mainFrame:WaitForChild("FighterInterfaces")
+local michael = fighterInterfaces:WaitForChild("MichaelN0va34")
+local itemInterfaces = mainFrame:WaitForChild("ItemInterfaces")
+local ammoContainer = michael:WaitForChild("Hotbar"):WaitForChild("Container"):WaitForChild("AmmoDisplays")
+local healthBar = michael:WaitForChild("Health"):WaitForChild("Container"):WaitForChild("Health"):WaitForChild("Bar")
+
+local worldEmitters = {} -- Для RPG и Flare Gun
+
+local function getSoftColor(hue)
+    return Color3.fromHSV(hue % 1, 0.8, 1)
+end
+
+local function getRgbColor(t, speed)
+    return Color3.fromHSV((t * 0.1 * (speed or WORLD_SPEED)) % 1, 1, 1)
+end
+
+local function setupGradient(obj, name)
+    local gradient = obj:FindFirstChild(name)
+    if not gradient then
+        gradient = Instance.new("UIGradient")
+        gradient.Name = name
+        gradient.Parent = obj
+    end
+    return gradient
+end
+
+local function applyModelTexture(part)
+    if not (part:IsA("MeshPart") or part:IsA("Part") or part:IsA("UnionOperation")) then return end
+    if part:FindFirstChild("CTex") then return end
+    
+    local tag = Instance.new("BoolValue", part)
+    tag.Name = "CTex"
+    
+    for _, face in ipairs(FACES) do
+        local tex = Instance.new("Texture")
+        tex.Name = "CustomTex"
+        tex.Texture = ASSET_ID
+        tex.Face = face
+        tex.StudsPerTileU, tex.StudsPerTileV = 0.5, 0.5
+        tex.ZIndex = 10
+        tex.Parent = part
+    end
+end
+
+local function applyGuiEffect(obj)
+    if obj:IsA("Frame") or obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("ImageLabel") or obj:IsA("ScrollingFrame") then
+        setupGradient(obj, "DeepRgbGradient")
+    end
+end
+
+local function trackWeaponEffects(obj)
+    if obj.Name == "RPG" or obj.Name == "Flare Gun" then
+        local function check(child)
+            if child:IsA("ParticleEmitter") or child:IsA("Beam") or child:IsA("Trail") then
+                worldEmitters[child] = true
+            end
+        end
+        for _, child in ipairs(obj:GetDescendants()) do check(child) end
+        obj.DescendantAdded:Connect(check)
+    end
+end
+
+local function applyRgbToTracer(tracer)
+    local objects = {}
+    local function add(o)
+        if o:IsA("BasePart") or o:IsA("ParticleEmitter") or o:IsA("Beam") or o:IsA("Trail") or o:IsA("PointLight") then
+            table.insert(objects, o)
+        end
+    end
+    add(tracer)
+    for _, obj in ipairs(tracer:GetDescendants()) do add(obj) end
+
+    local conn
+    conn = runService.Heartbeat:Connect(function()
+        if not tracer or not tracer.Parent then conn:Disconnect() return end
+        local color = getRgbColor(tick(), TRACER_SPEED)
+        local seq = ColorSequence.new(color)
+        for _, o in ipairs(objects) do
+            if o:IsA("BasePart") or o:IsA("PointLight") then o.Color = color
+            elseif o:IsA("ParticleEmitter") or o:IsA("Beam") or o:IsA("Trail") then o.Color = seq end
+        end
+    end)
+end
+
+
+for _, obj in ipairs(itemInterfaces:GetDescendants()) do applyGuiEffect(obj) end
+itemInterfaces.DescendantAdded:Connect(applyGuiEffect)
+for _, obj in ipairs(ammoContainer:GetDescendants()) do applyGuiEffect(obj) end
+ammoContainer.DescendantAdded:Connect(applyGuiEffect)
+local healthGradient = setupGradient(healthBar, "HealthGradient")
+
+workspace.DescendantAdded:Connect(function(desc)
+    trackWeaponEffects(desc)
+    if desc.Name == "TracerEffect" then applyRgbToTracer(desc) end
+end)
+
+for _, desc in ipairs(workspace:GetDescendants()) do
+    trackWeaponEffects(desc)
+    if desc.Name == "TracerEffect" then applyRgbToTracer(desc) end
+end
+
+
+runService.RenderStepped:Connect(function()
+    local t = tick()
+    
+    local uiHue = (t * UI_SPEED) * 0.1
+    local uiColorSeq = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, getSoftColor(uiHue)),
+        ColorSequenceKeypoint.new(0.5, getSoftColor(uiHue + 0.2)),
+        ColorSequenceKeypoint.new(1, getSoftColor(uiHue))
+    })
+    local rot = (t * ROT_SPEED) % 360
+
+    healthBar.BackgroundColor3 = Color3.new(1, 1, 1)
+    healthGradient.Color = uiColorSeq
+    healthGradient.Rotation = rot
+    healthGradient.Offset = Vector2.new(math.sin(t * UI_SPEED * 0.5) * 0.1, 0)
+
+    local function updateDeepRgb(container)
+        for _, obj in ipairs(container:GetDescendants()) do
+            local g = obj:FindFirstChild("DeepRgbGradient")
+            if g then
+                g.Color = uiColorSeq
+                g.Rotation = rot
+                if obj:IsA("TextLabel") or obj:IsA("TextButton") then obj.TextColor3 = Color3.new(1, 1, 1)
+                elseif obj:IsA("Frame") or obj:IsA("ScrollingFrame") then obj.BackgroundColor3 = Color3.new(1, 1, 1) end
+            end
+        end
+    end
+    updateDeepRgb(itemInterfaces)
+    updateDeepRgb(ammoContainer)
+
+    local vm = workspace.CurrentCamera:FindFirstChild("ViewModels", true) 
+            or workspace:FindFirstChild("ViewModels", true) 
+            or workspace.CurrentCamera:FindFirstChild("Viewmodel", true)
+    if vm then
+        for _, obj in ipairs(vm:GetDescendants()) do applyModelTexture(obj) end
+    end
+end)
+
+runService.Heartbeat:Connect(function()
+    local color = getRgbColor(tick(), WORLD_SPEED)
+    local seq = ColorSequence.new(color)
+
+    for emitter in pairs(worldEmitters) do
+        if emitter and emitter.Parent then
+            emitter.Color = seq
+        else
+            worldEmitters[emitter] = nil
+        end
+    end
+end)
