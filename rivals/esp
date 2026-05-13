@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -26,13 +25,10 @@ local Storage = {}
 
 local COLOR_ON = Color3.fromRGB(0, 134, 9)
 local COLOR_OFF = Color3.fromRGB(206, 131, 188)
+
 local function saveSettings()
-    if not writefile then 
-        return 
-    end
-    if not Config then
-        return
-    end
+    if not writefile or not Config then return end
+    local c = Config.Colors
     local settings = {
         Enabled = Config.Enabled,
         HeadImage = Config.HeadImage,
@@ -40,54 +36,45 @@ local function saveSettings()
         Thickness = Config.Thickness,
         MaxDist = Config.MaxDist,
         Colors = {
-            Head = { Config.Colors.Head.R * 255, Config.Colors.Head.G * 255, Config.Colors.Head.B * 255 },
-            Torso = { Config.Colors.Torso.R * 255, Config.Colors.Torso.G * 255, Config.Colors.Torso.B * 255 },
-            Arms = { Config.Colors.Arms.R * 255, Config.Colors.Arms.G * 255, Config.Colors.Arms.B * 255 },
-            Legs = { Config.Colors.Legs.R * 255, Config.Colors.Legs.G * 255, Config.Colors.Legs.B * 255 }
+            Head  = { c.Head.R*255,  c.Head.G*255,  c.Head.B*255  },
+            Torso = { c.Torso.R*255, c.Torso.G*255, c.Torso.B*255 },
+            Arms  = { c.Arms.R*255,  c.Arms.G*255,  c.Arms.B*255  },
+            Legs  = { c.Legs.R*255,  c.Legs.G*255,  c.Legs.B*255  }
         }
     }
-    local data = HttpService:JSONEncode(settings)
-    local success, err = pcall(writefile, SETTINGS_FILE, data)
-    if not success then
-    end
+    pcall(writefile, SETTINGS_FILE, HttpService:JSONEncode(settings))
 end
 
 local function loadSettings()
-    if not readfile then 
-        return 
-    end
-    local success, data = pcall(readfile, SETTINGS_FILE)
-    if success and data and data ~= "" then
+    if not readfile then return end
+    local ok, data = pcall(readfile, SETTINGS_FILE)
+    if ok and data and data ~= "" then
         local loaded = HttpService:JSONDecode(data)
         if type(loaded) == "table" then
-            Config.Enabled = loaded.Enabled
-            Config.HeadImage = loaded.HeadImage or Config.HeadImage
-            Config.HeadScale = loaded.HeadScale or 1
-            Config.Thickness = loaded.Thickness or 1
-            Config.MaxDist = loaded.MaxDist or 1500
+            Config.Enabled    = loaded.Enabled
+            Config.HeadImage  = loaded.HeadImage  or Config.HeadImage
+            Config.HeadScale  = loaded.HeadScale  or 1
+            Config.Thickness  = loaded.Thickness  or 1
+            Config.MaxDist    = loaded.MaxDist     or 1500
             if loaded.Colors then
-                if loaded.Colors.Head then Config.Colors.Head = Color3.fromRGB(unpack(loaded.Colors.Head)) end
+                if loaded.Colors.Head  then Config.Colors.Head  = Color3.fromRGB(unpack(loaded.Colors.Head))  end
                 if loaded.Colors.Torso then Config.Colors.Torso = Color3.fromRGB(unpack(loaded.Colors.Torso)) end
-                if loaded.Colors.Arms then Config.Colors.Arms = Color3.fromRGB(unpack(loaded.Colors.Arms)) end
-                if loaded.Colors.Legs then Config.Colors.Legs = Color3.fromRGB(unpack(loaded.Colors.Legs)) end
+                if loaded.Colors.Arms  then Config.Colors.Arms  = Color3.fromRGB(unpack(loaded.Colors.Arms))  end
+                if loaded.Colors.Legs  then Config.Colors.Legs  = Color3.fromRGB(unpack(loaded.Colors.Legs))  end
             end
         end
-    else
     end
 end
 
 local function saveBlacklist()
     if not writefile then return end
-    local data = HttpService:JSONEncode(Blacklist)
-    local success, err = pcall(writefile, BLACKLIST_FILE, data)
-    if not success then
-    end
+    pcall(writefile, BLACKLIST_FILE, HttpService:JSONEncode(Blacklist))
 end
 
 local function loadBlacklist()
     if not readfile then return end
-    local success, data = pcall(readfile, BLACKLIST_FILE)
-    if success and data and data ~= "" then
+    local ok, data = pcall(readfile, BLACKLIST_FILE)
+    if ok and data and data ~= "" then
         local decoded = HttpService:JSONDecode(data)
         if type(decoded) == "table" then
             for k, v in pairs(decoded) do
@@ -363,8 +350,8 @@ Legs.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Legs.Position = UDim2.new(0.081, 10, 0.833, 0)
 Legs.Size = UDim2.new(0.113, 0, 0.075, 0)
 Legs.Font = Enum.Font.GothamBold
-Legs.Text = string.format("%d,%d,%d", 
-    Config.Colors.Legs.R * 255, Config.Colors.Legs.G * 255, Config.Colors.Legs.B * 255)
+Legs.Text = string.format("%d,%d,%d",
+    Config.Colors.Legs.R*255, Config.Colors.Legs.G*255, Config.Colors.Legs.B*255)
 Legs.TextColor3 = Color3.fromRGB(255, 255, 255)
 Legs.TextSize = 11
 UICorner_12.Parent = Legs
@@ -375,7 +362,7 @@ Arm.Position = UDim2.new(0.252, 10, 0.417, -7)
 Arm.Size = UDim2.new(0.113, 0, 0.075, 0)
 Arm.Font = Enum.Font.GothamBold
 Arm.Text = string.format("%d,%d,%d",
-    Config.Colors.Arms.R * 255, Config.Colors.Arms.G * 255, Config.Colors.Arms.B * 255)
+    Config.Colors.Arms.R*255, Config.Colors.Arms.G*255, Config.Colors.Arms.B*255)
 Arm.TextColor3 = Color3.fromRGB(255, 255, 255)
 Arm.TextSize = 11
 UICorner_13.Parent = Arm
@@ -386,7 +373,7 @@ Torso_2.Position = UDim2.new(0.252, 10, 0.594, -7)
 Torso_2.Size = UDim2.new(0.113, 0, 0.075, 0)
 Torso_2.Font = Enum.Font.GothamBold
 Torso_2.Text = string.format("%d,%d,%d",
-    Config.Colors.Torso.R * 255, Config.Colors.Torso.G * 255, Config.Colors.Torso.B * 255)
+    Config.Colors.Torso.R*255, Config.Colors.Torso.G*255, Config.Colors.Torso.B*255)
 Torso_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Torso_2.TextSize = 11
 UICorner_14.Parent = Torso_2
@@ -451,10 +438,11 @@ TextBox_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextBox_2.TextSize = 11
 UICorner_21.Parent = TextBox_2
 
+-- [[ ГРАДИЕНТ (отдельно от ESP, пониженная нагрузка) ]]
 local ROTATION_SPEED = 300
 local currentRotation = 0
-RunService.RenderStepped:Connect(function(deltaTime)
-    currentRotation = currentRotation + (ROTATION_SPEED * deltaTime)
+RunService.Heartbeat:Connect(function(dt)
+    currentRotation = currentRotation + ROTATION_SPEED * dt
     if currentRotation > 180 then currentRotation = -180
     elseif currentRotation < -180 then currentRotation = 180 end
     UIGradient.Rotation = currentRotation
@@ -464,20 +452,29 @@ end)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
     end
 end)
 MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
 end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = dragInput.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
 end)
 
 MenuBind.MouseButton1Click:Connect(function()
@@ -510,18 +507,18 @@ Head_2.FocusLost:Connect(function()
         Head.Image = Config.HeadImage
         decorations_2.Image = Config.HeadImage
         decorations_4.Image = Config.HeadImage
-        for _, assets in pairs(Storage) do 
+        for _, assets in pairs(Storage) do
             if assets.HeadImg then assets.HeadImg.Image = Config.HeadImage end
         end
         saveSettings()
     end
 end)
 
-TextBox.FocusLost:Connect(function() 
+TextBox.FocusLost:Connect(function()
     Config.HeadScale = tonumber(TextBox.Text) or 1
     saveSettings()
 end)
-TextBox_2.FocusLost:Connect(function() 
+TextBox_2.FocusLost:Connect(function()
     Config.Thickness = tonumber(TextBox_2.Text) or 1
     saveSettings()
 end)
@@ -530,14 +527,13 @@ local function UpdatePlayerList()
     for _, p in pairs(Players:GetPlayers()) do
         if p == Players.LocalPlayer then continue end
         local uid = p.UserId
-        
         if not PlayerList:FindFirstChild(tostring(uid)) then
             local card = SamplePlayer:Clone()
             card.Visible = true
             card.Name = tostring(uid)
             card:FindFirstChild("Username").Text = "@" .. p.Name
             card:FindFirstChild("DisplayName").Text = p.DisplayName
-            
+
             task.spawn(function()
                 local s, img = pcall(function()
                     return Players:GetUserThumbnailAsync(uid, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
@@ -547,16 +543,14 @@ local function UpdatePlayerList()
                     if ic then ic.Image = img end
                 end
             end)
-            
+
             local pInd = card:FindFirstChild("indicator")
             pInd.BackgroundColor3 = Blacklist[uid] and COLOR_OFF or COLOR_ON
-            
             card.MouseButton1Click:Connect(function()
                 Blacklist[uid] = not Blacklist[uid]
                 pInd.BackgroundColor3 = Blacklist[uid] and COLOR_OFF or COLOR_ON
                 saveBlacklist()
             end)
-            
             card.Parent = PlayerList
         end
     end
@@ -566,13 +560,14 @@ Players.PlayerAdded:Connect(UpdatePlayerList)
 Players.PlayerRemoving:Connect(function(p)
     local card = PlayerList:FindFirstChild(tostring(p.UserId))
     if card then card:Destroy() end
-    if Storage[p] then
-        if Storage[p].HeadImg then Storage[p].HeadImg:Destroy() end
-        if Storage[p].AvatarImg then Storage[p].AvatarImg:Destroy() end
-        if Storage[p].HpText then Storage[p].HpText:Remove() end
-        if Storage[p].HpBarBg then Storage[p].HpBarBg:Remove() end
-        if Storage[p].HpBarFill then Storage[p].HpBarFill:Remove() end
-        for _, l in pairs(Storage[p].Lines or {}) do l:Remove() end
+    local assets = Storage[p]
+    if assets then
+        if assets.HeadImg   then assets.HeadImg:Destroy()   end
+        if assets.AvatarImg then assets.AvatarImg:Destroy() end
+        if assets.HpText    then assets.HpText:Remove()     end
+        if assets.HpBarBg   then assets.HpBarBg:Remove()    end
+        if assets.HpBarFill then assets.HpBarFill:Remove()  end
+        for _, l in pairs(assets.Lines or {}) do l:Remove() end
         Storage[p] = nil
     end
 end)
@@ -580,25 +575,28 @@ UpdatePlayerList()
 
 local Bones = {
     R15 = {
-        {"UpperTorso", "Head", "Head"}, {"UpperTorso", "LeftUpperArm", "Arms"}, {"LeftUpperArm", "LeftLowerArm", "Arms"},
-        {"UpperTorso", "RightUpperArm", "Arms"}, {"RightUpperArm", "RightLowerArm", "Arms"}, {"UpperTorso", "LowerTorso", "Torso"},
-        {"LowerTorso", "LeftUpperLeg", "Legs"}, {"LeftUpperLeg", "LeftLowerLeg", "Legs"}, {"LowerTorso", "RightUpperLeg", "Legs"},
-        {"RightUpperLeg", "RightLowerLeg", "Legs"}
+        {"UpperTorso","Head","Head"},
+        {"UpperTorso","LeftUpperArm","Arms"}, {"LeftUpperArm","LeftLowerArm","Arms"},
+        {"UpperTorso","RightUpperArm","Arms"}, {"RightUpperArm","RightLowerArm","Arms"},
+        {"UpperTorso","LowerTorso","Torso"},
+        {"LowerTorso","LeftUpperLeg","Legs"}, {"LeftUpperLeg","LeftLowerLeg","Legs"},
+        {"LowerTorso","RightUpperLeg","Legs"}, {"RightUpperLeg","RightLowerLeg","Legs"}
     },
     R6 = {
-        {"Torso", "Head", "Head"}, {"Torso", "Left Arm", "Arms"}, {"Torso", "Right Arm", "Arms"},
-        {"Torso", "Left Leg", "Legs"}, {"Torso", "Right Leg", "Legs"}
+        {"Torso","Head","Head"},
+        {"Torso","Left Arm","Arms"}, {"Torso","Right Arm","Arms"},
+        {"Torso","Left Leg","Legs"}, {"Torso","Right Leg","Legs"}
     }
 }
 
 local function addESP(p)
     if p == Players.LocalPlayer then return end
-    local assets = { 
-        Lines = {}, 
-        HeadImg = Instance.new("ImageLabel", SkeletonStudioConfig),
+    local assets = {
+        Lines = {},
+        HeadImg  = Instance.new("ImageLabel", SkeletonStudioConfig),
         AvatarImg = Instance.new("ImageLabel", SkeletonStudioConfig),
-        HpText = Drawing.new("Text"),
-        HpBarBg = Drawing.new("Square"),
+        HpText    = Drawing.new("Text"),
+        HpBarBg   = Drawing.new("Square"),
         HpBarFill = Drawing.new("Square")
     }
     assets.HeadImg.BackgroundTransparency = 1
@@ -606,7 +604,7 @@ local function addESP(p)
     assets.HeadImg.Image = Config.HeadImage
     assets.HeadImg.Visible = false
     assets.HeadImg.ZIndex = 100
-    
+
     assets.AvatarImg.BackgroundTransparency = 1
     assets.AvatarImg.AnchorPoint = Vector2.new(0.5, 0.5)
     assets.AvatarImg.Size = UDim2.new(0, 50, 0, 50)
@@ -620,24 +618,24 @@ local function addESP(p)
             assets.AvatarImg.Image = img
         end
     end)
-    
+
     assets.HpText.Visible = false
     assets.HpText.Color = Color3.fromRGB(255, 255, 255)
     assets.HpText.Outline = true
     assets.HpText.OutlineColor = Color3.new(0,0,0)
     assets.HpText.Size = 14
     assets.HpText.Center = true
-    
+
     assets.HpBarBg.Visible = false
     assets.HpBarBg.Color = Color3.fromRGB(40, 40, 40)
     assets.HpBarBg.Filled = true
     assets.HpBarBg.Thickness = 1
     assets.HpBarBg.Transparency = 0.1
-    
+
     assets.HpBarFill.Visible = false
     assets.HpBarFill.Filled = true
     assets.HpBarFill.Thickness = 0
-    
+
     for i = 1, 12 do
         local l = Drawing.new("Line")
         l.Visible = false
@@ -651,108 +649,130 @@ end
 for _, p in pairs(Players:GetPlayers()) do addESP(p) end
 Players.PlayerAdded:Connect(addESP)
 
+-- [[ Константы для ESP ]]
 local AVATAR_OFFSET = Vector3.new(0, -2.5, 0)
-local HP_OFFSET = Vector3.new(0, 9, 0)
-local BAR_WIDTH = 60
-local BAR_HEIGHT = 1
+local HP_OFFSET     = Vector3.new(0,  9,   0)
+local BAR_WIDTH     = 60
+local BAR_HEIGHT    = 1
+local HALF_BAR      = BAR_WIDTH / 2
+
+local function hideAssets(assets)
+    assets.HeadImg.Visible   = false
+    assets.AvatarImg.Visible = false
+    assets.HpText.Visible    = false
+    assets.HpBarBg.Visible   = false
+    assets.HpBarFill.Visible = false
+    for _, l in pairs(assets.Lines) do l.Visible = false end
+end
 
 RunService.RenderStepped:Connect(function()
-    local cam = workspace.CurrentCamera
-    for player, assets in pairs(Storage) do
+    local cam     = workspace.CurrentCamera
+    local camPos  = cam.CFrame.Position
+    local maxDist = Config.MaxDist
+    local enabled = Config.Enabled
+    local colors  = Config.Colors
+    local thick   = Config.Thickness
+    local hScale  = Config.HeadScale
+
+    for player, assets in next, Storage do
+        if not enabled or Blacklist[player.UserId] then
+            hideAssets(assets)
+            continue
+        end
+
         local char = player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hum  = char and char:FindFirstChildOfClass("Humanoid")
         local head = char and char:FindFirstChild("Head")
-        
-        if Config.Enabled and not Blacklist[player.UserId] and head and hum and hum.Health > 0 then
-            local headPos, onScreen = cam:WorldToViewportPoint(head.Position)
-            local dist = (head.Position - cam.CFrame.Position).Magnitude
-            
-            if onScreen and dist < Config.MaxDist then
-                local hSize = (2500 / dist) * Config.HeadScale
-                assets.HeadImg.Size = UDim2.new(0, hSize, 0, hSize)
-                assets.HeadImg.Position = UDim2.new(0, headPos.X, 0, headPos.Y)
-                assets.HeadImg.Visible = true
-                
-                local rootPart = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-                if rootPart then
-                    local footPos = rootPart.Position + AVATAR_OFFSET
-                    local footPosVec, footOnScreen = cam:WorldToViewportPoint(footPos)
-                    if footOnScreen then
-                        local avatarSize = (1500 / dist) * Config.HeadScale
-                        assets.AvatarImg.Size = UDim2.new(0, avatarSize, 0, avatarSize)
-                        assets.AvatarImg.Position = UDim2.new(0, footPosVec.X, 0, footPosVec.Y)
-                        assets.AvatarImg.Visible = true
-                        
-                        local hpPos = footPos + HP_OFFSET
-                        local hpVec, hpOn = cam:WorldToViewportPoint(hpPos)
-                        if hpOn then
-                            local healthPercent = hum.Health / hum.MaxHealth
-                            local barColor = Color3.fromRGB(255 - 255 * healthPercent, 255 * healthPercent, 0)
-                            local textX = hpVec.X 
-                            local textY = hpVec.Y
-                            assets.HpText.Text = string.format("%.0f%%", healthPercent * 100)
-                            assets.HpText.Position = Vector2.new(textX, textY)
-                            assets.HpText.Visible = true
-                            
-                            local barX = textX - BAR_WIDTH/2
-                            local barY = textY + 16
-                            assets.HpBarBg.Position = Vector2.new(barX, barY)
-                            assets.HpBarBg.Size = Vector2.new(BAR_WIDTH, BAR_HEIGHT)
-                            assets.HpBarBg.Visible = true
-                            
-                            assets.HpBarFill.Position = Vector2.new(barX, barY)
-                            assets.HpBarFill.Size = Vector2.new(BAR_WIDTH * healthPercent, BAR_HEIGHT)
-                            assets.HpBarFill.Color = barColor
-                            assets.HpBarFill.Visible = true
-                        else
-                            assets.HpText.Visible = false
-                            assets.HpBarBg.Visible = false
-                            assets.HpBarFill.Visible = false
-                        end
-                    else
-                        assets.AvatarImg.Visible = false
-                        assets.HpText.Visible = false
-                        assets.HpBarBg.Visible = false
-                        assets.HpBarFill.Visible = false
-                    end
+
+        if not (head and hum and hum.Health > 0) then
+            hideAssets(assets)
+            continue
+        end
+
+        local headPos, onScreen = cam:WorldToViewportPoint(head.Position)
+        local dist = (head.Position - camPos).Magnitude
+
+        if not onScreen or dist >= maxDist then
+            hideAssets(assets)
+            continue
+        end
+
+        -- Head image
+        local hSize = (2500 / dist) * hScale
+        assets.HeadImg.Size     = UDim2.new(0, hSize, 0, hSize)
+        assets.HeadImg.Position = UDim2.new(0, headPos.X, 0, headPos.Y)
+        assets.HeadImg.Visible  = true
+
+        -- Avatar image
+        local rootPart = char:FindFirstChild("HumanoidRootPart")
+            or char:FindFirstChild("UpperTorso")
+            or char:FindFirstChild("Torso")
+
+        if rootPart then
+            local footVec, footOn = cam:WorldToViewportPoint(rootPart.Position + AVATAR_OFFSET)
+            if footOn then
+                local avatarSize = (1500 / dist) * hScale
+                assets.AvatarImg.Size     = UDim2.new(0, avatarSize, 0, avatarSize)
+                assets.AvatarImg.Position = UDim2.new(0, footVec.X, 0, footVec.Y)
+                assets.AvatarImg.Visible  = true
+
+                local hpVec, hpOn = cam:WorldToViewportPoint(rootPart.Position + AVATAR_OFFSET + HP_OFFSET)
+                if hpOn then
+                    local hp      = hum.Health / hum.MaxHealth
+                    local barX    = hpVec.X - HALF_BAR
+                    local barY    = hpVec.Y + 16
+
+                    assets.HpText.Text     = string.format("%.0f%%", hp * 100)
+                    assets.HpText.Position = Vector2.new(hpVec.X, hpVec.Y)
+                    assets.HpText.Visible  = true
+
+                    assets.HpBarBg.Position = Vector2.new(barX, barY)
+                    assets.HpBarBg.Size     = Vector2.new(BAR_WIDTH, BAR_HEIGHT)
+                    assets.HpBarBg.Visible  = true
+
+                    assets.HpBarFill.Position = Vector2.new(barX, barY)
+                    assets.HpBarFill.Size     = Vector2.new(BAR_WIDTH * hp, BAR_HEIGHT)
+                    assets.HpBarFill.Color    = Color3.fromRGB(255 - 255*hp, 255*hp, 0)
+                    assets.HpBarFill.Visible  = true
                 else
-                    assets.AvatarImg.Visible = false
-                    assets.HpText.Visible = false
-                    assets.HpBarBg.Visible = false
+                    assets.HpText.Visible    = false
+                    assets.HpBarBg.Visible   = false
                     assets.HpBarFill.Visible = false
                 end
-                
-                local rig = hum.RigType == Enum.HumanoidRigType.R15 and Bones.R15 or Bones.R6
-                for i, bone in ipairs(rig) do
-                    local p1, p2 = char:FindFirstChild(bone[1]), char:FindFirstChild(bone[2])
-                    local line = assets.Lines[i]
-                    if p1 and p2 and line then
-                        local pos1, vis1 = cam:WorldToViewportPoint(p1.Position)
-                        local pos2, vis2 = cam:WorldToViewportPoint(p2.Position)
-                        if vis1 and vis2 then
-                            line.Visible = true
-                            line.From = Vector2.new(pos1.X, pos1.Y)
-                            line.To = Vector2.new(pos2.X, pos2.Y)
-                            line.Color = Config.Colors[bone[3]]
-                            line.Thickness = Config.Thickness
-                        else line.Visible = false end
-                    elseif line then line.Visible = false end
-                end
             else
-                assets.HeadImg.Visible = false
                 assets.AvatarImg.Visible = false
-                assets.HpText.Visible = false
-                assets.HpBarBg.Visible = false
+                assets.HpText.Visible    = false
+                assets.HpBarBg.Visible   = false
                 assets.HpBarFill.Visible = false
-                for _, l in pairs(assets.Lines) do l.Visible = false end
             end
         else
-            assets.HeadImg.Visible = false
             assets.AvatarImg.Visible = false
-            assets.HpText.Visible = false
-            assets.HpBarBg.Visible = false
+            assets.HpText.Visible    = false
+            assets.HpBarBg.Visible   = false
             assets.HpBarFill.Visible = false
-            for _, l in pairs(assets.Lines) do l.Visible = false end
+        end
+
+        -- Скелет
+        local rig = hum.RigType == Enum.HumanoidRigType.R15 and Bones.R15 or Bones.R6
+        for i, bone in ipairs(rig) do
+            local p1   = char:FindFirstChild(bone[1])
+            local p2   = char:FindFirstChild(bone[2])
+            local line = assets.Lines[i]
+            if p1 and p2 and line then
+                local pos1, vis1 = cam:WorldToViewportPoint(p1.Position)
+                local pos2, vis2 = cam:WorldToViewportPoint(p2.Position)
+                if vis1 and vis2 then
+                    line.Visible    = true
+                    line.From       = Vector2.new(pos1.X, pos1.Y)
+                    line.To         = Vector2.new(pos2.X, pos2.Y)
+                    line.Color      = colors[bone[3]]
+                    line.Thickness  = thick
+                else
+                    line.Visible = false
+                end
+            elseif line then
+                line.Visible = false
+            end
         end
     end
 end)
