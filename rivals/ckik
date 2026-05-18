@@ -66,10 +66,10 @@ UpdateDots()
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(1, -450, 0.5, -190)
+MainFrame.Position = UDim2.new(1, -1100, 0.5, -190)
 MainFrame.Size = UDim2.new(0, 220, 0, 400)
 MainFrame.BorderSizePixel = 0
-MainFrame.Visible = false  -- Сразу скрыто
+MainFrame.Visible = false  
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
 local dragging, dragInput, dragStart, startPos
