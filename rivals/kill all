@@ -13,17 +13,17 @@ if not LocalPlayer then
 end
 
 local CONFIG = {
-    MenuKey = Enum.KeyCode.P,   -- открыть/закрыть GUI
-    ToggleKey = Enum.KeyCode.X, -- включить/выключить автоубийство
-    TeleportOffset = 4.5,       -- высота над головой цели
-    ShootDelay = 0.03,          -- задержка между выстрелами
+    MenuKey = Enum.KeyCode.P,  
+    ToggleKey = Enum.KeyCode.X, 
+    TeleportOffset = 4.5,    
+    ShootDelay = 0.03,       
 }
 
-local selectedTarget = nil          -- выбранный игрок (жертва)
-local isActive = false              -- активен ли режим
-local stopShooting = nil            -- функция остановки стрельбы
-local cameraConnection = nil        -- соединение для фиксации камеры
-local teleportConnection = nil      -- соединение для телепортации
+local selectedTarget = nil     
+local isActive = false           
+local stopShooting = nil            
+local cameraConnection = nil       
+local teleportConnection = nil  
 
 local function getHeadPart(character)
     if not character then return nil end
@@ -44,7 +44,6 @@ local function teleportToTarget(targetChar)
     local newPos = targetHead.Position + Vector3.new(0, CONFIG.TeleportOffset, 0)
     hrp.CFrame = CFrame.new(newPos)
     
-    -- Отключаем гравитацию/PlatformStand, чтобы не падать
     local humanoid = myChar:FindFirstChild("Humanoid")
     if humanoid then
         humanoid.PlatformStand = true
@@ -120,7 +119,6 @@ local function disableKillMode()
     if cameraConnection then cameraConnection:Disconnect() end
     if teleportConnection then teleportConnection:Disconnect() end
     
-    -- Возвращаем персонажу гравитацию
     local myChar = LocalPlayer.Character
     if myChar then
         local humanoid = myChar:FindFirstChild("Humanoid")
@@ -157,7 +155,7 @@ end
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(1, -450, 0.5, -190)
+MainFrame.Position = UDim2.new(1, -400, 0.5, -190)
 MainFrame.Size = UDim2.new(0, 220, 0, 400)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
