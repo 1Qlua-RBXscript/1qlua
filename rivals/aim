@@ -57,7 +57,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = AimbotMenuGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(1, -240, 0.5, -200)
+MainFrame.Position = UDim2.new(1, -600, 0.5, -190)
 MainFrame.Size = UDim2.new(0, 220, 0, 400)
 MainFrame.BorderSizePixel = 0
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
@@ -274,5 +274,5 @@ RunService.RenderStepped:Connect(function()
         CurrentTarget = nil
     end
 end)
-
+MainFrame.Visible = false
 UpdateList()
