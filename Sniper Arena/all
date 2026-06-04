@@ -1,7 +1,6 @@
 local scripts = {
-    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/rivals/aim",
-    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Flick/Tigger",
-    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/rivals/esp",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Sniper%20Arena/AIM",
+    "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Sniper%20Arena/ESP",
     "https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Sniper%20Arena/Image",
 }
 
