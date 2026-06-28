@@ -979,3 +979,4 @@ function Library:CreateTextBox(opts)
 end
 
 return Library 
+end)()
