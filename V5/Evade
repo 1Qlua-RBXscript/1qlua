@@ -55,9 +55,8 @@
 
 -- https://discord.gg/5n8AjWAbJn <3
 
--- 1QLUAlibrary v1
+-- 1QLUAlibrary v1.01
  
-
 if not game:IsLoaded() then game.Loaded:Wait() end
 task.wait(0.5)
 
@@ -385,6 +384,10 @@ userInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
+-- НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ
+-- НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ
+-- НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ
+-- НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ НАЧАЛО БИБЛЕОТЕКИ
 local Library = (function()
 
 local Library = {}
@@ -812,6 +815,8 @@ function Library:CreateMenu(name, color)
     menu.CreateButton = Library.CreateButton
     menu.CreateSlider = Library.CreateSlider
     menu.CreateToggle = Library.CreateToggle
+    menu.CreateSubtitle = Library.CreateSubtitle
+    menu.CreateTextBox = Library.CreateTextBox
     return menu
 end
 
@@ -877,7 +882,7 @@ function Library:CreateButton(opts)
     local KeyBox = New("Frame", {
         Parent = Container, Size = UDim2.new(0, 50, 0, 42),
         Name = "Key",
-        Position = UDim2.new(0.9095, 0, 0.197, 0),
+        Position = UDim2.new(0.7995, 0, 0.160, 0),
         BorderSizePixel = 0,
         BackgroundColor3 = Color3.fromRGB(28, 30, 35),
         ZIndex = 6, Visible = key ~= nil,
@@ -1139,7 +1144,7 @@ function Library:CreateToggle(opts)
     local KeyBox = New("Frame", {
         Parent = Container, Size = UDim2.new(0, 50, 0, 42),
         Name = "Key",
-        Position = UDim2.new(0.9095, 0, 0.147, 0),
+        Position = UDim2.new(0.7995, 0, 0.160, 0),
         BorderSizePixel = 0,
         BackgroundColor3 = Color3.fromRGB(28, 30, 35),
         ZIndex = 6, Visible = key ~= nil,
@@ -1210,9 +1215,124 @@ function Library:CreateToggle(opts)
     }
 end
 
+function Library:CreateSubtitle(opts)
+    if type(opts) == "string" then opts = {Name = opts} end
+    opts = opts or {}
+    local name = opts.Name or "Subtitle"
+
+    local Container = New("Frame", {
+        Parent = self.Scroll, Name = "Subtitle",
+        Size = UDim2.new(0, 917, 0, 56),
+        BackgroundTransparency = 1,
+    })
+    local BG = New("Frame", {
+        Parent = Container,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0, 400, 0.494, 1),
+        Size = UDim2.new(0, 800, 0, 46),
+        BorderSizePixel = 0,
+        BackgroundColor3 = Color3.fromRGB(32, 32, 32),
+    })
+    New("UICorner", {Parent = BG})
+    local Label = New("TextLabel", {
+        Parent = Container, RichText = true,
+        TextColor3 = Color3.new(1, 1, 1), Text = name,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextSize = 26, Name = "name",
+        Font = Enum.Font.SourceSansBold,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.0153, 0, 0.327, -2),
+        Size = UDim2.new(0, 869, 0, 24), ZIndex = 2,
+    })
+
+    return {
+        SetText = function(_, t) name = t; Label.Text = t end,
+    }
+end
+
+function Library:CreateTextBox(opts)
+    opts = opts or {}
+    local name = opts.Name or "TextBox"
+    local description = opts.Description or ""
+    local placeholder = opts.Placeholder or opts.Default or ""
+    local callback = opts.Callback or function() end
+
+    local Container = New("Frame", {
+        Parent = self.Scroll, Name = "TextBox",
+        Size = UDim2.new(0, 917, 0, 60),
+        BackgroundTransparency = 1,
+    })
+    local BG = New("Frame", {
+        Parent = Container,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0, 400, 0.494, 1),
+        Size = UDim2.new(0, 800, 0, 56),
+        BorderSizePixel = 0,
+        BackgroundColor3 = Color3.fromRGB(32, 32, 32),
+    }) 
+    New("UICorner", {Parent = BG})
+    local Box = New("Frame", {
+        Parent = Container, Name = "TextBox",
+        Position = UDim2.new(0.0164, 0, 0.15, 0),
+        Size = UDim2.new(0, 68, 0, 42),
+        BorderSizePixel = 0,
+        BackgroundColor3 = Color3.fromRGB(24, 25, 30),
+    })
+    New("UICorner", {Parent = Box})
+    New("UIStroke", {Parent = Box, Color = Color3.fromRGB(85, 85, 85)})
+    local Input = New("TextBox", {
+        Parent = Box, RichText = true,
+        TextColor3 = Color3.new(1, 1, 1),
+        Text = placeholder,
+        Font = Enum.Font.SourceSansBold,
+        BackgroundTransparency = 1, TextSize = 14,
+        Size = UDim2.new(0, 68, 0, 42),
+        ZIndex = 6, ClearTextOnFocus = false,
+    })
+    New("TextLabel", {
+        Parent = Container, RichText = true,
+        TextColor3 = Color3.new(1, 1, 1), Text = name,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextSize = 26, Name = "name",
+        Font = Enum.Font.SourceSansBold,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.1036, 0, 0.183, -2),
+        Size = UDim2.new(0, 615, 0, 24), ZIndex = 2,
+    })
+    New("TextLabel", {
+        Parent = Container, RichText = true,
+        TextColor3 = Color3.fromRGB(141, 141, 141),
+        Text = description,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextSize = 13, Name = "description",
+        Font = Enum.Font.SourceSansBold,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.1036, 0, 0.583, -4),
+        Size = UDim2.new(0, 615, 0, 20), ZIndex = 2,
+    })
+
+    local currentText = placeholder
+
+    Input.Focused:Connect(function()
+        if Input.Text == placeholder then Input.Text = "" end
+    end)
+    Input.FocusLost:Connect(function(enterPressed)
+        currentText = Input.Text
+        if currentText == "" then
+            Input.Text = placeholder
+        end
+        local ok, err = pcall(callback, currentText, enterPressed)
+        if not ok then end
+    end)
+
+    return {
+        SetText = function(_, t) currentText = t; Input.Text = t end,
+        GetText = function() return currentText end,
+    }
+end
+
 return Library 
 end)()
-
 
 -- начало!!! начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!! 
 -- начало!!! начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!!  начало!!! 
@@ -1247,6 +1367,7 @@ local UITab = Window:CreateMenu("UI Size", Color3.fromRGB(150, 150, 150))
 LocalTab:CreateToggle({
     Name = "Буст скорости",
     Description = "Включения буста",
+    Key = "F",
     Default = false,
     Callback = function(state)
         if state then
@@ -1341,6 +1462,8 @@ pcall(function()
 end)
     end 
 })
+
+LocalTab:CreateSubtitle("Есть идеи что добавить?")
 
 LocalTab:CreateButton({
     Name = "Есть идеи что добавить? (https://discord.gg/5n8AjWAbJn)",
@@ -1467,4 +1590,3 @@ RS:BindToRenderStep("ForceFOV", Enum.RenderPriority.Camera.Value + 1, function()
         C.FieldOfView = _G.FOV
     end
 end)
-
