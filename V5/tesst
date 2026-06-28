@@ -533,7 +533,7 @@ function Library:CreateButton(opts)
 
     local function runCallback()
         local ok, err = pcall(callback)
-        if not ok then  end
+        if not ok then end
     end
 
     ClickBtn.MouseButton1Click:Connect(function()
@@ -687,7 +687,7 @@ function Library:CreateSlider(opts)
         Fill.Size = UDim2.new(0, maxWidth * percent, 0, 22)
         ValueLabel.Text = formatVal(currentValue)
         local ok, err = pcall(callback, currentValue)
-        if not ok then print()("[SWAG SUS]:", err) end
+        if not ok then end  -- убрали вывод ошибок
     end
 
     setValue(default)
@@ -828,7 +828,7 @@ function Library:CreateToggle(opts)
         state = v
         updateVisual()
         local ok, err = pcall(callback, state)
-        if not ok then Print("[SWAG Sus]:", err) end
+        if not ok then end  -- убрали вывод ошибок
     end
 
     updateVisual()
@@ -978,4 +978,5 @@ function Library:CreateTextBox(opts)
     }
 end
 
-return Library 
+return Library
+end)()
