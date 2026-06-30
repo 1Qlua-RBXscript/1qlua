@@ -1440,7 +1440,7 @@ LocalTab:CreateButton({
     Description = "Тп куда ты нажимаешь",
     Color = Color3.fromRGB(0, 150, 150),
     Callback = function()
-        loadstring(game:HttpGet(('https://pastebin.com/raw/9bNj1EcR'),true))()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/V2/eng/key/1qluaKeyEngOHIO'),true))()
     end 
 })
 
@@ -1676,16 +1676,6 @@ pvpTab:CreateToggle({
     end
 })
 
-pvpTab:CreateSlider({
-    Name = "Со скольки хп телепортируеться в сейф зону",
-    Description = ":D",
-    Min = 1,
-    Max = 100,
-    Default = 25,
-    Callback = function(value)
-            _G.LowHealthTPConfig.HealthPercent = value
-    end
-})
 
 tpTab:CreateButton({
     Name = "Магазин оружий",
@@ -1866,7 +1856,7 @@ local player = Players.LocalPlayer
 _G.LowHealthTPConfig = _G.LowHealthTPConfig or {
     Enabled = true,
     TargetPosition = Vector3.new(1203, 25, -950), 
-    HealthPercent = 20,
+    HealthPercent = 25,
     Cooldown = 1
 }
 
