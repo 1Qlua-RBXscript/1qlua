@@ -1,7 +1,4 @@
 
---==============================================================
--- 1Qlua Multi v5.1  |  Aim + Vfly + ESP + Graphics + Scripts
---==============================================================
 local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,7 +10,7 @@ local StarterGui       = game:GetService("StarterGui")
 local LocalPlayer      = Players.LocalPlayer
 
 local SCRIPT_LAYER   = "1Qlua_MultiV5"
-local CONFIG_FOLDER  = SCRIPT_LAYER .. "/configs"
+local CONFIG_FOLDER  = SCRIPT_LAYER .. "/configs" 
 local SETTINGS_FILE  = SCRIPT_LAYER .. "/settings.json"
 local BLACKLIST_FILE = SCRIPT_LAYER .. "/blacklist.json"
 local SCRIPTS_FILE   = SCRIPT_LAYER .. "/scripts.json"
@@ -50,10 +47,8 @@ local WHITE   = mkColor(255,255,255)
 local COLOR_ON, COLOR_OFF = mkColor(0,180,90), mkColor(230,50,50)
 local awaitingBind = nil
 
--- ESP render state (forward)
 local ESP_STATE = { Dirty = true, Frame = 0, Hidden = false }
 
---==================== CONFIG ====================
 local Config = {
     Aim = { Active=false, Smoothness=1, FOVRadius=300, AimKey=Enum.KeyCode.E,
             Mode="Hold", AimType="Real", TargetPlayers=true, TargetNPCs=true,
@@ -67,7 +62,7 @@ local Config = {
     FOV = { Color=ACCENT, Thickness=1.5, Transparency=0.4 },
 
     UI  = { Accent=ACCENT, Button=mkColor(25,24,24), Scale=1,
-            ToggleKey=Enum.KeyCode.P, HeaderImage="rbxassetid://0",
+            ToggleKey=Enum.KeyCode.P, HeaderImage="rbxassetid://99235383301237",
             Font=Enum.Font.GothamBold, FontScale=1 },
 
     Scripts = {},
@@ -143,7 +138,6 @@ local Config = {
 }
 local Blacklist = {}
 
---==================== SCRIPT STORAGE ====================
 local DEFAULT_SCRIPTS = {
     { name="RAGE", code='loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Sniper%20Arena/BOT/AIm2"))()', bind=nil },
     { name="Auto-Farm", code='loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Farm"))()', bind=nil },
@@ -172,7 +166,6 @@ local function loadScripts()
 end
 loadScripts()
 
---==================== HELPERS ====================
 local function colToTable(c) return { math.round(c.R*255), math.round(c.G*255), math.round(c.B*255) } end
 local function tableToCol(t)
     if type(t) ~= "table" or not t[1] then return nil end
@@ -249,7 +242,6 @@ local function refreshStyleButtons()
     for _, fn in ipairs(STYLE_REFRESHERS) do pcall(fn) end
 end
 
---==================== FORWARD DECLS ====================
 local Gui, Main, MainGrad, MainScale, PageContainer, Title, decoR, decoL
 local AimPage, LocalPage, ESPPage, GraphicsPage, ConfigPage, CustomPage, SetPage
 local TabButtons, TabPages
@@ -265,7 +257,6 @@ local fontBtn
 local applyGraphicsFromConfig, rebuildParticles
 local saveSettingsFull
 
---==================== SNAPSHOT ====================
 local function snapshot()
     local A, U, FV, B = Config.Aim, Config.UI, Config.FOV, Config.Binds
     local G, E, F = Config.Graphics, Config.ESP, Config.Flight
@@ -470,7 +461,7 @@ local function applySnapshot(s)
             end
         end
         if type(g.Tonemapper)=="string" then G.Tonemapper = g.Tonemapper end
-        local pNum = {"P_MultiCount","P_OrbRadius","P_OrbTransparency","P_AutoRotateSpeed",
+        local pNum = {"P_MultiCount","P_OrbRadius","P_OrbTransparency","P_AutoRotateSpeed", 
             "P_Rate","P_LifetimeMin","P_LifetimeMax","P_SizeMin","P_SizeMax",
             "P_TranspStart","P_TranspMid","P_TranspEnd","P_SpeedMin","P_SpeedMax",
             "P_SpreadAngle","P_AccelX","P_AccelY","P_AccelZ","P_Drag",
@@ -495,7 +486,6 @@ local function applySnapshot(s)
     end
 end
 
---==================== MAIN GUI ====================
 Gui = mk("ScreenGui", CoreGui, {
     Name=GUI_LAYER_NAME, ResetOnSpawn=false, IgnoreGuiInset=true,
     DisplayOrder=6, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
@@ -556,8 +546,6 @@ Title = mk("TextLabel", Main, {
     TextColor3=Color3.new(1,1,1), TextSize=16,
     TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
 })
-
---==================== FONTS ====================
 do
     local baseSizes = setmetatable({}, {__mode="k"})
     local function applyFontTo(inst)
@@ -577,7 +565,6 @@ do
     end)
 end
 
---==================== PAGES ====================
 local function makePage(name, isFrame)
     if isFrame then
         return mk("Frame", PageContainer, {
@@ -606,8 +593,6 @@ TabPages = {
     Config=ConfigPage, Custom=CustomPage, Settings=SetPage,
 }
 TabButtons = {}
-
---==================== WIDGETS ====================
 local function settingBlock(parent, text, val, pos, size, textSize, getVal)
     textSize = textSize or 12
     size = size or UDim2.fromOffset(220,44)
@@ -768,7 +753,6 @@ local function keyBindBox(parent, label, pos, size, keyName, getKey, setKey)
     return btn
 end
 
---==================== TABS ====================
 local function tabIndex(name, order)
     for i, n in ipairs(order) do if n == name then return i end end
     return 1
@@ -825,7 +809,6 @@ do
     applyTabStyles()
 end
 
---==================== AIM PAGE ====================
 local AimPlayerList
 do
     local P = AimPage
@@ -988,7 +971,6 @@ do
     mk("UIListLayout", AimPlayerList, {Padding=UDim.new(0,5)})
 end
 
---==================== LOCAL PAGE (Vfly) ====================
 do
     local P = LocalPage
     mk("TextLabel", P, {
@@ -1070,7 +1052,6 @@ do
     })
 end
 
---==================== ESP PAGE ====================
 do
     local P = ESPPage
     local function markDirty() ESP_STATE.Dirty = true end
@@ -1289,9 +1270,6 @@ do
     })
 end
 
---==============================================================
--- GRAPHICS PAGE (compact helpers)
---==============================================================
 local GraphicsGY = { y = 12 }
 local getEff
 
@@ -1360,8 +1338,6 @@ do
         BorderSizePixel=0, ZIndex=3,
     })
     step(12)
-
-    -- LIGHTING
     hdr("LIGHTING")
     gNum("Brightness", "Brightness", 0, 100, function(v) Lighting.Brightness = v end)
     gNum("Clock Time (0-24)", "ClockTime", 0, 24, function(v) Lighting.ClockTime = v end)
@@ -1379,23 +1355,19 @@ do
         function() return G.EnvSpecular == 1 end)
     step(38)
 
-    -- COLORS
     hdr("COLORS")
     gCol("Ambient", "Ambient", "Ambient Color", function(c) Lighting.Ambient = c end)
     gCol("Outdoor Ambient", "OutdoorAmbient", "Outdoor Ambient", function(c) Lighting.OutdoorAmbient = c end)
     gCol("ColorShift Top", "ColorShiftTop", "ColorShift Top", function(c) Lighting.ColorShift_Top = c end)
     gCol("ColorShift Bottom", "ColorShiftBottom", "ColorShift Bottom", function(c) Lighting.ColorShift_Bottom = c end)
 
-    -- FOG
     hdr("FOG")
     gNum("Fog Start", "FogStart", -100000, 100000, function(v) Lighting.FogStart = v end)
     gNum("Fog End", "FogEnd", -100000, 100000, function(v) Lighting.FogEnd = v end)
     gCol("Fog Color", "FogColor", "Fog Color", function(c) Lighting.FogColor = c end)
 
-    -- EFFECTS
     hdr("EFFECTS")
 
-    -- BLUR
     local blur = getEff("BlurEffect", "SolaraBlur")
     blur.Size = G.BlurSize
     blur.Enabled = G.BlurEnabled
@@ -1406,7 +1378,6 @@ do
     step(34)
     gNum("Blur Size", "BlurSize", 0, 200, function(v) blur.Size = v end)
 
-    -- BLOOM
     local bloom = getEff("BloomEffect", "SolaraBloom")
     bloom.Intensity, bloom.Size, bloom.Threshold = G.BloomIntensity, G.BloomSize, G.BloomThreshold
     bloom.Enabled = G.BloomEnabled
@@ -1419,7 +1390,6 @@ do
     gNum("Bloom Size", "BloomSize", 0, 200, function(v) bloom.Size = v end)
     gNum("Bloom Threshold", "BloomThreshold", 0, 20, function(v) bloom.Threshold = v end)
 
-    -- COLOR CORRECTION
     local cc = getEff("ColorCorrectionEffect", "SolaraCC")
     cc.Brightness, cc.Contrast, cc.Saturation = G.CCBrightness, G.CCContrast, G.CCSaturation
     cc.Enabled = G.CCEnabled
@@ -1435,7 +1405,6 @@ do
     gCol("CC Tint", "CCTint", "ColorCorrection Tint",
         function(c) cc.TintColor = c end, cc.TintColor)
 
-    -- SUN RAYS
     local sr = getEff("SunRaysEffect", "SolaraSunRays")
     sr.Intensity, sr.Spread = G.SRIntensity, G.SRSpread
     sr.Enabled = G.SunRaysEnabled
@@ -1447,7 +1416,6 @@ do
     gNum("SunRays Intensity", "SRIntensity", 0, 10, function(v) sr.Intensity = v end)
     gNum("SunRays Spread", "SRSpread", 0, 10, function(v) sr.Spread = v end)
 
-    -- DOF
     local dof = getEff("DepthOfFieldEffect", "SolaraDOF")
     dof.FarIntensity, dof.FocusDistance, dof.InFocusRadius, dof.NearIntensity =
         G.DOFFar, G.DOFFocus, G.DOFRadius, G.DOFNear
@@ -1462,7 +1430,6 @@ do
     gNum("DOF In-Focus Radius", "DOFRadius", 0, 1000, function(v) dof.InFocusRadius = v end)
     gNum("DOF Near Intensity", "DOFNear", 0, 10, function(v) dof.NearIntensity = v end)
 
-    -- ATMOSPHERE
     toggleButton(GraphicsPage, "Atmosphere", G.AtmoEnabled,
         UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
         function(v)
@@ -1499,7 +1466,6 @@ do
         local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Decay = c end
     end, Color3.fromRGB(106,112,125))
 
-    -- COLOR GRADING
     local cgEff = getEff("ColorGradingEffect", "SolaraCG")
     cgEff.Enabled = G.ColorGradingEnabled
     toggleButton(GraphicsPage, "ColorGrading", G.ColorGradingEnabled,
@@ -1521,7 +1487,6 @@ do
         end)
     step(38)
 
-    -- SKY PRESETS
     hdr("SKY PRESETS")
     local presets = {
         { "Dawn",   Color3.fromRGB(230,140,80), 6,    Color3.fromRGB(100,80,70),   Color3.fromRGB(180,140,120), 800,  Color3.fromRGB(230,180,150) },
@@ -1548,7 +1513,6 @@ do
     end
     step(40)
 
-    -- SKYBOX
     hdr("CUSTOM SKYBOX")
     local skyKeys = { "Bk", "Dn", "Ft", "Lf", "Rt", "Up" }
     local skyLabels = { "Back", "Down", "Front", "Left", "Right", "Up" }
@@ -1595,7 +1559,6 @@ do
     end)
     step(44)
 
-    -- SUN / MOON / STARS
     hdr("SUN / MOON / STARS")
     gNum("Sun Angular Size", "SunAngularSize", 0, 100, function(v)
         local s = Lighting:FindFirstChildOfClass("Sky"); if s then s.SunAngularSize = v end
@@ -1612,7 +1575,6 @@ do
     step(6)
 end
 
---==================== PARTICLES ====================
 rebuildParticles = function() end
 do
     local GY, G = GraphicsGY, Config.Graphics
@@ -1786,7 +1748,7 @@ do
     pNum("Orb Radius", "P_OrbRadius", 1, 5000)
     pNum("Orb Transparency", "P_OrbTransparency", 0, 1)
     pNum("Auto-Rotate Speed", "P_AutoRotateSpeed", 0, 3600)
-
+ 
     colorSwatch(GraphicsPage, "Orb Color", UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(240,42),
         function() return G.P_OrbColor or WHITE end,
         function(c) G.P_OrbColor = c; if starOrb then starOrb.Color = c end; saveSettingsFull() end, "Orb Color")
@@ -2031,7 +1993,6 @@ do
     mk("UIListLayout", LocalList, { Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder })
 end
 
---==================== CUSTOM PAGE ====================
 local AddScriptBtn
 do
     local P = CustomPage
@@ -2067,7 +2028,6 @@ do
     mk("UIListLayout", CustomList, { Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder })
 end
 
---==================== SETTINGS PAGE ====================
 do
     local P = SetPage
     mk("TextLabel", P, {
@@ -2165,8 +2125,6 @@ do
         fsIn.Text = tostring(Config.UI.FontScale); applyFonts(); saveSettingsFull()
     end)
 end
-
---==================== WARNING MODAL ====================
 do
     local overlay = mk("Frame", Gui, {
         Name="WarnOverlay", Size=UDim2.fromScale(1,1),
@@ -2219,7 +2177,6 @@ do
     end)
 end
 
---==================== COLOR PICKER ====================
 do
     local CP_W, CP_H = 320, 440
     local overlay = mk("Frame", Gui, {
@@ -2450,7 +2407,6 @@ do
     end
 end
 
---==================== ACCENT / TITLE ====================
 applyAccent = function()
     local seq = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromHex("#151517")),
@@ -2463,11 +2419,10 @@ applyAccent = function()
     refreshAccentButtons()
 end
 updateTitle = function()
-    Title.Text = "1Qlua Multi v5 | "..Config.UI.ToggleKey.Name..": menu"
+    Title.Text = "1Qlua Sniper arena | "..Config.UI.ToggleKey.Name..": menu"
 end
 updateTitle()
 
---==================== FOV CIRCLE ====================
 do
     local FOV = mk("Frame", Gui, {
         Name="FOVCircle", AnchorPoint=Vector2.new(0.5,0.5),
@@ -2493,7 +2448,6 @@ do
     end)
 end
 
---==================== BLACKLIST CARDS ====================
 local AimCards = {}
 do
     local function makeCard(p)
@@ -2553,7 +2507,6 @@ do
     updateList()
 end
 
---==================== VFLY ====================
 do
     local st = { Active=false, Conn=nil, Vel=Vector3.new(), Char=nil, Root=nil }
     local function setChar(c)
@@ -2621,7 +2574,6 @@ do
     end
 end
 
---==================== AIM LOGIC ====================
 do
     local NPCCache, NPCLookup = {}, {}
     local function tryAddNPC(inst)
@@ -2749,9 +2701,6 @@ do
     end)
 end
 
---==============================================================
--- ESP RENDERING (OPTIMIZED)
---==============================================================
 local ESPStorage, ESPNPCStorage = {}, {}
 local ESPBones = {
     R15 = {
@@ -2769,7 +2718,6 @@ local ESPBones = {
     },
 }
 
--- drawing fallback (no per-frame property churn)
 local function espNewDrawing(kind)
     if Drawing and type(Drawing.new) == "function" then
         local ok, d = pcall(Drawing.new, kind)
@@ -2824,7 +2772,6 @@ local function espNewLines(n)
     return t
 end
 
--- create one entity bundle (used by both players and NPCs)
 local function espCreateEntity()
     local a = {
         Lines = espNewLines(12),
@@ -2936,7 +2883,6 @@ local function espHide(a)
     end
 end
 
--- called only when settings change (dirty)
 local function espApplyStyle(a)
     local E = Config.ESP
     a.HeadImg.Image = E.HeadImage
@@ -2961,7 +2907,6 @@ local function espApplyStyle(a)
     a.DistLabel.TextSize = E.DistSize
     a.DistLabel.Font = Enum.Font[E.DistFont] or Enum.Font.GothamBold
 
-    -- corner styles
     local hpStyle = E.HPBarStyle or 1
     local rad = (hpStyle == 1) and UDim.new(1,0) or UDim.new(0,0)
     local bc = a.HPBar:FindFirstChildOfClass("UICorner")
@@ -3223,7 +3168,6 @@ local function espRenderEntity(a, cam, camPos)
     a._hpVisible = E.ShowHealth
 end
 
--- register initial
 for _, p in ipairs(Players:GetPlayers()) do espAddPlayer(p) end
 bind(Players.PlayerAdded, espAddPlayer)
 bind(Players.PlayerRemoving, function(p)
@@ -3255,7 +3199,6 @@ for _, inst in ipairs(workspace:GetDescendants()) do
     end
 end
 
--- main ESP render loop
 bind(RunService.RenderStepped, function()
     if not Config.ESP.Enabled then
         if not ESP_STATE.Hidden then
@@ -3304,7 +3247,6 @@ bind(RunService.RenderStepped, function()
     end
 end)
 
---==================== CONFIG MANAGEMENT ====================
 do
     local function refreshLocalList()
         LocalConfigs = {}
@@ -3416,7 +3358,6 @@ do
     refreshLocalList(); rebuildLocalList()
 end
 
---==================== CUSTOM SCRIPTS ====================
 runCustomScript = function(s)
     if not s or not s.code or s.code == "" then return end
     task.spawn(function()
@@ -3590,7 +3531,6 @@ end
 
 rebuildCustomList()
 
---==================== HANDLERS ====================
 handleBindAction = function(name)
     if name == "Aimbot" then
         Config.Aim.Active = not Config.Aim.Active
@@ -3604,7 +3544,6 @@ handleBindAction = function(name)
     end
 end
 
---==================== INPUT ====================
 bind(AimKeyBtn.MouseButton1Click, function()
     awaitingBind = "Aim"; AimKeyBtn.Text = "..."
 end)
@@ -3653,7 +3592,6 @@ bind(UserInputService.InputBegan, function(input, gp)
     end
 end)
 
---==================== DRAG ====================
 do
     local dragging, dragInput, dragStart, startPos
     Title.Active = true
@@ -3695,7 +3633,6 @@ do
     end)
 end
 
---==================== SYNC ====================
 syncFullUI = function()
     refreshAllUI()
     if applyAccent then applyAccent() end
@@ -3716,8 +3653,6 @@ applyFonts()
 task.spawn(function()
     pcall(function() ContentProvider:PreloadAsync({ Config.UI.HeaderImage }) end)
 end)
-
---==================== STARTUP PROMPT ====================
 if CachedSettings then
     local prompt = mk("Frame", Gui, {
         Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.new(0,0,0),
@@ -3764,7 +3699,6 @@ if CachedSettings then
     end)
 end
 
--- if particles are enabled by default, spawn them shortly after load
 if Config.Graphics.P_Enabled then
     task.spawn(function()
         task.wait(1.5)
@@ -3772,7 +3706,6 @@ if Config.Graphics.P_Enabled then
     end)
 end
 
---==================== CLEANUP ====================
 Runtime.Cleanup = function()
     if not Runtime.Running then return end
     Runtime.Running = false
@@ -3793,6 +3726,3 @@ Runtime.Cleanup = function()
     if env.__MultiV5 == Runtime then env.__MultiV5 = nil end
 end
 
-print("[1Qlua Multi v5.1] loaded | menu: "..Config.UI.ToggleKey.Name..
-      " | vfly: "..(Config.Binds.Flight and Config.Binds.Flight.Name or "V")..
-      " | scripts: "..#Config.Scripts)
