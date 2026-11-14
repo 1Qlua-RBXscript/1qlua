@@ -1,148 +1,134 @@
 
 
-local Players = game:GetService("Players")
-local UIS     = game:GetService("UserInputService")
+do
+    local Players = game:GetService("Players")
+    local UIS     = game:GetService("UserInputService")
+    local player  = Players.LocalPlayer
 
-local player = Players.LocalPlayer
-
-local function getGuiParent()
-    if type(gethui) == "function" then
-        local ok, hui = pcall(gethui)
-        if ok and hui then return hui end
-    end
-    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
-    if ok and cg then
-        local test = Instance.new("Folder")
-        if pcall(function() test.Parent = cg end) and test.Parent == cg then
-            test:Destroy(); return cg
+    local function getGuiParent()
+        if type(gethui) == "function" then
+            local ok, hui = pcall(gethui)
+            if ok and hui then return hui end
         end
-        test:Destroy()
-    end
-    return player:WaitForChild("PlayerGui")
-end
-
-local function getMainFrame()
-    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
-    if not ok or not cg then return nil end
-    local layer = cg:FindFirstChild("1Qlua_MultiV5_Layer")
-    if not layer then return nil end
-    return layer:FindFirstChild("MainFrame")
-end
-
-local sg = Instance.new("ScreenGui")
-sg.Name = "ToggleBtn_1Q"
-sg.ResetOnSpawn = false
-sg.IgnoreGuiInset = true
-sg.Enabled = true
-sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-sg.DisplayOrder = 2147483647
-sg.Parent = getGuiParent()
-
-task.spawn(function()
-    while task.wait(0.5) do
-        local mf = getMainFrame()
-        if mf then
-            local host = mf:FindFirstAncestorWhichIsA("LayerCollector")
-            if host and host ~= sg and host:IsA("ScreenGui") and sg.DisplayOrder <= host.DisplayOrder then
-                sg.DisplayOrder = host.DisplayOrder + 1
+        local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+        if ok and cg then
+            local test = Instance.new("Folder")
+            if pcall(function() test.Parent = cg end) and test.Parent == cg then
+                test:Destroy(); return cg
             end
+            test:Destroy()
         end
+        return player:WaitForChild("PlayerGui")
     end
-end)
-
-local SIZE   = 56
-local OFFSET = 90
-
-local frame = Instance.new("Frame")
-frame.Name = "ToggleFrame"
-frame.Size = UDim2.new(0, SIZE, 0, SIZE)
-frame.Position = UDim2.new(0, workspace.CurrentCamera.ViewportSize.X - SIZE - OFFSET, 0, OFFSET)
-frame.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-frame.BorderSizePixel = 0
-frame.ZIndex = 1
-
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
-
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(255, 255, 255)
-stroke.Thickness = 1.5
-stroke.Transparency = 0.4
-stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-local grad = Instance.new("UIGradient", frame)
-grad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 105, 140)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 70)),
-})
-grad.Rotation = 90
-
-local button = Instance.new("ImageButton")
-button.Name = "Toggle"
-button.Image = "rbxassetid://99235383301237"
-button.ScaleType = Enum.ScaleType.Fit
-button.BackgroundTransparency = 1
-button.AutoButtonColor = true
-button.Size = UDim2.fromScale(1, 1)
-button.Position = UDim2.fromScale(0, 0)
-button.ZIndex = 2
-
-local pad = Instance.new("UIPadding", button)
-pad.PaddingTop    = UDim.new(0, 8)
-pad.PaddingBottom = UDim.new(0, 8)
-pad.PaddingLeft   = UDim.new(0, 8)
-pad.PaddingRight  = UDim.new(0, 8)
-
-button.Parent = frame
-frame.Parent = sg
-
-local function toggle()
-    local mf = getMainFrame()
-    if not mf then
-        warn("[Toggle] MainFrame не найден")
-        return
+    local function getMainFrame()
+        local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+        if not ok or not cg then return nil end
+        local layer = cg:FindFirstChild("1Qlua_MultiV5_Layer")
+        if not layer then return nil end
+        return layer:FindFirstChild("MainFrame")
     end
-    mf.Visible = not mf.Visible
-end
 
-local dragging  = false
-local dragStart = Vector2.zero
-local startPos  = UDim2.new()
-local moved     = false
-local LIMIT     = 6
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "ToggleBtn_1Q"
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.Enabled = true
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.DisplayOrder = 2147483647
+    sg.Parent = getGuiParent()
 
-button.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        dragging  = true
-        moved     = false
-        dragStart = input.Position
-        startPos  = frame.Position
-        local conn
-        conn = input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                if conn then conn:Disconnect() end
-                if not moved then
-                    toggle()
+    task.spawn(function()
+        while task.wait(0.5) do
+            local mf = getMainFrame()
+            if mf then
+                local host = mf:FindFirstAncestorWhichIsA("LayerCollector")
+                if host and host ~= sg and host:IsA("ScreenGui") and sg.DisplayOrder <= host.DisplayOrder then
+                    sg.DisplayOrder = host.DisplayOrder + 1
                 end
             end
-        end)
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if not dragging then return end
-    if input.UserInputType == Enum.UserInputType.MouseMovement
-    or input.UserInputType == Enum.UserInputType.Touch then
-        local delta = input.Position - dragStart
-        if not moved and delta.Magnitude > LIMIT then moved = true end
-        if moved then
-            frame.Position = UDim2.new(
-                0, startPos.X.Offset + delta.X,
-                0, startPos.Y.Offset + delta.Y
-            )
         end
+    end)
+
+    local SIZE, OFFSET = 56, 90
+    local frame = Instance.new("Frame")
+    frame.Name = "ToggleFrame"
+    frame.Size = UDim2.new(0, SIZE, 0, SIZE)
+    frame.Position = UDim2.new(0, workspace.CurrentCamera.ViewportSize.X - SIZE - OFFSET, 0, OFFSET)
+    frame.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    frame.BorderSizePixel = 0
+    frame.ZIndex = 1
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Thickness = 1.5
+    stroke.Transparency = 0.4
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local grad = Instance.new("UIGradient", frame)
+    grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 105, 140)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 70)),
+    })
+    grad.Rotation = 90
+
+    local button = Instance.new("ImageButton")
+    button.Name = "Toggle"
+    button.Image = "rbxassetid://99235383301237"
+    button.ScaleType = Enum.ScaleType.Fit
+    button.BackgroundTransparency = 1
+    button.AutoButtonColor = true
+    button.Size = UDim2.fromScale(1, 1)
+    button.Position = UDim2.fromScale(0, 0)
+    button.ZIndex = 2
+
+    local pad = Instance.new("UIPadding", button)
+    pad.PaddingTop    = UDim.new(0, 8)
+    pad.PaddingBottom = UDim.new(0, 8)
+    pad.PaddingLeft   = UDim.new(0, 8)
+    pad.PaddingRight  = UDim.new(0, 8)
+
+    button.Parent = frame
+    frame.Parent = sg
+
+    local function toggle()
+        local mf = getMainFrame()
+        if not mf then warn("[Toggle] MainFrame not found"); return end
+        mf.Visible = not mf.Visible
     end
-end)
+
+    local dragging, dragStart, startPos, moved = false, Vector2.zero, UDim2.new(), false
+    local LIMIT = 6
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            moved = false
+            dragStart = input.Position
+            startPos = frame.Position
+            local conn
+            conn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    if conn then conn:Disconnect() end
+                    if not moved then toggle() end
+                end
+            end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - dragStart
+            if not moved and delta.Magnitude > LIMIT then moved = true end
+            if moved then
+                frame.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+            end
+        end
+    end)
+end
 
 local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
@@ -152,10 +138,11 @@ local TweenService     = game:GetService("TweenService")
 local ContentProvider  = game:GetService("ContentProvider")
 local Lighting         = game:GetService("Lighting")
 local StarterGui       = game:GetService("StarterGui")
+local VirtualUser      = game:GetService("VirtualUser")
 local LocalPlayer      = Players.LocalPlayer
 
 local SCRIPT_LAYER   = "1Qlua_MultiV5"
-local CONFIG_FOLDER  = SCRIPT_LAYER .. "/configs" 
+local CONFIG_FOLDER  = SCRIPT_LAYER .. "/configs"
 local SETTINGS_FILE  = SCRIPT_LAYER .. "/settings.json"
 local BLACKLIST_FILE = SCRIPT_LAYER .. "/blacklist.json"
 local SCRIPTS_FILE   = SCRIPT_LAYER .. "/scripts.json"
@@ -182,7 +169,7 @@ local Runtime = { Running = true, Connections = {} }
 env.__MultiV5 = Runtime
 local function bind(sig, fn)
     local c = sig:Connect(fn)
-    Runtime.Connections[#Runtime.Connections + 1] = c 
+    Runtime.Connections[#Runtime.Connections + 1] = c
     return c
 end
 
@@ -197,7 +184,8 @@ local ESP_STATE = { Dirty = true, Frame = 0, Hidden = false }
 local Config = {
     Aim = { Active=false, Smoothness=1, FOVRadius=300, AimKey=Enum.KeyCode.E,
             Mode="Hold", AimType="Real", TargetPlayers=true, TargetNPCs=true,
-            ShowFOV=false, ToggleActive=false },
+            ShowFOV=false, ToggleActive=false,
+            AutoShoot=false, AimTolerance=2, ShootDelay=0.08, DeadCooldown=1.5 },
 
     Flight = { Active=false, Speed=50, Acceleration=4, TurnSpeed=16,
                SpeedKey=Enum.KeyCode.LeftControl, SpeedMultiplier=3 },
@@ -411,7 +399,9 @@ local function snapshot()
     return {
         Aim = { Active=A.Active, Smoothness=A.Smoothness, FOVRadius=A.FOVRadius, AimKey=A.AimKey.Name,
                 Mode=A.Mode, AimType=A.AimType,
-                TargetPlayers=A.TargetPlayers, TargetNPCs=A.TargetNPCs, ShowFOV=A.ShowFOV },
+                TargetPlayers=A.TargetPlayers, TargetNPCs=A.TargetNPCs, ShowFOV=A.ShowFOV,
+                AutoShoot=A.AutoShoot, AimTolerance=A.AimTolerance,
+                ShootDelay=A.ShootDelay, DeadCooldown=A.DeadCooldown },
         Flight = { Speed=F.Speed, Acceleration=F.Acceleration, TurnSpeed=F.TurnSpeed, SpeedMultiplier=F.SpeedMultiplier },
         ESP = {
             Enabled=E.Enabled, NPCESPEnabled=E.NPCESPEnabled, HeadImage=E.HeadImage,
@@ -508,6 +498,10 @@ local function applySnapshot(s)
         if type(a.TargetPlayers)=="boolean" then Config.Aim.TargetPlayers = a.TargetPlayers end
         if type(a.TargetNPCs)=="boolean" then Config.Aim.TargetNPCs = a.TargetNPCs end
         if type(a.ShowFOV)=="boolean" then Config.Aim.ShowFOV = a.ShowFOV end
+        if type(a.AutoShoot)=="boolean"    then Config.Aim.AutoShoot = a.AutoShoot end
+        if tonumber(a.AimTolerance)        then Config.Aim.AimTolerance = math.clamp(tonumber(a.AimTolerance), 0.1, 45) end
+        if tonumber(a.ShootDelay)          then Config.Aim.ShootDelay = math.clamp(tonumber(a.ShootDelay), 0.02, 5) end
+        if tonumber(a.DeadCooldown)        then Config.Aim.DeadCooldown = math.clamp(tonumber(a.DeadCooldown), 0.1, 10) end
     end
     if type(s.Flight) == "table" then
         for _, k in ipairs({"Speed","Acceleration","TurnSpeed","SpeedMultiplier"}) do
@@ -606,7 +600,7 @@ local function applySnapshot(s)
             end
         end
         if type(g.Tonemapper)=="string" then G.Tonemapper = g.Tonemapper end
-        local pNum = {"P_MultiCount","P_OrbRadius","P_OrbTransparency","P_AutoRotateSpeed", 
+        local pNum = {"P_MultiCount","P_OrbRadius","P_OrbTransparency","P_AutoRotateSpeed",
             "P_Rate","P_LifetimeMin","P_LifetimeMax","P_SizeMin","P_SizeMax",
             "P_TranspStart","P_TranspMid","P_TranspEnd","P_SpeedMin","P_SpeedMax",
             "P_SpreadAngle","P_AccelX","P_AccelY","P_AccelZ","P_Drag",
@@ -691,6 +685,7 @@ Title = mk("TextLabel", Main, {
     TextColor3=Color3.new(1,1,1), TextSize=16,
     TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
 })
+
 do
     local baseSizes = setmetatable({}, {__mode="k"})
     local function applyFontTo(inst)
@@ -738,6 +733,7 @@ TabPages = {
     Config=ConfigPage, Custom=CustomPage, Settings=SetPage,
 }
 TabButtons = {}
+
 local function settingBlock(parent, text, val, pos, size, textSize, getVal)
     textSize = textSize or 12
     size = size or UDim2.fromOffset(220,44)
@@ -1076,6 +1072,10 @@ do
         UDim2.fromOffset(20,364), UDim2.fromOffset(240,20),
         function(v) Config.Aim.ShowFOV = v; saveSettingsFull() end,
         function() return Config.Aim.ShowFOV end)
+    toggleButton(P, "Auto Shoot", Config.Aim.AutoShoot,
+        UDim2.fromOffset(268,364), UDim2.fromOffset(240,20),
+        function(v) Config.Aim.AutoShoot = v; saveSettingsFull() end,
+        function() return Config.Aim.AutoShoot end)
     mk("TextLabel", P, {
         BackgroundTransparency=1, Position=UDim2.fromOffset(20,392),
         Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="FOV CIRCLE",
@@ -1469,7 +1469,6 @@ do
         return e
     end
 
-    -- page header
     mk("TextLabel", GraphicsPage, {
         BackgroundTransparency=1, Position=UDim2.fromOffset(20,GY.y),
         Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Graphics / Lighting",
@@ -1483,6 +1482,7 @@ do
         BorderSizePixel=0, ZIndex=3,
     })
     step(12)
+
     hdr("LIGHTING")
     gNum("Brightness", "Brightness", 0, 100, function(v) Lighting.Brightness = v end)
     gNum("Clock Time (0-24)", "ClockTime", 0, 24, function(v) Lighting.ClockTime = v end)
@@ -1893,7 +1893,7 @@ do
     pNum("Orb Radius", "P_OrbRadius", 1, 5000)
     pNum("Orb Transparency", "P_OrbTransparency", 0, 1)
     pNum("Auto-Rotate Speed", "P_AutoRotateSpeed", 0, 3600)
- 
+
     colorSwatch(GraphicsPage, "Orb Color", UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(240,42),
         function() return G.P_OrbColor or WHITE end,
         function(c) G.P_OrbColor = c; if starOrb then starOrb.Color = c end; saveSettingsFull() end, "Orb Color")
@@ -2087,7 +2087,7 @@ applyGraphicsFromConfig = function()
     if G.AtmoEnabled then
         if not atmo then atmo = Instance.new("Atmosphere"); atmo.Name = "SolaraAtmosphere"; atmo.Parent = Lighting end
         atmo.Density, atmo.Offset, atmo.Glare, atmo.Haze = G.AtmoDensity, G.AtmoOffset, G.AtmoGlare, G.AtmoHaze
-        if G.AtmoColor then atmo.Color = G.AtmoColor end
+        if G.AtmoColor then atmo.Color = G.AtmooColor end
         if G.AtmoDecay then atmo.Decay = G.AtmoDecay end
     elseif atmo then
         atmo:Destroy()
@@ -2096,7 +2096,6 @@ applyGraphicsFromConfig = function()
     if rebuildParticles then task.defer(rebuildParticles) end
 end
 
---==================== CONFIG PAGE ====================
 local LocalConfigs, SaveBtn
 do
     local P = ConfigPage
@@ -2173,6 +2172,7 @@ do
     mk("UIListLayout", CustomList, { Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder })
 end
 
+--==================== SETTINGS PAGE ====================
 do
     local P = SetPage
     mk("TextLabel", P, {
@@ -2270,6 +2270,7 @@ do
         fsIn.Text = tostring(Config.UI.FontScale); applyFonts(); saveSettingsFull()
     end)
 end
+
 do
     local overlay = mk("Frame", Gui, {
         Name="WarnOverlay", Size=UDim2.fromScale(1,1),
@@ -2720,6 +2721,46 @@ do
 end
 
 do
+    local EnemyHolder = nil
+    local function findEnemyHolder()
+        local hi = workspace:FindFirstChild("Highlight")
+        if not hi then return nil end
+        local en = hi:FindFirstChild("Enemy")
+        if not en then return nil end
+        return en:FindFirstChild("HighlightHolder")
+    end
+    EnemyHolder = findEnemyHolder()
+    task.spawn(function()
+        while Runtime.Running and not EnemyHolder do
+            task.wait(2)
+            EnemyHolder = findEnemyHolder()
+        end
+    end)
+
+    local DeadTable = {}
+    local CurrentTarget = nil
+    local aimedTarget = nil
+    local aimSettleStart = 0
+    local AIM_SETTLE_TIME = 0.08
+    local lastShot = 0
+    local camScriptable = false
+
+    local function enterAimCam()
+        if camScriptable then return end
+        local cam = workspace.CurrentCamera
+        if cam then
+            cam.CameraType = Enum.CameraType.Scriptable
+            camScriptable = true
+        end
+    end
+    local function exitAimCam()
+        if not camScriptable then return end
+        local cam = workspace.CurrentCamera
+        if cam then cam.CameraType = Enum.CameraType.Custom end
+        camScriptable = false
+    end
+
+    --==== Generic player/NPC targeting ====
     local NPCCache, NPCLookup = {}, {}
     local function tryAddNPC(inst)
         if inst:IsA("Humanoid") then
@@ -2728,7 +2769,8 @@ do
                 if m and m:IsA("Model")
                    and not Players:GetPlayerFromCharacter(m)
                    and not NPCLookup[m] then
-                    NPCLookup[m] = true; NPCCache[#NPCCache+1] = m
+                    NPCLookup[m] = true
+                    NPCCache[#NPCCache+1] = m
                 end
             end)
         end
@@ -2736,11 +2778,12 @@ do
     for _, d in ipairs(workspace:GetDescendants()) do tryAddNPC(d) end
     bind(workspace.DescendantAdded, tryAddNPC)
 
-    local CurrentTarget = nil
-    local function isPlayerObj(t) return typeof(t) == "Instance" and t:IsA("Player") end
-    local function isValidTarget(t)
+    local function isPlayerTarget(t)
+        return typeof(t) == "Instance" and t:IsA("Player")
+    end
+    local function isGenericValid(t)
         if not t then return false end
-        if isPlayerObj(t) then
+        if isPlayerTarget(t) then
             if t.Parent ~= Players then return false end
             if Blacklist[t.UserId] or Blacklist[tostring(t.UserId)] then return false end
             local ch = t.Character
@@ -2754,96 +2797,275 @@ do
         local h = t:FindFirstChildOfClass("Humanoid")
         return h and h.Health > 0
     end
-    local function getHeadPos(t)
+    local function genericHeadPos(t)
         if not t then return nil end
-        if isPlayerObj(t) then
+        if isPlayerTarget(t) then
             local ch = t.Character
-            return ch and (ch:FindFirstChild("Head") and ch.Head.Position)
+            local h = ch and ch:FindFirstChild("Head")
+            return h and h.Position
         end
         local h = t:FindFirstChild("Head")
         return h and h.Position
     end
+
+    --==== Sniper holder helpers ====
+    local function getHoldBody(model)
+        if not model or not model.Parent then return nil end
+        return model:FindFirstChild("Collider") or model
+    end
+    local limbNames = {
+        "Arm", "Leg",
+        "Left Arm","Right Arm","Left Leg","Right Leg",
+        "LeftUpperArm","RightUpperArm","LeftUpperLeg","RightUpperLeg",
+        "LeftHand","RightHand","LeftFoot","RightFoot",
+    }
+    local function isHoldAlive(model)
+        if not model or not model.Parent then return false end
+        if DeadTable[model] and tick() - DeadTable[model] < Config.Aim.DeadCooldown then
+            return false
+        end
+        local body = getHoldBody(model)
+        if not body then return false end
+        for _, child in ipairs(body:GetChildren()) do
+            if child:IsA("BasePart") then
+                for _, n in ipairs(limbNames) do
+                    if child.Name == n then return true end
+                end
+            end
+        end
+        DeadTable[model] = tick()
+        return false
+    end
+    local function getHoldAimPart(model)
+        local body = getHoldBody(model)
+        if not body then return nil end
+        return body:FindFirstChild("Head")
+            or body:FindFirstChild("Body")
+            or body:FindFirstChild("HumanoidRootPart")
+            or body:FindFirstChild("Torso")
+            or body:FindFirstChild("UpperTorso")
+    end
+    local function hasShield(model)
+        if not model then return false end
+        if model:FindFirstChildOfClass("ForceField") then return true end
+        local body = getHoldBody(model)
+        if body and body:FindFirstChildOfClass("ForceField") then return true end
+        return false
+    end
+
+    local function raycastVisible(cam, pos, model)
+        if not pos then return false end
+        local origin = cam.CFrame.Position
+        local dir = pos - origin
+        if dir.Magnitude < 0.1 then return true end
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        local filter = { LocalPlayer.Character, cam }
+        if model then table.insert(filter, model) end
+        params.FilterDescendantsInstances = filter
+        params.IgnoreWater = true
+        local result = workspace:Raycast(origin, dir, params)
+        return result == nil
+    end
+
+    local function acquireHolder(cam, mpos)
+        if not EnemyHolder or not EnemyHolder.Parent then return nil end
+        local bestDist, best = Config.Aim.FOVRadius, nil
+        for _, model in ipairs(EnemyHolder:GetChildren()) do
+            if (model:IsA("Model") or model:IsA("Folder"))
+               and isHoldAlive(model) and not hasShield(model) then
+                local part = getHoldAimPart(model)
+                if part and part.Parent then
+                    local sp, on = cam:WorldToViewportPoint(part.Position)
+                    if on then
+                        local m = (Vector2.new(sp.X, sp.Y) - mpos).Magnitude
+                        if m < bestDist and raycastVisible(cam, part.Position, model) then
+                            bestDist = m
+                            best = { model = model, part = part, worldPos = part.Position }
+                        end
+                    end
+                end
+            end
+        end
+        return best
+    end
+
+    local function acquireGeneric(cam, mpos)
+        local bestDist, best = Config.Aim.FOVRadius, nil
+        if Config.Aim.TargetPlayers then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and isGenericValid(p) then
+                    local hp = genericHeadPos(p)
+                    if hp then
+                        local sp, on = cam:WorldToViewportPoint(hp)
+                        if on then
+                            local m = (Vector2.new(sp.X, sp.Y) - mpos).Magnitude
+                            if m < bestDist and raycastVisible(cam, hp, p.Character) then
+                                bestDist = m
+                                best = { model = p, worldPos = hp }
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if Config.Aim.TargetNPCs then
+            for i = #NPCCache, 1, -1 do
+                local m = NPCCache[i]
+                if not m:IsDescendantOf(workspace) then
+                    NPCLookup[m] = nil; table.remove(NPCCache, i)
+                elseif isGenericValid(m) then
+                    local hp = genericHeadPos(m)
+                    if hp then
+                        local sp, on = cam:WorldToViewportPoint(hp)
+                        if on then
+                            local d = (Vector2.new(sp.X, sp.Y) - mpos).Magnitude
+                            if d < bestDist and raycastVisible(cam, hp, m) then
+                                bestDist = d
+                                best = { model = m, worldPos = hp }
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return best
+    end
+
+    local function isTargetStillValid(t)
+        if not t or not t.model then return false end
+        if EnemyHolder and EnemyHolder.Parent
+           and (t.model:IsA("Model") or t.model:IsA("Folder"))
+           and t.model.Parent == EnemyHolder then
+            if not isHoldAlive(t.model) or hasShield(t.model) then return false end
+            local part = t.part or getHoldAimPart(t.model)
+            if not part or not part.Parent then return false end
+            t.part = part
+            t.worldPos = part.Position
+            return true
+        end
+        if isGenericValid(t.model) then
+            local hp = genericHeadPos(t.model)
+            if not hp then return false end
+            t.worldPos = hp
+            return true
+        end
+        return false
+    end
+
     local function isAimingNow()
         if not Config.Aim.Active then return false end
         if Config.Aim.Mode == "Hold" then
             return UserInputService:IsKeyDown(Config.Aim.AimKey)
-        elseif Config.Aim.Mode == "Toggle" then
-            return Config.Aim.ToggleActive == true
         end
-        return false
+        return Config.Aim.ToggleActive == true
     end
     local function restoreAutoRotate()
         local ch = LocalPlayer.Character
         local hum = ch and ch:FindFirstChildOfClass("Humanoid")
         if hum and not hum.AutoRotate then hum.AutoRotate = true end
     end
+
+    local function tryShoot(cam)
+        if not Config.Aim.AutoShoot then return end
+        if tick() - lastShot < Config.Aim.ShootDelay then return end
+        lastShot = tick()
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:Button1Down(
+                Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2), cam.CFrame)
+            task.wait(0.02)
+            VirtualUser:Button1Up(
+                Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2), cam.CFrame)
+        end)
+        if mouse1click then pcall(mouse1click) end
+    end
+
     bind(RunService.RenderStepped, function()
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+
+        for model, t in pairs(DeadTable) do
+            if not model.Parent or tick() - t > Config.Aim.DeadCooldown then
+                DeadTable[model] = nil
+            end
+        end
+
         if not isAimingNow() then
             CurrentTarget = nil
+            aimedTarget = nil
+            exitAimCam()
             restoreAutoRotate()
             return
         end
-        local cam = workspace.CurrentCamera
-        if not cam then return end
-        if not isValidTarget(CurrentTarget) then CurrentTarget = nil end
-        if not CurrentTarget then
+
+        if not CurrentTarget or not isTargetStillValid(CurrentTarget) then
+            CurrentTarget = nil
             local mpos = UserInputService:GetMouseLocation()
-            local bestDist, best = Config.Aim.FOVRadius, nil
-            if Config.Aim.TargetPlayers then
-                for _, p in ipairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and isValidTarget(p) then
-                        local hp = getHeadPos(p)
-                        if hp then
-                            local pos, vis = cam:WorldToViewportPoint(hp)
-                            if vis then
-                                local m = (Vector2.new(pos.X, pos.Y) - mpos).Magnitude
-                                if m < bestDist then bestDist = m; best = p end
-                            end
-                        end
-                    end
-                end
-            end
-            if Config.Aim.TargetNPCs then
-                for i = #NPCCache, 1, -1 do
-                    local m = NPCCache[i]
-                    if not m:IsDescendantOf(workspace) then
-                        NPCLookup[m] = nil; table.remove(NPCCache, i)
-                    elseif isValidTarget(m) then
-                        local hp = getHeadPos(m)
-                        if hp then
-                            local pos, vis = cam:WorldToViewportPoint(hp)
-                            if vis then
-                                local d = (Vector2.new(pos.X, pos.Y) - mpos).Magnitude
-                                if d < bestDist then bestDist = d; best = m end
-                            end
-                        end
-                    end
-                end
-            end
-            CurrentTarget = best
+            CurrentTarget = acquireHolder(cam, mpos) or acquireGeneric(cam, mpos)
         end
-        if CurrentTarget then
-            local hp = getHeadPos(CurrentTarget)
-            if hp then
-                if Config.Aim.AimType == "Real" then
-                    local ch = LocalPlayer.Character
-                    local root = ch and ch:FindFirstChild("HumanoidRootPart")
-                    local hum = ch and ch:FindFirstChildOfClass("Humanoid")
-                    if root and hum then
-                        hum.AutoRotate = false
-                        local cur = root.Position
-                        local lookAt = Vector3.new(hp.X, cur.Y, hp.Z)
-                        if (lookAt - cur).Magnitude > 0.05 then
-                            local targetCF = CFrame.lookAt(cur, lookAt)
-                            local rotLerp = math.clamp(math.max(Config.Aim.Smoothness, 0.35), 0, 1)
-                            root.CFrame = root.CFrame:Lerp(targetCF, rotLerp)
-                        end
-                    end
+
+        if not CurrentTarget then
+            exitAimCam()
+            return
+        end
+
+        enterAimCam()
+
+        local pos = CurrentTarget.worldPos
+        if not pos then return end
+
+        local curCamPos = cam.CFrame.Position
+        if (pos - curCamPos).Magnitude > 0.05 then
+            local newCF = CFrame.lookAt(curCamPos, pos)
+            if Config.Aim.Smoothness >= 0.99 then
+                cam.CFrame = newCF
+            else
+                cam.CFrame = cam.CFrame:Lerp(newCF, Config.Aim.Smoothness)
+            end
+        end
+
+        if Config.Aim.AimType == "Real" then
+            local ch = LocalPlayer.Character
+            local root = ch and ch:FindFirstChild("HumanoidRootPart")
+            local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+            if root and hum then
+                hum.AutoRotate = false
+                local cur = root.Position
+                local flat = Vector3.new(pos.X, cur.Y, pos.Z)
+                if (flat - cur).Magnitude > 0.05 then
+                    local rotLerp = math.clamp(math.max(Config.Aim.Smoothness, 0.35), 0, 1)
+                    root.CFrame = root.CFrame:Lerp(CFrame.lookAt(cur, flat), rotLerp)
                 end
-                cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, hp), Config.Aim.Smoothness)
+            end
+        end
+
+        if Config.Aim.AutoShoot then
+            local camLook = cam.CFrame.LookVector
+            local dir = pos - cam.CFrame.Position
+            if dir.Magnitude > 0.01 then
+                local angle = math.acos(math.clamp(camLook:Dot(dir.Unit), -1, 1))
+                if angle <= math.rad(Config.Aim.AimTolerance or 2) then
+                    if CurrentTarget.model ~= aimedTarget then
+                        aimedTarget = CurrentTarget.model
+                        aimSettleStart = tick()
+                    end
+                    if tick() - aimSettleStart >= AIM_SETTLE_TIME then
+                        tryShoot(cam)
+                    end
+                else
+                    aimedTarget = nil
+                end
             end
         end
     end)
+
+    Runtime.CleanupAim = function()
+        exitAimCam()
+        local ch = LocalPlayer.Character
+        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+        if hum then hum.AutoRotate = true end
+    end
 end
 
 local ESPStorage, ESPNPCStorage = {}, {}
@@ -3225,7 +3447,6 @@ local function espRenderEntity(a, cam, camPos)
     local dist = (head.Position - camPos).Magnitude
     if dist > Config.ESP.MaxDist then espHide(a); return end
 
-    -- distance-based stride for optimization
     local stride = 1
     if dist > 300 then stride = 2 end
     if dist > 700 then stride = 3 end
@@ -3392,6 +3613,7 @@ bind(RunService.RenderStepped, function()
     end
 end)
 
+--==================== CONFIG MANAGEMENT ====================
 do
     local function refreshLocalList()
         LocalConfigs = {}
@@ -3688,7 +3910,6 @@ handleBindAction = function(name)
         if toggleFlight then toggleFlight() end
     end
 end
-
 bind(AimKeyBtn.MouseButton1Click, function()
     awaitingBind = "Aim"; AimKeyBtn.Text = "..."
 end)
@@ -3798,6 +4019,7 @@ applyFonts()
 task.spawn(function()
     pcall(function() ContentProvider:PreloadAsync({ Config.UI.HeaderImage }) end)
 end)
+
 if CachedSettings then
     local prompt = mk("Frame", Gui, {
         Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.new(0,0,0),
@@ -3858,6 +4080,7 @@ Runtime.Cleanup = function()
         pcall(function() Runtime.Connections[i]:Disconnect() end)
     end
     if Runtime.CleanupFlight then pcall(Runtime.CleanupFlight) end
+    if Runtime.CleanupAim then pcall(Runtime.CleanupAim) end
     local sp = workspace:FindFirstChild("SolaraParticles"); if sp then sp:Destroy() end
     for _, a in pairs(ESPStorage) do
         for i = 1, #(a.Lines or {}) do pcall(function() a.Lines[i]:Remove() end) end
@@ -3870,4 +4093,3 @@ Runtime.Cleanup = function()
     Gui:Destroy()
     if env.__MultiV5 == Runtime then env.__MultiV5 = nil end
 end
-
