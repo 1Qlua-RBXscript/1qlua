@@ -1,4 +1,149 @@
 
+
+local Players = game:GetService("Players")
+local UIS     = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+local function getGuiParent()
+    if type(gethui) == "function" then
+        local ok, hui = pcall(gethui)
+        if ok and hui then return hui end
+    end
+    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+    if ok and cg then
+        local test = Instance.new("Folder")
+        if pcall(function() test.Parent = cg end) and test.Parent == cg then
+            test:Destroy(); return cg
+        end
+        test:Destroy()
+    end
+    return player:WaitForChild("PlayerGui")
+end
+
+local function getMainFrame()
+    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+    if not ok or not cg then return nil end
+    local layer = cg:FindFirstChild("1Qlua_MultiV5_Layer")
+    if not layer then return nil end
+    return layer:FindFirstChild("MainFrame")
+end
+
+local sg = Instance.new("ScreenGui")
+sg.Name = "ToggleBtn_1Q"
+sg.ResetOnSpawn = false
+sg.IgnoreGuiInset = true
+sg.Enabled = true
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+sg.DisplayOrder = 2147483647
+sg.Parent = getGuiParent()
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local mf = getMainFrame()
+        if mf then
+            local host = mf:FindFirstAncestorWhichIsA("LayerCollector")
+            if host and host ~= sg and host:IsA("ScreenGui") and sg.DisplayOrder <= host.DisplayOrder then
+                sg.DisplayOrder = host.DisplayOrder + 1
+            end
+        end
+    end
+end)
+
+local SIZE   = 56
+local OFFSET = 90
+
+local frame = Instance.new("Frame")
+frame.Name = "ToggleFrame"
+frame.Size = UDim2.new(0, SIZE, 0, SIZE)
+frame.Position = UDim2.new(0, workspace.CurrentCamera.ViewportSize.X - SIZE - OFFSET, 0, OFFSET)
+frame.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+frame.BorderSizePixel = 0
+frame.ZIndex = 1
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Thickness = 1.5
+stroke.Transparency = 0.4
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local grad = Instance.new("UIGradient", frame)
+grad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 105, 140)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 70)),
+})
+grad.Rotation = 90
+
+local button = Instance.new("ImageButton")
+button.Name = "Toggle"
+button.Image = "rbxassetid://99235383301237"
+button.ScaleType = Enum.ScaleType.Fit
+button.BackgroundTransparency = 1
+button.AutoButtonColor = true
+button.Size = UDim2.fromScale(1, 1)
+button.Position = UDim2.fromScale(0, 0)
+button.ZIndex = 2
+
+local pad = Instance.new("UIPadding", button)
+pad.PaddingTop    = UDim.new(0, 8)
+pad.PaddingBottom = UDim.new(0, 8)
+pad.PaddingLeft   = UDim.new(0, 8)
+pad.PaddingRight  = UDim.new(0, 8)
+
+button.Parent = frame
+frame.Parent = sg
+
+local function toggle()
+    local mf = getMainFrame()
+    if not mf then
+        warn("[Toggle] MainFrame не найден")
+        return
+    end
+    mf.Visible = not mf.Visible
+end
+
+local dragging  = false
+local dragStart = Vector2.zero
+local startPos  = UDim2.new()
+local moved     = false
+local LIMIT     = 6
+
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        dragging  = true
+        moved     = false
+        dragStart = input.Position
+        startPos  = frame.Position
+        local conn
+        conn = input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+                if conn then conn:Disconnect() end
+                if not moved then
+                    toggle()
+                end
+            end
+        end)
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if not dragging then return end
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
+        if not moved and delta.Magnitude > LIMIT then moved = true end
+        if moved then
+            frame.Position = UDim2.new(
+                0, startPos.X.Offset + delta.X,
+                0, startPos.Y.Offset + delta.Y
+            )
+        end
+    end
+end)
+
 local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -37,7 +182,7 @@ local Runtime = { Running = true, Connections = {} }
 env.__MultiV5 = Runtime
 local function bind(sig, fn)
     local c = sig:Connect(fn)
-    Runtime.Connections[#Runtime.Connections + 1] = c
+    Runtime.Connections[#Runtime.Connections + 1] = c 
     return c
 end
 
