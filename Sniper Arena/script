@@ -1,0 +1,3798 @@
+
+--==============================================================
+-- 1Qlua Multi v5.1  |  Aim + Vfly + ESP + Graphics + Scripts
+--==============================================================
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService      = game:GetService("HttpService")
+local TweenService     = game:GetService("TweenService")
+local ContentProvider  = game:GetService("ContentProvider")
+local Lighting         = game:GetService("Lighting")
+local StarterGui       = game:GetService("StarterGui")
+local LocalPlayer      = Players.LocalPlayer
+
+local SCRIPT_LAYER   = "1Qlua_MultiV5"
+local CONFIG_FOLDER  = SCRIPT_LAYER .. "/configs"
+local SETTINGS_FILE  = SCRIPT_LAYER .. "/settings.json"
+local BLACKLIST_FILE = SCRIPT_LAYER .. "/blacklist.json"
+local SCRIPTS_FILE   = SCRIPT_LAYER .. "/scripts.json"
+local GUI_LAYER_NAME = "1Qlua_MultiV5_Layer"
+
+do
+    local function ensure(p)
+        if type(isfolder) == "function" and type(makefolder) == "function" then
+            local ok, ex = pcall(isfolder, p)
+            if ok and not ex then pcall(makefolder, p) end
+        end
+    end
+    ensure(SCRIPT_LAYER); ensure(CONFIG_FOLDER)
+end
+
+local CoreGui = LocalPlayer:WaitForChild("PlayerGui")
+if type(gethui) == "function" then
+    local ok, p = pcall(gethui)
+    if ok and typeof(p) == "Instance" then CoreGui = p end
+end
+local env = type(getgenv) == "function" and getgenv() or _G
+if env.__MultiV5 and env.__MultiV5.Cleanup then pcall(env.__MultiV5.Cleanup) end
+local Runtime = { Running = true, Connections = {} }
+env.__MultiV5 = Runtime
+local function bind(sig, fn)
+    local c = sig:Connect(fn)
+    Runtime.Connections[#Runtime.Connections + 1] = c
+    return c
+end
+
+local mkColor = Color3.fromRGB
+local ACCENT  = mkColor(255,255,255)
+local WHITE   = mkColor(255,255,255)
+local COLOR_ON, COLOR_OFF = mkColor(0,180,90), mkColor(230,50,50)
+local awaitingBind = nil
+
+-- ESP render state (forward)
+local ESP_STATE = { Dirty = true, Frame = 0, Hidden = false }
+
+--==================== CONFIG ====================
+local Config = {
+    Aim = { Active=false, Smoothness=1, FOVRadius=300, AimKey=Enum.KeyCode.E,
+            Mode="Hold", AimType="Real", TargetPlayers=true, TargetNPCs=true,
+            ShowFOV=false, ToggleActive=false },
+
+    Flight = { Active=false, Speed=50, Acceleration=4, TurnSpeed=16,
+               SpeedKey=Enum.KeyCode.LeftControl, SpeedMultiplier=3 },
+
+    Binds = { Aimbot=nil, Flight=Enum.KeyCode.V },
+
+    FOV = { Color=ACCENT, Thickness=1.5, Transparency=0.4 },
+
+    UI  = { Accent=ACCENT, Button=mkColor(25,24,24), Scale=1,
+            ToggleKey=Enum.KeyCode.P, HeaderImage="rbxassetid://0",
+            Font=Enum.Font.GothamBold, FontScale=1 },
+
+    Scripts = {},
+
+    ESP = {
+        Enabled = false, NPCESPEnabled = true,
+        HeadImage = "rbxassetid://0",
+        HeadScale = 1, Thickness = 1, MaxDist = 1500,
+        PlayerColors = {},
+        ESPMode = "Both",
+        BoxStyle = 2,
+        BoxWidthScale = 1.0,
+        BoxColor = WHITE, BoxThickness = 1, BoxTransparency = 0,
+        HPBarStyle = 1,
+        ShowHealth = true, ShowDistance = true, HideHead = false,
+        HPColor = WHITE,
+        HPTextColor = WHITE, HPTextTransparency = 0,
+        DistTextColor = WHITE, DistTextTransparency = 0,
+        HPBarOffX=0, HPBarOffY=0, HPTextOffX=0, HPTextOffY=0, DistOffX=0, DistOffY=0,
+        HPFont="GothamBold", HPSize=14,
+        DistFont="GothamBold", DistSize=14,
+        StrokeEnabled=true, StrokeTransparency=0.25,
+        Highlight = { Enabled=false,
+            FillColor=WHITE, FillTransparency=0.55,
+            OutlineColor=WHITE, OutlineTransparency=0 },
+        Colors = { Head=WHITE, Torso=WHITE, Arms=WHITE, Legs=WHITE },
+    },
+
+    Graphics = {
+        Brightness=nil, ClockTime=nil, Exposure=nil,
+        GlobalShadows=nil, EnvDiffuse=nil, EnvSpecular=nil,
+        GeographicLatitude=nil, Ambient=nil, OutdoorAmbient=nil,
+        ColorShiftTop=nil, ColorShiftBottom=nil,
+        FogStart=nil, FogEnd=nil, FogColor=nil,
+
+        BlurEnabled=false, BlurSize=24,
+        BloomEnabled=false, BloomIntensity=1, BloomSize=24, BloomThreshold=2,
+        CCEnabled=false, CCBrightness=0, CCContrast=0, CCSaturation=0, CCTint=nil,
+        SunRaysEnabled=false, SRIntensity=0.25, SRSpread=1,
+        DOFEnabled=false, DOFFar=10, DOFFocus=100, DOFRadius=30, DOFNear=10,
+        AtmoEnabled=false, AtmoDensity=0.3, AtmoOffset=0, AtmoGlare=0, AtmoHaze=0,
+        AtmoColor=nil, AtmoDecay=nil,
+        ColorGradingEnabled=false, Tonemapper="Default",
+
+        Skybox={Bk="", Dn="", Ft="", Lf="", Rt="", Up=""},
+        SkyRotateEnabled=false, SkyRotateSpeed=5,
+        SunAngularSize=nil, MoonAngularSize=nil,
+        CelestialBodiesShown=nil, StarCount=nil,
+
+        P_Enabled=true, P_Mode="Single", P_MultiCount=100,
+        P_OrbRadius=50, P_ShowOrb=false,
+        P_OrbColor=mkColor(255,209,209), P_OrbTransparency=0.85,
+        P_AutoRotate=true, P_AutoRotateSpeed=60,
+        P_Texture="rbxassetid://112882057182762", P_Rate=10000,
+        P_LifetimeMin=1, P_LifetimeMax=1,
+        P_SizeMin=1, P_SizeMax=1,
+        P_ColorStart=mkColor(255,209,209), P_ColorEnd=mkColor(255,176,176),
+        P_UseGradient=true,
+        P_TranspStart=0, P_TranspMid=0.3, P_TranspEnd=1,
+        P_SpeedMin=0, P_SpeedMax=2,
+        P_SpreadAngle=180, P_EmissionDir="Top",
+        P_Shape="Box", P_ShapeStyle="Volume", P_ShapeInOut="Outward",
+        P_AccelX=0, P_AccelY=0, P_AccelZ=0, P_Drag=0,
+        P_RotMin=0, P_RotMax=360, P_RotSpeedMin=-60, P_RotSpeedMax=60,
+        P_LightEmission=1, P_LightInfluence=0,
+        P_ZOffset=0, P_Squash=0, P_VelocityInherit=0,
+        P_WindAffectsDrag=false, P_LockedToPart=false,
+        P_Orientation="FacingCamera", P_TimeScale=1, P_ShapePartial=1,
+        P_FlipbookLayout="None",
+        P_FlipbookFramerateMin=1, P_FlipbookFramerateMax=30,
+        P_FlipbookMode="Loop", P_FlipbookStartRandom=true,
+    },
+}
+local Blacklist = {}
+
+--==================== SCRIPT STORAGE ====================
+local DEFAULT_SCRIPTS = {
+    { name="RAGE", code='loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Sniper%20Arena/BOT/AIm2"))()', bind=nil },
+    { name="Auto-Farm", code='loadstring(game:HttpGet("https://raw.githubusercontent.com/1Qlua-RBXscript/1qlua/refs/heads/main/Farm"))()', bind=nil },
+}
+local function saveScripts()
+    if type(writefile) ~= "function" then return end
+    pcall(writefile, SCRIPTS_FILE, HttpService:JSONEncode(Config.Scripts))
+end
+local function loadScripts()
+    local function seed()
+        Config.Scripts = {}
+        for _, ds in ipairs(DEFAULT_SCRIPTS) do
+            table.insert(Config.Scripts, {name=ds.name, code=ds.code, bind=ds.bind})
+        end
+    end
+    if not readfile then seed(); return end
+    local ok, d = pcall(readfile, SCRIPTS_FILE)
+    if not ok or not d or d == "" then seed(); saveScripts(); return end
+    local ok2, s = pcall(function() return HttpService:JSONDecode(d) end)
+    if ok2 and type(s) == "table" then
+        Config.Scripts = s
+        if #Config.Scripts == 0 then seed(); saveScripts() end
+    else
+        seed(); saveScripts()
+    end
+end
+loadScripts()
+
+--==================== HELPERS ====================
+local function colToTable(c) return { math.round(c.R*255), math.round(c.G*255), math.round(c.B*255) } end
+local function tableToCol(t)
+    if type(t) ~= "table" or not t[1] then return nil end
+    local r,g,b = tonumber(t[1]), tonumber(t[2]), tonumber(t[3])
+    if not (r and g and b) then return nil end
+    return mkColor(math.clamp(r,0,255), math.clamp(g,0,255), math.clamp(b,0,255))
+end
+local function loadSettingsFile()
+    if not readfile then return nil end
+    local ok, d = pcall(readfile, SETTINGS_FILE)
+    if not ok or not d or d == "" then return nil end
+    local ok2, s = pcall(function() return HttpService:JSONDecode(d) end)
+    if ok2 and type(s) == "table" then return s end
+    return nil
+end
+local function deleteSettingsFile()
+    if type(delfile) == "function" then pcall(delfile, SETTINGS_FILE) end
+end
+local function saveBlacklist()
+    if writefile then pcall(writefile, BLACKLIST_FILE, HttpService:JSONEncode(Blacklist)) end
+end
+local function loadBlacklist()
+    if not readfile then return end
+    local ok, d = pcall(readfile, BLACKLIST_FILE)
+    if not ok or not d or d == "" then return end
+    local ok2, s = pcall(function() return HttpService:JSONDecode(d) end)
+    if ok2 and type(s)=="table" then
+        for k,v in next, s do Blacklist[tonumber(k) or k] = v end
+    end
+end
+loadBlacklist()
+local CachedSettings = loadSettingsFile()
+
+local function mk(cls, parent, props)
+    local o = Instance.new(cls)
+    for k, v in next, props do o[k] = v end
+    o.Parent = parent
+    return o
+end
+local function corner(o, r)
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 4); c.Parent = o; return c
+end
+local function stroke(o, col, th)
+    local s = Instance.new("UIStroke")
+    s.Color = col; s.Thickness = th or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = o; return s
+end
+local function addBtnFx(btn, strength)
+    strength = strength or 0.04
+    btn.AutoButtonColor = false
+    if btn:FindFirstChildOfClass("UIScale") then return end
+    local sc = Instance.new("UIScale"); sc.Scale = 1; sc.Parent = btn
+    bind(btn.MouseEnter, function() TweenService:Create(sc, TweenInfo.new(0.12), {Scale=1+strength}):Play() end)
+    bind(btn.MouseLeave, function() TweenService:Create(sc, TweenInfo.new(0.15), {Scale=1}):Play() end)
+    bind(btn.MouseButton1Down, function() TweenService:Create(sc, TweenInfo.new(0.06), {Scale=1-strength*0.6}):Play() end)
+    bind(btn.MouseButton1Up, function() TweenService:Create(sc, TweenInfo.new(0.12), {Scale=1+strength}):Play() end)
+end
+
+local REFRESHERS, ACCENT_BUTTONS, STYLE_REFRESHERS = {}, {}, {}
+local function registerRefresh(fn) table.insert(REFRESHERS, fn) end
+local function refreshAllUI() for _, fn in ipairs(REFRESHERS) do pcall(fn) end end
+local function registerAccentButton(btn)
+    ACCENT_BUTTONS[#ACCENT_BUTTONS+1] = btn
+    btn.BackgroundColor3 = Config.UI.Accent
+end
+local function refreshAccentButtons()
+    for _, btn in ipairs(ACCENT_BUTTONS) do
+        if btn and btn.Parent then btn.BackgroundColor3 = Config.UI.Accent end
+    end
+end
+local function registerStyleRefresh(fn) table.insert(STYLE_REFRESHERS, fn) end
+local function refreshStyleButtons()
+    for _, fn in ipairs(STYLE_REFRESHERS) do pcall(fn) end
+end
+
+--==================== FORWARD DECLS ====================
+local Gui, Main, MainGrad, MainScale, PageContainer, Title, decoR, decoL
+local AimPage, LocalPage, ESPPage, GraphicsPage, ConfigPage, CustomPage, SetPage
+local TabButtons, TabPages
+local applyFonts, applyAccent, applyTabStyles, updateTitle, syncFullUI
+local openColorPicker, showWarning, applyConfigFull, handleBindAction
+local toggleFlight, runCustomScript
+local rebuildCustomList, rebuildLocalList
+local CPGrad, CPTitle, CPApply, FOVStroke
+local AimToggleBtn, refreshAimToggle, AimKeyBtn, MenuKeyBtn
+local LocalList, StatusLabel, NameBox
+local CustomList, CustomStatusLabel
+local fontBtn
+local applyGraphicsFromConfig, rebuildParticles
+local saveSettingsFull
+
+--==================== SNAPSHOT ====================
+local function snapshot()
+    local A, U, FV, B = Config.Aim, Config.UI, Config.FOV, Config.Binds
+    local G, E, F = Config.Graphics, Config.ESP, Config.Flight
+    local binds = {}
+    for k, v in pairs(B) do binds[k] = v and v.Name or nil end
+    local function col(n) return n and colToTable(n) or nil end
+    return {
+        Aim = { Active=A.Active, Smoothness=A.Smoothness, FOVRadius=A.FOVRadius, AimKey=A.AimKey.Name,
+                Mode=A.Mode, AimType=A.AimType,
+                TargetPlayers=A.TargetPlayers, TargetNPCs=A.TargetNPCs, ShowFOV=A.ShowFOV },
+        Flight = { Speed=F.Speed, Acceleration=F.Acceleration, TurnSpeed=F.TurnSpeed, SpeedMultiplier=F.SpeedMultiplier },
+        ESP = {
+            Enabled=E.Enabled, NPCESPEnabled=E.NPCESPEnabled, HeadImage=E.HeadImage,
+            HeadScale=E.HeadScale, Thickness=E.Thickness, MaxDist=E.MaxDist,
+            ESPMode=E.ESPMode, BoxStyle=E.BoxStyle, BoxWidthScale=E.BoxWidthScale,
+            BoxColor=col(E.BoxColor), BoxThickness=E.BoxThickness, BoxTransparency=E.BoxTransparency,
+            HPBarStyle=E.HPBarStyle, ShowHealth=E.ShowHealth, ShowDistance=E.ShowDistance, HideHead=E.HideHead,
+            HPColor=col(E.HPColor), HPTextColor=col(E.HPTextColor), HPTextTransparency=E.HPTextTransparency,
+            DistTextColor=col(E.DistTextColor), DistTextTransparency=E.DistTextTransparency,
+            HPBarOffX=E.HPBarOffX, HPBarOffY=E.HPBarOffY,
+            HPTextOffX=E.HPTextOffX, HPTextOffY=E.HPTextOffY,
+            DistOffX=E.DistOffX, DistOffY=E.DistOffY,
+            HPFont=E.HPFont, HPSize=E.HPSize, DistFont=E.DistFont, DistSize=E.DistSize,
+            StrokeEnabled=E.StrokeEnabled, StrokeTransparency=E.StrokeTransparency,
+            Highlight = {
+                Enabled=E.Highlight.Enabled,
+                FillColor=col(E.Highlight.FillColor), FillTransparency=E.Highlight.FillTransparency,
+                OutlineColor=col(E.Highlight.OutlineColor), OutlineTransparency=E.Highlight.OutlineTransparency,
+            },
+            Colors = { Head=col(E.Colors.Head), Torso=col(E.Colors.Torso),
+                       Arms=col(E.Colors.Arms), Legs=col(E.Colors.Legs) },
+        },
+        Binds = binds,
+        FOV = { Color=colToTable(FV.Color), Thickness=FV.Thickness, Transparency=FV.Transparency },
+        UI  = { Accent=colToTable(U.Accent), Button=colToTable(U.Button),
+                Scale=U.Scale, ToggleKey=U.ToggleKey.Name, HeaderImage=U.HeaderImage,
+                Font=U.Font.Name, FontScale=U.FontScale },
+        Graphics = {
+            Brightness=G.Brightness, ClockTime=G.ClockTime, Exposure=G.Exposure,
+            GlobalShadows=G.GlobalShadows, EnvDiffuse=G.EnvDiffuse, EnvSpecular=G.EnvSpecular,
+            GeographicLatitude=G.GeographicLatitude,
+            Ambient=col(G.Ambient), OutdoorAmbient=col(G.OutdoorAmbient),
+            ColorShiftTop=col(G.ColorShiftTop), ColorShiftBottom=col(G.ColorShiftBottom),
+            FogStart=G.FogStart, FogEnd=G.FogEnd, FogColor=col(G.FogColor),
+            BlurEnabled=G.BlurEnabled, BlurSize=G.BlurSize,
+            BloomEnabled=G.BloomEnabled, BloomIntensity=G.BloomIntensity,
+            BloomSize=G.BloomSize, BloomThreshold=G.BloomThreshold,
+            CCEnabled=G.CCEnabled, CCBrightness=G.CCBrightness, CCContrast=G.CCContrast,
+            CCSaturation=G.CCSaturation, CCTint=col(G.CCTint),
+            SunRaysEnabled=G.SunRaysEnabled, SRIntensity=G.SRIntensity, SRSpread=G.SRSpread,
+            DOFEnabled=G.DOFEnabled, DOFFar=G.DOFFar, DOFFocus=G.DOFFocus,
+            DOFRadius=G.DOFRadius, DOFNear=G.DOFNear,
+            AtmoEnabled=G.AtmoEnabled, AtmoDensity=G.AtmoDensity, AtmoOffset=G.AtmoOffset,
+            AtmoGlare=G.AtmoGlare, AtmoHaze=G.AtmoHaze,
+            AtmoColor=col(G.AtmoColor), AtmoDecay=col(G.AtmoDecay),
+            ColorGradingEnabled=G.ColorGradingEnabled, Tonemapper=G.Tonemapper,
+            Skybox={Bk=G.Skybox.Bk, Dn=G.Skybox.Dn, Ft=G.Skybox.Ft,
+                    Lf=G.Skybox.Lf, Rt=G.Skybox.Rt, Up=G.Skybox.Up},
+            SkyRotateEnabled=G.SkyRotateEnabled, SkyRotateSpeed=G.SkyRotateSpeed,
+            SunAngularSize=G.SunAngularSize, MoonAngularSize=G.MoonAngularSize,
+            CelestialBodiesShown=G.CelestialBodiesShown, StarCount=G.StarCount,
+            P_Enabled=G.P_Enabled, P_Mode=G.P_Mode, P_MultiCount=G.P_MultiCount,
+            P_OrbRadius=G.P_OrbRadius, P_ShowOrb=G.P_ShowOrb,
+            P_OrbColor=col(G.P_OrbColor), P_OrbTransparency=G.P_OrbTransparency,
+            P_AutoRotate=G.P_AutoRotate, P_AutoRotateSpeed=G.P_AutoRotateSpeed,
+            P_Texture=G.P_Texture, P_Rate=G.P_Rate,
+            P_LifetimeMin=G.P_LifetimeMin, P_LifetimeMax=G.P_LifetimeMax,
+            P_SizeMin=G.P_SizeMin, P_SizeMax=G.P_SizeMax,
+            P_ColorStart=col(G.P_ColorStart), P_ColorEnd=col(G.P_ColorEnd),
+            P_UseGradient=G.P_UseGradient,
+            P_TranspStart=G.P_TranspStart, P_TranspMid=G.P_TranspMid, P_TranspEnd=G.P_TranspEnd,
+            P_SpeedMin=G.P_SpeedMin, P_SpeedMax=G.P_SpeedMax,
+            P_SpreadAngle=G.P_SpreadAngle, P_EmissionDir=G.P_EmissionDir,
+            P_Shape=G.P_Shape, P_ShapeStyle=G.P_ShapeStyle, P_ShapeInOut=G.P_ShapeInOut,
+            P_AccelX=G.P_AccelX, P_AccelY=G.P_AccelY, P_AccelZ=G.P_AccelZ,
+            P_Drag=G.P_Drag, P_RotMin=G.P_RotMin, P_RotMax=G.P_RotMax,
+            P_RotSpeedMin=G.P_RotSpeedMin, P_RotSpeedMax=G.P_RotSpeedMax,
+            P_LightEmission=G.P_LightEmission, P_LightInfluence=G.P_LightInfluence,
+            P_ZOffset=G.P_ZOffset, P_Squash=G.P_Squash, P_VelocityInherit=G.P_VelocityInherit,
+            P_WindAffectsDrag=G.P_WindAffectsDrag, P_LockedToPart=G.P_LockedToPart,
+            P_Orientation=G.P_Orientation, P_TimeScale=G.P_TimeScale, P_ShapePartial=G.P_ShapePartial,
+            P_FlipbookLayout=G.P_FlipbookLayout,
+            P_FlipbookFramerateMin=G.P_FlipbookFramerateMin, P_FlipbookFramerateMax=G.P_FlipbookFramerateMax,
+            P_FlipbookMode=G.P_FlipbookMode, P_FlipbookStartRandom=G.P_FlipbookStartRandom,
+        },
+    }
+end
+
+saveSettingsFull = function()
+    if type(writefile) ~= "function" then return end
+    pcall(writefile, SETTINGS_FILE, HttpService:JSONEncode(snapshot()))
+end
+
+local function applySnapshot(s)
+    if type(s) ~= "table" then return end
+    if type(s.Aim) == "table" then
+        local a = s.Aim
+        if type(a.Active)=="boolean" then Config.Aim.Active = a.Active end
+        if tonumber(a.Smoothness) then Config.Aim.Smoothness = math.clamp(tonumber(a.Smoothness),0.01,1) end
+        if tonumber(a.FOVRadius) then Config.Aim.FOVRadius = math.clamp(tonumber(a.FOVRadius),10,2000) end
+        if type(a.AimKey)=="string" and Enum.KeyCode[a.AimKey] then Config.Aim.AimKey = Enum.KeyCode[a.AimKey] end
+        if a.Mode=="Hold" or a.Mode=="Toggle" then Config.Aim.Mode = a.Mode end
+        if a.AimType=="Camera" or a.AimType=="Real" then Config.Aim.AimType = a.AimType end
+        if type(a.TargetPlayers)=="boolean" then Config.Aim.TargetPlayers = a.TargetPlayers end
+        if type(a.TargetNPCs)=="boolean" then Config.Aim.TargetNPCs = a.TargetNPCs end
+        if type(a.ShowFOV)=="boolean" then Config.Aim.ShowFOV = a.ShowFOV end
+    end
+    if type(s.Flight) == "table" then
+        for _, k in ipairs({"Speed","Acceleration","TurnSpeed","SpeedMultiplier"}) do
+            if tonumber(s.Flight[k]) then Config.Flight[k] = tonumber(s.Flight[k]) end
+        end
+    end
+    if type(s.Binds) == "table" then
+        local nb = {}
+        for k, v in pairs(s.Binds) do
+            if type(v)=="string" and Enum.KeyCode[v] then nb[k] = Enum.KeyCode[v] end
+        end
+        if nb.Flight == nil then nb.Flight = Enum.KeyCode.V end
+        Config.Binds = nb
+    end
+    if type(s.FOV) == "table" then
+        local c = tableToCol(s.FOV.Color); if c then Config.FOV.Color = c end
+        if tonumber(s.FOV.Thickness) then Config.FOV.Thickness = math.clamp(tonumber(s.FOV.Thickness),0.5,10) end
+        if tonumber(s.FOV.Transparency) then Config.FOV.Transparency = math.clamp(tonumber(s.FOV.Transparency),0,1) end
+    end
+    if type(s.UI) == "table" then
+        local u = s.UI
+        local a = tableToCol(u.Accent); if a then Config.UI.Accent = a end
+        local b = tableToCol(u.Button); if b then Config.UI.Button = b end
+        if tonumber(u.Scale) then Config.UI.Scale = math.clamp(tonumber(u.Scale),0.5,2) end
+        if type(u.ToggleKey)=="string" and Enum.KeyCode[u.ToggleKey] then Config.UI.ToggleKey = Enum.KeyCode[u.ToggleKey] end
+        if type(u.HeaderImage)=="string" and u.HeaderImage ~= "" then Config.UI.HeaderImage = u.HeaderImage end
+        if type(u.Font)=="string" and Enum.Font[u.Font] then Config.UI.Font = Enum.Font[u.Font] end
+        if tonumber(u.FontScale) then Config.UI.FontScale = math.clamp(tonumber(u.FontScale),0.5,3) end
+    end
+    if type(s.ESP) == "table" then
+        local e, E = s.ESP, Config.ESP
+        if type(e.Enabled)=="boolean" then E.Enabled = e.Enabled end
+        if type(e.NPCESPEnabled)=="boolean" then E.NPCESPEnabled = e.NPCESPEnabled end
+        if type(e.HeadImage)=="string" then E.HeadImage = e.HeadImage end
+        for _, k in ipairs({"HeadScale","Thickness","MaxDist","BoxWidthScale","BoxThickness",
+            "BoxTransparency","HPTextTransparency","DistTextTransparency","HPSize","DistSize",
+            "StrokeTransparency","HPBarOffX","HPBarOffY","HPTextOffX","HPTextOffY","DistOffX","DistOffY"}) do
+            local v = tonumber(e[k]); if v then E[k] = v end
+        end
+        if type(e.ESPMode)=="string" then E.ESPMode = e.ESPMode end
+        local bs = tonumber(e.BoxStyle); if bs then E.BoxStyle = math.clamp(math.floor(bs),1,3) end
+        local hps = tonumber(e.HPBarStyle); if hps then E.HPBarStyle = math.clamp(math.floor(hps),1,3) end
+        if type(e.ShowHealth)=="boolean" then E.ShowHealth = e.ShowHealth end
+        if type(e.ShowDistance)=="boolean" then E.ShowDistance = e.ShowDistance end
+        if type(e.HideHead)=="boolean" then E.HideHead = e.HideHead end
+        if type(e.StrokeEnabled)=="boolean" then E.StrokeEnabled = e.StrokeEnabled end
+        if type(e.HPFont)=="string" and Enum.Font[e.HPFont] then E.HPFont = e.HPFont end
+        if type(e.DistFont)=="string" and Enum.Font[e.DistFont] then E.DistFont = e.DistFont end
+        local c
+        c = tableToCol(e.BoxColor); if c then E.BoxColor = c end
+        c = tableToCol(e.HPColor); if c then E.HPColor = c end
+        c = tableToCol(e.HPTextColor); if c then E.HPTextColor = c end
+        c = tableToCol(e.DistTextColor); if c then E.DistTextColor = c end
+        if type(e.Highlight)=="table" then
+            local h = e.Highlight
+            if type(h.Enabled)=="boolean" then E.Highlight.Enabled = h.Enabled end
+            local fc = tableToCol(h.FillColor); if fc then E.Highlight.FillColor = fc end
+            local oc = tableToCol(h.OutlineColor); if oc then E.Highlight.OutlineColor = oc end
+            local v
+            v = tonumber(h.FillTransparency); if v then E.Highlight.FillTransparency = math.clamp(v,0,1) end
+            v = tonumber(h.OutlineTransparency); if v then E.Highlight.OutlineTransparency = math.clamp(v,0,1) end
+        end
+        if type(e.Colors)=="table" then
+            for k in next, E.Colors do
+                local col = tableToCol(e.Colors[k]); if col then E.Colors[k] = col end
+            end
+        end
+        ESP_STATE.Dirty = true
+    end
+    if type(s.Graphics) == "table" then
+        local g, G = s.Graphics, Config.Graphics
+        local numProps = {"Brightness","ClockTime","Exposure","FogStart","FogEnd",
+            "BlurSize","BloomIntensity","BloomSize","BloomThreshold",
+            "CCBrightness","CCContrast","CCSaturation",
+            "SRIntensity","SRSpread","DOFFar","DOFFocus","DOFRadius","DOFNear",
+            "AtmoDensity","AtmoOffset","AtmoGlare","AtmoHaze",
+            "SkyRotateSpeed","SunAngularSize","MoonAngularSize","StarCount","GeographicLatitude"}
+        for _, k in ipairs(numProps) do
+            if g[k] ~= nil and tonumber(g[k]) then G[k] = tonumber(g[k]) end
+        end
+        local boolProps = {"BlurEnabled","BloomEnabled","CCEnabled","SunRaysEnabled",
+            "DOFEnabled","AtmoEnabled","SkyRotateEnabled","ColorGradingEnabled","CelestialBodiesShown"}
+        for _, k in ipairs(boolProps) do
+            if type(g[k])=="boolean" then G[k] = g[k] end
+        end
+        if type(g.GlobalShadows)=="boolean" then G.GlobalShadows = g.GlobalShadows end
+        if g.EnvDiffuse ~= nil then G.EnvDiffuse = g.EnvDiffuse end
+        if g.EnvSpecular ~= nil then G.EnvSpecular = g.EnvSpecular end
+        for _, k in ipairs({"Ambient","OutdoorAmbient","ColorShiftTop","ColorShiftBottom",
+            "FogColor","CCTint","AtmoColor","AtmoDecay"}) do
+            local c = tableToCol(g[k]); if c then G[k] = c end
+        end
+        if type(g.Skybox)=="table" then
+            for _, k in ipairs({"Bk","Dn","Ft","Lf","Rt","Up"}) do
+                if type(g.Skybox[k])=="string" then G.Skybox[k] = g.Skybox[k] end
+            end
+        end
+        if type(g.Tonemapper)=="string" then G.Tonemapper = g.Tonemapper end
+        local pNum = {"P_MultiCount","P_OrbRadius","P_OrbTransparency","P_AutoRotateSpeed",
+            "P_Rate","P_LifetimeMin","P_LifetimeMax","P_SizeMin","P_SizeMax",
+            "P_TranspStart","P_TranspMid","P_TranspEnd","P_SpeedMin","P_SpeedMax",
+            "P_SpreadAngle","P_AccelX","P_AccelY","P_AccelZ","P_Drag",
+            "P_RotMin","P_RotMax","P_RotSpeedMin","P_RotSpeedMax",
+            "P_LightEmission","P_LightInfluence","P_ZOffset","P_Squash","P_VelocityInherit",
+            "P_TimeScale","P_ShapePartial","P_FlipbookFramerateMin","P_FlipbookFramerateMax"}
+        for _, k in ipairs(pNum) do
+            if g[k] ~= nil and tonumber(g[k]) then G[k] = tonumber(g[k]) end
+        end
+        for _, k in ipairs({"P_Enabled","P_ShowOrb","P_AutoRotate","P_UseGradient",
+            "P_WindAffectsDrag","P_LockedToPart","P_FlipbookStartRandom"}) do
+            if type(g[k])=="boolean" then G[k] = g[k] end
+        end
+        for _, k in ipairs({"P_Mode","P_Texture","P_EmissionDir","P_Shape","P_ShapeStyle",
+            "P_ShapeInOut","P_Orientation","P_FlipbookLayout","P_FlipbookMode"}) do
+            if type(g[k])=="string" then G[k] = g[k] end
+        end
+        local c1 = tableToCol(g.P_OrbColor);   if c1 then G.P_OrbColor = c1 end
+        local c2 = tableToCol(g.P_ColorStart); if c2 then G.P_ColorStart = c2 end
+        local c3 = tableToCol(g.P_ColorEnd);   if c3 then G.P_ColorEnd = c3 end
+        if applyGraphicsFromConfig then applyGraphicsFromConfig() end
+    end
+end
+
+--==================== MAIN GUI ====================
+Gui = mk("ScreenGui", CoreGui, {
+    Name=GUI_LAYER_NAME, ResetOnSpawn=false, IgnoreGuiInset=true,
+    DisplayOrder=6, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
+})
+Main = mk("Frame", Gui, {
+    Name="MainFrame", BackgroundColor3=mkColor(20,20,22), BorderSizePixel=0,
+    Position=UDim2.new(0.5,-264,0.5,-175), Size=UDim2.fromOffset(528,350),
+    Active=true, Visible=false, ClipsDescendants=false, ZIndex=1,
+})
+corner(Main, 6)
+local mainStroke = stroke(Main, Color3.new(1,1,1), 2)
+MainGrad = mk("UIGradient", mainStroke, {
+    Color=ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromHex("#151517")),
+        ColorSequenceKeypoint.new(1, Config.UI.Accent),
+    }
+})
+MainScale = mk("UIScale", Main, {Scale=Config.UI.Scale})
+PageContainer = mk("Frame", Main, {
+    Name="PageContainer", BackgroundTransparency=1,
+    Position=UDim2.fromOffset(0,0), Size=UDim2.new(1,0,1,0),
+    ClipsDescendants=true, ZIndex=2,
+})
+local TabBar = mk("Frame", Main, {
+    Name="TabBar", BackgroundColor3=mkColor(26,26,30),
+    Position=UDim2.fromOffset(0,-38), Size=UDim2.new(1,0,0,32),
+    BorderSizePixel=0, ClipsDescendants=true, ZIndex=20,
+})
+corner(TabBar, 8)
+local TabScroll = mk("ScrollingFrame", TabBar, {
+    BackgroundTransparency=1, Size=UDim2.new(1,0,1,0),
+    ScrollBarThickness=0, CanvasSize=UDim2.new(),
+    AutomaticCanvasSize=Enum.AutomaticSize.X,
+    ScrollingDirection=Enum.ScrollingDirection.X,
+    BorderSizePixel=0, VerticalScrollBarInset=Enum.ScrollBarInset.None, ZIndex=21,
+})
+mk("UIListLayout", TabScroll, {
+    Padding=UDim.new(0,4), FillDirection=Enum.FillDirection.Horizontal,
+    VerticalAlignment=Enum.VerticalAlignment.Center, SortOrder=Enum.SortOrder.LayoutOrder,
+})
+mk("UIPadding", TabScroll, {
+    PaddingLeft=UDim.new(0,4), PaddingRight=UDim.new(0,4),
+    PaddingTop=UDim.new(0,4), PaddingBottom=UDim.new(0,4),
+})
+decoR = mk("ImageLabel", Main, {
+    BackgroundTransparency=1, Position=UDim2.new(1,-38,0,5),
+    Size=UDim2.fromOffset(28,28), Image=Config.UI.HeaderImage,
+    BorderSizePixel=0, ZIndex=30,
+})
+decoL = mk("ImageLabel", Main, {
+    BackgroundTransparency=1, Position=UDim2.fromOffset(10,5),
+    Size=UDim2.fromOffset(28,28), Image=Config.UI.HeaderImage,
+    BorderSizePixel=0, ZIndex=30,
+})
+Title = mk("TextLabel", Main, {
+    BackgroundTransparency=1, Size=UDim2.new(1,-50,0,40),
+    Position=UDim2.fromOffset(46,0), Font=Enum.Font.Code, Text="1Qlua Multi v5",
+    TextColor3=Color3.new(1,1,1), TextSize=16,
+    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+})
+
+--==================== FONTS ====================
+do
+    local baseSizes = setmetatable({}, {__mode="k"})
+    local function applyFontTo(inst)
+        if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
+            pcall(function()
+                inst.Font = Config.UI.Font
+                if not baseSizes[inst] then baseSizes[inst] = inst.TextSize or 12 end
+                inst.TextSize = math.max(6, math.round(baseSizes[inst] * Config.UI.FontScale))
+            end)
+        end
+    end
+    applyFonts = function()
+        for _, v in ipairs(Gui:GetDescendants()) do applyFontTo(v) end
+    end
+    bind(Gui.DescendantAdded, function(inst)
+        task.defer(function() if inst.Parent then applyFontTo(inst) end end)
+    end)
+end
+
+--==================== PAGES ====================
+local function makePage(name, isFrame)
+    if isFrame then
+        return mk("Frame", PageContainer, {
+            Name=name, BackgroundTransparency=1, Visible=false,
+            Size=UDim2.fromOffset(528,350), BorderSizePixel=0, ZIndex=2,
+        })
+    end
+    return mk("ScrollingFrame", PageContainer, {
+        Name=name, BackgroundTransparency=1, Visible=false,
+        Size=UDim2.fromOffset(528,350),
+        BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=Config.UI.Accent,
+        CanvasSize=UDim2.new(), AutomaticCanvasSize=Enum.AutomaticSize.Y, ZIndex=2,
+    })
+end
+AimPage      = makePage("AimPage")
+LocalPage    = makePage("LocalPage")
+ESPPage      = makePage("ESPPage")
+GraphicsPage = makePage("GraphicsPage")
+ConfigPage   = makePage("ConfigPage", true)
+CustomPage   = makePage("CustomPage", true)
+SetPage      = makePage("SetPage")
+AimPage.Visible = true
+
+TabPages = {
+    Aim=AimPage, Local=LocalPage, ESP=ESPPage, Graphics=GraphicsPage,
+    Config=ConfigPage, Custom=CustomPage, Settings=SetPage,
+}
+TabButtons = {}
+
+--==================== WIDGETS ====================
+local function settingBlock(parent, text, val, pos, size, textSize, getVal)
+    textSize = textSize or 12
+    size = size or UDim2.fromOffset(220,44)
+    local box = mk("Frame", parent, {
+        BackgroundColor3=Config.UI.Button, Position=pos, Size=size,
+        BorderSizePixel=0, ZIndex=3,
+    })
+    corner(box)
+    mk("TextLabel", box, {
+        BackgroundTransparency=1, Position=UDim2.new(0.05,0,0,0),
+        Size=UDim2.new(0.6,0,1,0), Font=Enum.Font.Gotham, Text=text,
+        TextColor3=mkColor(200,200,205), TextSize=textSize,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+        TextWrapped=true, TextYAlignment=Enum.TextYAlignment.Center,
+    })
+    local input = mk("TextBox", box, {
+        BackgroundColor3=mkColor(28,28,32), Position=UDim2.new(0.65,0,0.2,0),
+        Size=UDim2.new(0.3,0,0.6,0), Font=Enum.Font.GothamBold,
+        Text=tostring(val), TextColor3=Color3.new(1,1,1), TextSize=11,
+        BorderSizePixel=0, ZIndex=4, ClearTextOnFocus=false,
+        TextXAlignment=Enum.TextXAlignment.Center,
+    })
+    corner(input)
+    if getVal then
+        registerRefresh(function()
+            local v = getVal(); if v ~= nil then input.Text = tostring(v) end
+        end)
+    end
+    return input, box
+end
+
+local function toggleButton(parent, text, initial, pos, size, onChange, getState, warnData)
+    size = size or UDim2.fromOffset(220,28)
+    local function textColor(on) return on and mkColor(220,220,225) or COLOR_OFF end
+    local btn = mk("TextButton", parent, {
+        Position=pos, Size=size, BackgroundColor3=Config.UI.Button,
+        Font=Enum.Font.GothamBold,
+        Text=text..": "..(initial and "ON" or "OFF"),
+        TextColor3=textColor(initial), TextSize=13,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
+    })
+    corner(btn); addBtnFx(btn)
+    local ind = mk("Frame", btn, {
+        BackgroundColor3=initial and COLOR_ON or COLOR_OFF,
+        BorderSizePixel=0, Position=UDim2.new(0.94,-1,0.2,0),
+        Size=UDim2.fromOffset(7,18), ZIndex=4,
+    })
+    corner(ind, 5)
+    local state = initial
+    if getState then
+        registerRefresh(function()
+            local s = getState()
+            if s ~= nil then
+                state = s
+                btn.Text = text..": "..(state and "ON" or "OFF")
+                btn.TextColor3 = textColor(state)
+                ind.BackgroundColor3 = state and COLOR_ON or COLOR_OFF
+            end
+        end)
+    end
+    local function applyToggle(v)
+        state = v
+        btn.Text = text..": "..(state and "ON" or "OFF")
+        btn.TextColor3 = textColor(state)
+        ind.BackgroundColor3 = state and COLOR_ON or COLOR_OFF
+        onChange(state)
+    end
+    bind(btn.MouseButton1Click, function()
+        if not state and warnData then
+            showWarning(warnData.title, warnData.msg, function() applyToggle(true) end)
+        else
+            applyToggle(not state)
+        end
+    end)
+    return btn, ind
+end
+
+local function colorSwatch(parent, label, pos, size, getColor, setColor, titleText, textSize, radius)
+    size = size or UDim2.fromOffset(120,44)
+    textSize = textSize or 12
+    radius = radius or 6
+    local btn = mk("TextButton", parent, {
+        Position=pos, Size=size, BackgroundColor3=Config.UI.Button,
+        BorderSizePixel=0, Text="", AutoButtonColor=false, ZIndex=3,
+    })
+    corner(btn, radius); addBtnFx(btn, 0.03)
+    local pv = math.max((size.Y.Offset or 40) - 10, 18)
+    local preview = mk("Frame", btn, {
+        Position=UDim2.fromOffset(5,5), Size=UDim2.fromOffset(pv,pv),
+        BackgroundColor3=getColor() or Color3.new(1,1,1),
+        BorderSizePixel=0, ZIndex=4,
+    })
+    corner(preview, math.min(radius, 6))
+    mk("TextLabel", btn, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(5+pv+8, 0),
+        Size=UDim2.new(1, -(5+pv+14), 1, 0),
+        Font=Enum.Font.GothamBold, Text=label,
+        TextColor3=mkColor(225,225,230), TextSize=textSize,
+        TextXAlignment=Enum.TextXAlignment.Left,
+        TextYAlignment=Enum.TextYAlignment.Center, ZIndex=4,
+        TextTruncate=Enum.TextTruncate.AtEnd,
+    })
+    bind(btn.MouseButton1Click, function()
+        openColorPicker(getColor() or Color3.new(1,1,1), titleText or label, function(c)
+            setColor(c); preview.BackgroundColor3 = c; saveSettingsFull()
+        end)
+    end)
+    registerRefresh(function()
+        local c = getColor(); if c then preview.BackgroundColor3 = c end
+    end)
+    registerRefresh(function() btn.BackgroundColor3 = Config.UI.Button end)
+    return btn
+end
+
+local function selectBtn(parent, label, pos, size, onClick)
+    local btn = mk("TextButton", parent, {
+        Position=pos, Size=size, BackgroundColor3=Config.UI.Button,
+        Text=label, Font=Enum.Font.GothamBold, TextSize=12,
+        TextColor3=mkColor(220,220,225), BorderSizePixel=0,
+        AutoButtonColor=false, ZIndex=3,
+    })
+    corner(btn, 5); addBtnFx(btn)
+    bind(btn.MouseButton1Click, onClick)
+    return btn
+end
+
+local function keyBindBox(parent, label, pos, size, keyName, getKey, setKey)
+    local box = mk("Frame", parent, {
+        BackgroundColor3=Config.UI.Button, Position=pos, Size=size,
+        BorderSizePixel=0, ZIndex=3,
+    })
+    corner(box)
+    mk("TextLabel", box, {
+        BackgroundTransparency=1, Position=UDim2.new(0.05,0,0,0),
+        Size=UDim2.new(0.5,0,1,0), Font=Enum.Font.Gotham, Text=label,
+        TextColor3=mkColor(200,200,205), TextSize=11,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+        TextWrapped=true, TextYAlignment=Enum.TextYAlignment.Center,
+    })
+    local btn = mk("TextButton", box, {
+        Position=UDim2.new(0.5,0,0.2,0), Size=UDim2.new(0.45,0,0.6,0),
+        BackgroundColor3=mkColor(28,28,32), Font=Enum.Font.GothamBold,
+        Text=(getKey() and getKey().Name) or "none",
+        TextColor3=Color3.new(1,1,1), TextSize=11,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+    })
+    corner(btn); addBtnFx(btn)
+    registerRefresh(function()
+        local k = getKey(); btn.Text = k and k.Name or "none"
+    end)
+    bind(btn.MouseButton1Click, function()
+        awaitingBind = "BIND:"..keyName; btn.Text = "..."
+    end)
+    bind(btn.MouseButton2Click, function()
+        setKey(nil); saveSettingsFull(); refreshAllUI()
+    end)
+    registerRefresh(function() box.BackgroundColor3 = Config.UI.Button end)
+    return btn
+end
+
+--==================== TABS ====================
+local function tabIndex(name, order)
+    for i, n in ipairs(order) do if n == name then return i end end
+    return 1
+end
+do
+    local TabOrder = { "Aim", "Local", "ESP", "Graphics", "Config", "Custom", "Settings" }
+    local CurrentTab, tabSwitching = "Aim", false
+    local function setTab(name)
+        if CurrentTab == name or tabSwitching then return end
+        tabSwitching = true
+        local oldIdx = tabIndex(CurrentTab, TabOrder)
+        local newIdx = tabIndex(name, TabOrder)
+        local dir = (newIdx >= oldIdx) and 1 or -1
+        CurrentTab = name
+        local out = TweenService:Create(PageContainer,
+            TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+            {Position=UDim2.fromOffset(-30*dir,0)})
+        out:Play()
+        out.Completed:Connect(function()
+            for n, p in next, TabPages do p.Visible = (n == name) end
+            applyTabStyles()
+            PageContainer.Position = UDim2.fromOffset(30*dir, 0)
+            local inn = TweenService:Create(PageContainer,
+                TweenInfo.new(0.20, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Position=UDim2.fromOffset(0,0)})
+            inn:Play()
+            inn.Completed:Connect(function() tabSwitching = false end)
+        end)
+    end
+    for _, name in ipairs(TabOrder) do
+        local btn = mk("TextButton", TabScroll, {
+            Size=UDim2.fromOffset(72,24),
+            BackgroundColor3=Config.UI.Button, Text=name,
+            Font=Enum.Font.GothamBold, TextSize=11,
+            TextColor3=mkColor(210,210,215), BorderSizePixel=0,
+            AutoButtonColor=false, ZIndex=22,
+        })
+        corner(btn, 6); addBtnFx(btn, 0.05)
+        TabButtons[name] = btn
+        bind(btn.MouseButton1Click, function() setTab(name) end)
+    end
+    applyTabStyles = function()
+        for name, btn in next, TabButtons do
+            if name == CurrentTab then
+                btn.BackgroundColor3 = Config.UI.Accent
+                btn.TextColor3 = mkColor(20,20,20)
+            else
+                btn.BackgroundColor3 = Config.UI.Button
+                btn.TextColor3 = mkColor(210,210,215)
+            end
+        end
+        refreshStyleButtons()
+    end
+    applyTabStyles()
+end
+
+--==================== AIM PAGE ====================
+local AimPlayerList
+do
+    local P = AimPage
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Aimbot",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    mk("Frame", P, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,70), Size=UDim2.new(1,-40,0,2),
+        BorderSizePixel=0, ZIndex=3,
+    })
+    AimToggleBtn = selectBtn(P, "", UDim2.fromOffset(20,82), UDim2.fromOffset(378,30), function() end)
+    local AimInd = mk("Frame", AimToggleBtn, {
+        BackgroundColor3=COLOR_OFF, BorderSizePixel=0,
+        Position=UDim2.new(0.94,-1,0.2,0), Size=UDim2.fromOffset(7,18), ZIndex=4,
+    })
+    corner(AimInd, 5)
+    refreshAimToggle = function()
+        AimToggleBtn.Text = "Aimbot: "..(Config.Aim.Active and "ON" or "OFF")
+        AimToggleBtn.TextColor3 = Config.Aim.Active and mkColor(220,220,225) or COLOR_OFF
+        AimInd.BackgroundColor3 = Config.Aim.Active and COLOR_ON or COLOR_OFF
+    end
+    refreshAimToggle()
+    bind(AimToggleBtn.MouseButton1Click, function()
+        Config.Aim.Active = not Config.Aim.Active
+        Config.Aim.ToggleActive = false
+        local ch = LocalPlayer.Character
+        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+        if hum then hum.AutoRotate = true end
+        refreshAimToggle(); saveSettingsFull()
+    end)
+    keyBindBox(P, "Aimbot Key", UDim2.fromOffset(406,82), UDim2.fromOffset(102,30),
+        "Aimbot", function() return Config.Binds.Aimbot end,
+        function(k) Config.Binds.Aimbot = k end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,124),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="AIM TYPE", TextColor3=mkColor(160,160,170),
+        TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local AimTypeButtons, AimTypeKeys = {}, { "Camera", "Real" }
+    local AimTypeLabels = { "Camera  |  visual only", "Real    |  camera + character rotation" }
+    for i, key in ipairs(AimTypeKeys) do
+        AimTypeButtons[i] = selectBtn(P, AimTypeLabels[i],
+            UDim2.fromOffset(20, 140 + (i-1)*30), UDim2.fromOffset(488,28),
+            function() Config.Aim.AimType = key; refreshStyleButtons(); saveSettingsFull() end)
+    end
+    registerStyleRefresh(function()
+        for j, b in ipairs(AimTypeButtons) do
+            local on = (AimTypeKeys[j] == Config.Aim.AimType)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,208),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="ACTIVATION", TextColor3=mkColor(160,160,170),
+        TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local ModeButtons, ModeKeys = {}, { "Hold", "Toggle" }
+    for i, key in ipairs(ModeKeys) do
+        ModeButtons[i] = selectBtn(P, key,
+            UDim2.fromOffset(20 + (i-1)*248, 224), UDim2.fromOffset(240,28),
+            function() Config.Aim.Mode = key; Config.Aim.ToggleActive = false
+                refreshStyleButtons(); saveSettingsFull() end)
+    end
+    registerStyleRefresh(function()
+        for j, b in ipairs(ModeButtons) do
+            local on = (ModeKeys[j] == Config.Aim.Mode)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+    local KeyBox = mk("Frame", P, {
+        Position=UDim2.fromOffset(20,264), Size=UDim2.fromOffset(240,44),
+        BackgroundColor3=Config.UI.Button, BorderSizePixel=0, ZIndex=3,
+    })
+    corner(KeyBox)
+    mk("TextLabel", KeyBox, {
+        BackgroundTransparency=1, Position=UDim2.new(0.05,0,0,0),
+        Size=UDim2.new(0.55,0,1,0), Font=Enum.Font.Gotham, Text="Aim Key",
+        TextColor3=mkColor(200,200,205), TextSize=12,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+    })
+    AimKeyBtn = mk("TextButton", KeyBox, {
+        Position=UDim2.new(0.55,0,0.2,0), Size=UDim2.new(0.4,0,0.6,0),
+        BackgroundColor3=mkColor(28,28,32), Font=Enum.Font.GothamBold,
+        Text=Config.Aim.AimKey.Name, TextColor3=Color3.new(1,1,1), TextSize=12,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+    })
+    corner(AimKeyBtn); addBtnFx(AimKeyBtn)
+    registerRefresh(function() AimKeyBtn.Text = Config.Aim.AimKey.Name end)
+    local SmoothIn = settingBlock(P, "Smoothness", Config.Aim.Smoothness,
+        UDim2.fromOffset(268,264), UDim2.fromOffset(240,44), 11,
+        function() return Config.Aim.Smoothness end)
+    bind(SmoothIn.FocusLost, function()
+        Config.Aim.Smoothness = math.clamp(tonumber(SmoothIn.Text) or 1, 0.01, 1)
+        SmoothIn.Text = tostring(Config.Aim.Smoothness); saveSettingsFull()
+    end)
+    local FOVRadiusIn = settingBlock(P, "FOV Radius", Config.Aim.FOVRadius,
+        UDim2.fromOffset(20,316), UDim2.fromOffset(240,44), 11,
+        function() return Config.Aim.FOVRadius end)
+    bind(FOVRadiusIn.FocusLost, function()
+        Config.Aim.FOVRadius = math.clamp(tonumber(FOVRadiusIn.Text) or 300, 10, 2000)
+        FOVRadiusIn.Text = tostring(Config.Aim.FOVRadius); saveSettingsFull()
+    end)
+    toggleButton(P, "Target Players", Config.Aim.TargetPlayers,
+        UDim2.fromOffset(268,316), UDim2.fromOffset(240,20),
+        function(v) Config.Aim.TargetPlayers = v; saveSettingsFull() end,
+        function() return Config.Aim.TargetPlayers end)
+    toggleButton(P, "Target NPCs", Config.Aim.TargetNPCs,
+        UDim2.fromOffset(268,340), UDim2.fromOffset(240,20),
+        function(v) Config.Aim.TargetNPCs = v; saveSettingsFull() end,
+        function() return Config.Aim.TargetNPCs end)
+    toggleButton(P, "Show FOV Circle", Config.Aim.ShowFOV,
+        UDim2.fromOffset(20,364), UDim2.fromOffset(240,20),
+        function(v) Config.Aim.ShowFOV = v; saveSettingsFull() end,
+        function() return Config.Aim.ShowFOV end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,392),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="FOV CIRCLE",
+        TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    colorSwatch(P, "FOV COLOR", UDim2.fromOffset(20,410), UDim2.fromOffset(180,42),
+        function() return Config.FOV.Color end,
+        function(c) Config.FOV.Color = c end, "FOV Circle Color")
+    local FOVThickIn = settingBlock(P, "Thickness", Config.FOV.Thickness,
+        UDim2.fromOffset(210,410), UDim2.fromOffset(140,42), 10,
+        function() return Config.FOV.Thickness end)
+    bind(FOVThickIn.FocusLost, function()
+        Config.FOV.Thickness = math.clamp(tonumber(FOVThickIn.Text) or 1.5, 0.5, 10)
+        FOVThickIn.Text = tostring(Config.FOV.Thickness); saveSettingsFull()
+    end)
+    local FOVTranspIn = settingBlock(P, "Opacity", Config.FOV.Transparency,
+        UDim2.fromOffset(360,410), UDim2.fromOffset(148,42), 10,
+        function() return Config.FOV.Transparency end)
+    bind(FOVTranspIn.FocusLost, function()
+        Config.FOV.Transparency = math.clamp(tonumber(FOVTranspIn.Text) or 0.4, 0, 1)
+        FOVTranspIn.Text = tostring(Config.FOV.Transparency); saveSettingsFull()
+    end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,462),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="PLAYER BLACKLIST  (click to toggle)",
+        TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    AimPlayerList = mk("ScrollingFrame", P, {
+        BackgroundTransparency=1,
+        Position=UDim2.fromOffset(20,482), Size=UDim2.new(1,-40,0,240),
+        ScrollBarThickness=3, ScrollBarImageColor3=Config.UI.Accent,
+        CanvasSize=UDim2.new(), AutomaticCanvasSize=Enum.AutomaticSize.Y,
+        BorderSizePixel=0, ZIndex=3,
+    })
+    mk("UIListLayout", AimPlayerList, {Padding=UDim.new(0,5)})
+end
+
+--==================== LOCAL PAGE (Vfly) ====================
+do
+    local P = LocalPage
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Local Player / Vfly",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    mk("Frame", P, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,70), Size=UDim2.new(1,-40,0,2),
+        BorderSizePixel=0, ZIndex=3,
+    })
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,86),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="VFLY  (WASD + Space, LCTRL = boost)",
+        TextColor3=mkColor(160,160,170),
+        TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local VflyBtn = mk("TextButton", P, {
+        Position=UDim2.fromOffset(20,106), Size=UDim2.fromOffset(240,36),
+        BackgroundColor3=Config.UI.Button, Text="Vfly: OFF",
+        TextColor3=COLOR_OFF, Font=Enum.Font.GothamBold, TextSize=13,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
+    })
+    corner(VflyBtn, 5); addBtnFx(VflyBtn)
+    local VflyInd = mk("Frame", VflyBtn, {
+        BackgroundColor3=COLOR_OFF, BorderSizePixel=0,
+        Position=UDim2.new(0.94,-1,0.2,0), Size=UDim2.fromOffset(7,18), ZIndex=4,
+    })
+    corner(VflyInd, 5)
+    registerRefresh(function()
+        local on = Config.Flight.Active
+        VflyBtn.Text = "Vfly: "..(on and "ON" or "OFF")
+        VflyBtn.TextColor3 = on and mkColor(220,220,225) or COLOR_OFF
+        VflyInd.BackgroundColor3 = on and COLOR_ON or COLOR_OFF
+    end)
+    bind(VflyBtn.MouseButton1Click, function()
+        if toggleFlight then toggleFlight() end
+    end)
+    keyBindBox(P, "Key", UDim2.fromOffset(268,106), UDim2.fromOffset(240,36),
+        "Flight", function() return Config.Binds.Flight end,
+        function(k) Config.Binds.Flight = k end)
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,160),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="VFLY SETTINGS", TextColor3=mkColor(160,160,170),
+        TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local SpeedIn = settingBlock(P, "Speed (studs/sec)", Config.Flight.Speed,
+        UDim2.fromOffset(20,178), UDim2.fromOffset(488,44), 11,
+        function() return Config.Flight.Speed end)
+    bind(SpeedIn.FocusLost, function()
+        Config.Flight.Speed = math.clamp(tonumber(SpeedIn.Text) or 50, 1, 5000)
+        SpeedIn.Text = tostring(Config.Flight.Speed); saveSettingsFull()
+    end)
+    local BoostIn = settingBlock(P, "Boost Multiplier (LCTRL)", Config.Flight.SpeedMultiplier,
+        UDim2.fromOffset(20,230), UDim2.fromOffset(488,44), 11,
+        function() return Config.Flight.SpeedMultiplier end)
+    bind(BoostIn.FocusLost, function()
+        Config.Flight.SpeedMultiplier = math.clamp(tonumber(BoostIn.Text) or 3, 1, 20)
+        BoostIn.Text = tostring(Config.Flight.SpeedMultiplier); saveSettingsFull()
+    end)
+    local AccelIn = settingBlock(P, "Acceleration (higher = snappier)", Config.Flight.Acceleration,
+        UDim2.fromOffset(20,282), UDim2.fromOffset(488,44), 11,
+        function() return Config.Flight.Acceleration end)
+    bind(AccelIn.FocusLost, function()
+        Config.Flight.Acceleration = math.clamp(tonumber(AccelIn.Text) or 4, 0.5, 30)
+        AccelIn.Text = tostring(Config.Flight.Acceleration); saveSettingsFull()
+    end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,340),
+        Size=UDim2.new(1,-40,0,60), Font=Enum.Font.Gotham,
+        Text="Tip: hold LCTRL while pressing WASD to boost. Space = up.",
+        TextColor3=mkColor(150,150,160), TextSize=11,
+        TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+end
+
+--==================== ESP PAGE ====================
+do
+    local P = ESPPage
+    local function markDirty() ESP_STATE.Dirty = true end
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="ESP Settings",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    mk("Frame", P, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,70), Size=UDim2.new(1,-40,0,2),
+        BorderSizePixel=0, ZIndex=3,
+    })
+    toggleButton(P, "ESP Enabled", Config.ESP.Enabled,
+        UDim2.fromOffset(20,82), UDim2.fromOffset(488,30),
+        function(v) Config.ESP.Enabled = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.Enabled end)
+    toggleButton(P, "NPC ESP", Config.ESP.NPCESPEnabled,
+        UDim2.fromOffset(20,120), UDim2.fromOffset(240,30),
+        function(v) Config.ESP.NPCESPEnabled = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.NPCESPEnabled end)
+    toggleButton(P, "Highlight (BAN RISK)", Config.ESP.Highlight.Enabled,
+        UDim2.fromOffset(268,120), UDim2.fromOffset(240,30),
+        function(v) Config.ESP.Highlight.Enabled = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.Highlight.Enabled end,
+        { title="HIGHLIGHT WARNING",
+          msg="Highlight may be detected by anti-cheat and can lead to a ban.\n\nEnable anyway?" })
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,160),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="DISPLAY", TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    toggleButton(P, "Show Health", Config.ESP.ShowHealth,
+        UDim2.fromOffset(20,178), UDim2.fromOffset(240,30),
+        function(v) Config.ESP.ShowHealth = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.ShowHealth end)
+    toggleButton(P, "Show Distance", Config.ESP.ShowDistance,
+        UDim2.fromOffset(268,178), UDim2.fromOffset(240,30),
+        function(v) Config.ESP.ShowDistance = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.ShowDistance end)
+    toggleButton(P, "Hide Head Icon", Config.ESP.HideHead,
+        UDim2.fromOffset(20,216), UDim2.fromOffset(240,30),
+        function(v) Config.ESP.HideHead = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.HideHead end)
+    toggleButton(P, "Text Stroke", Config.ESP.StrokeEnabled,
+        UDim2.fromOffset(268,216), UDim2.fromOffset(240,30),
+        function(v) Config.ESP.StrokeEnabled = v; markDirty(); saveSettingsFull() end,
+        function() return Config.ESP.StrokeEnabled end)
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,256),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="ESP MODE", TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local EspModeKeys = { "Bones", "Box", "Both" }
+    local EspModeBtns = {}
+    for i, key in ipairs(EspModeKeys) do
+        EspModeBtns[i] = selectBtn(P, key,
+            UDim2.fromOffset(20 + (i-1)*164, 274), UDim2.fromOffset(156,28),
+            function() Config.ESP.ESPMode = key; markDirty(); refreshStyleButtons(); saveSettingsFull() end)
+    end
+    registerStyleRefresh(function()
+        for j, b in ipairs(EspModeBtns) do
+            local on = (EspModeKeys[j] == Config.ESP.ESPMode)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,312),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="BOX STYLE", TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local BoxStyleBtns = {}
+    local BoxStyleLabels = { "Corner", "Full", "Rounded" }
+    for i, lbl in ipairs(BoxStyleLabels) do
+        BoxStyleBtns[i] = selectBtn(P, lbl,
+            UDim2.fromOffset(20 + (i-1)*164, 330), UDim2.fromOffset(156,28),
+            function() Config.ESP.BoxStyle = i; markDirty(); refreshStyleButtons(); saveSettingsFull() end)
+    end
+    registerStyleRefresh(function()
+        for j, b in ipairs(BoxStyleBtns) do
+            local on = (j == Config.ESP.BoxStyle)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,368),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="HP BAR STYLE", TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local HPStyleBtns = {}
+    local HPStyleLabels = { "Pill", "Flat", "Segmented" }
+    for i, lbl in ipairs(HPStyleLabels) do
+        HPStyleBtns[i] = selectBtn(P, lbl,
+            UDim2.fromOffset(20 + (i-1)*164, 386), UDim2.fromOffset(156,28),
+            function() Config.ESP.HPBarStyle = i; markDirty(); refreshStyleButtons(); saveSettingsFull() end)
+    end
+    registerStyleRefresh(function()
+        for j, b in ipairs(HPStyleBtns) do
+            local on = (j == Config.ESP.HPBarStyle)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,424),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="COLORS", TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    colorSwatch(P, "Box", UDim2.fromOffset(20,442), UDim2.fromOffset(156,42),
+        function() return Config.ESP.BoxColor end,
+        function(c) Config.ESP.BoxColor = c; markDirty() end, "ESP Box Color")
+    colorSwatch(P, "HP", UDim2.fromOffset(186,442), UDim2.fromOffset(156,42),
+        function() return Config.ESP.HPColor end,
+        function(c) Config.ESP.HPColor = c; markDirty() end, "HP Bar Color")
+    colorSwatch(P, "Bones", UDim2.fromOffset(352,442), UDim2.fromOffset(156,42),
+        function() return Config.ESP.Colors.Torso end,
+        function(c)
+            Config.ESP.Colors.Head = c
+            Config.ESP.Colors.Torso = c
+            Config.ESP.Colors.Arms  = c
+            Config.ESP.Colors.Legs  = c
+            markDirty()
+        end, "Bone Color")
+    colorSwatch(P, "HP Text", UDim2.fromOffset(20,494), UDim2.fromOffset(156,42),
+        function() return Config.ESP.HPTextColor end,
+        function(c) Config.ESP.HPTextColor = c; markDirty() end, "HP Text Color")
+    colorSwatch(P, "Dist Text", UDim2.fromOffset(186,494), UDim2.fromOffset(156,42),
+        function() return Config.ESP.DistTextColor end,
+        function(c) Config.ESP.DistTextColor = c; markDirty() end, "Distance Text Color")
+    colorSwatch(P, "HL Fill", UDim2.fromOffset(352,494), UDim2.fromOffset(156,42),
+        function() return Config.ESP.Highlight.FillColor end,
+        function(c) Config.ESP.Highlight.FillColor = c; markDirty() end, "Highlight Fill")
+
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,552),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="SIZES", TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local HeadScaleIn = settingBlock(P, "Head Scale", Config.ESP.HeadScale,
+        UDim2.fromOffset(20,570), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.HeadScale end)
+    bind(HeadScaleIn.FocusLost, function()
+        Config.ESP.HeadScale = math.clamp(tonumber(HeadScaleIn.Text) or 1, 0.1, 5)
+        HeadScaleIn.Text = tostring(Config.ESP.HeadScale); markDirty(); saveSettingsFull()
+    end)
+    local BoxWidthIn = settingBlock(P, "Box Width Scale", Config.ESP.BoxWidthScale,
+        UDim2.fromOffset(186,570), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.BoxWidthScale end)
+    bind(BoxWidthIn.FocusLost, function()
+        Config.ESP.BoxWidthScale = math.clamp(tonumber(BoxWidthIn.Text) or 1, 0.3, 3)
+        BoxWidthIn.Text = tostring(Config.ESP.BoxWidthScale); markDirty(); saveSettingsFull()
+    end)
+    local BoxThickIn = settingBlock(P, "Box Thickness", Config.ESP.BoxThickness,
+        UDim2.fromOffset(352,570), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.BoxThickness end)
+    bind(BoxThickIn.FocusLost, function()
+        Config.ESP.BoxThickness = math.clamp(tonumber(BoxThickIn.Text) or 1, 1, 10)
+        BoxThickIn.Text = tostring(Config.ESP.BoxThickness); markDirty(); saveSettingsFull()
+    end)
+    local BoxTranspIn = settingBlock(P, "Box Transparency", Config.ESP.BoxTransparency,
+        UDim2.fromOffset(20,620), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.BoxTransparency end)
+    bind(BoxTranspIn.FocusLost, function()
+        Config.ESP.BoxTransparency = math.clamp(tonumber(BoxTranspIn.Text) or 0, 0, 1)
+        BoxTranspIn.Text = tostring(Config.ESP.BoxTransparency); markDirty(); saveSettingsFull()
+    end)
+    local DistIn = settingBlock(P, "Max Distance", Config.ESP.MaxDist,
+        UDim2.fromOffset(186,620), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.MaxDist end)
+    bind(DistIn.FocusLost, function()
+        Config.ESP.MaxDist = math.clamp(tonumber(DistIn.Text) or 1500, 10, 10000)
+        DistIn.Text = tostring(Config.ESP.MaxDist); markDirty(); saveSettingsFull()
+    end)
+    local HPSizeIn = settingBlock(P, "HP Font Size", Config.ESP.HPSize,
+        UDim2.fromOffset(352,620), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.HPSize end)
+    bind(HPSizeIn.FocusLost, function()
+        Config.ESP.HPSize = math.clamp(tonumber(HPSizeIn.Text) or 14, 6, 48)
+        HPSizeIn.Text = tostring(Config.ESP.HPSize); markDirty(); saveSettingsFull()
+    end)
+    local DistSizeIn = settingBlock(P, "Dist Font Size", Config.ESP.DistSize,
+        UDim2.fromOffset(20,670), UDim2.fromOffset(156,42), 10,
+        function() return Config.ESP.DistSize end)
+    bind(DistSizeIn.FocusLost, function()
+        Config.ESP.DistSize = math.clamp(tonumber(DistSizeIn.Text) or 14, 6, 48)
+        DistSizeIn.Text = tostring(Config.ESP.DistSize); markDirty(); saveSettingsFull()
+    end)
+    local HeadImgIn = settingBlock(P, "Head Asset ID", (Config.ESP.HeadImage:match("(%d+)") or "0"),
+        UDim2.fromOffset(186,670), UDim2.fromOffset(322,42), 10,
+        function() return (Config.ESP.HeadImage:match("(%d+)") or "0") end)
+    bind(HeadImgIn.FocusLost, function()
+        local n = HeadImgIn.Text:match("%d+"); if not n then return end
+        Config.ESP.HeadImage = "rbxassetid://"..n
+        markDirty(); saveSettingsFull()
+    end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,730),
+        Size=UDim2.new(1,-40,0,40), Font=Enum.Font.Gotham,
+        Text="Note: players in the Aim blacklist are also hidden from ESP.",
+        TextColor3=mkColor(150,150,160), TextSize=11,
+        TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+end
+
+--==============================================================
+-- GRAPHICS PAGE (compact helpers)
+--==============================================================
+local GraphicsGY = { y = 12 }
+local getEff
+
+do
+    local GY, G = GraphicsGY, Config.Graphics
+
+    local function step(h) GY.y = GY.y + h end
+    local function hdr(text)
+        mk("TextLabel", GraphicsPage, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(20, GY.y),
+            Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text=text,
+            TextColor3=mkColor(220,220,225), TextSize=14,
+            TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+        })
+        step(24)
+    end
+    local function gNum(label, key, minV, maxV, after)
+        local p = settingBlock(GraphicsPage, label, G[key],
+            UDim2.fromOffset(20, GY.y), UDim2.fromOffset(488, 36), 11,
+            function() return G[key] end)
+        bind(p.FocusLost, function()
+            local v = tonumber(p.Text)
+            if v then
+                G[key] = math.clamp(v, minV, maxV)
+                p.Text = tostring(G[key])
+                if after then after(G[key]) end
+                saveSettingsFull()
+            end
+        end)
+        step(42)
+    end
+    local function gCol(label, key, title, after, fallback)
+        colorSwatch(GraphicsPage, label, UDim2.fromOffset(20, GY.y), UDim2.fromOffset(488, 42),
+            function() return G[key] or fallback end,
+            function(c) G[key] = c; if after then after(c) end; saveSettingsFull() end, title)
+        step(48)
+    end
+    local function gToggle(label, key, after, get)
+        toggleButton(GraphicsPage, label, G[key],
+            UDim2.fromOffset(20, GY.y), UDim2.fromOffset(488, 28),
+            function(v) G[key] = v; if after then after(v) end; saveSettingsFull() end,
+            function() return G[key] end)
+        step(34)
+    end
+
+    getEff = function(cls, name)
+        local e = Lighting:FindFirstChild(name)
+        if not e or not e:IsA(cls) then
+            if e then e:Destroy() end
+            e = Instance.new(cls); e.Name = name; e.Enabled = false; e.Parent = Lighting
+        end
+        return e
+    end
+
+    -- page header
+    mk("TextLabel", GraphicsPage, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,GY.y),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Graphics / Lighting",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    step(24)
+    mk("Frame", GraphicsPage, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,GY.y), Size=UDim2.new(1,-40,0,2),
+        BorderSizePixel=0, ZIndex=3,
+    })
+    step(12)
+
+    -- LIGHTING
+    hdr("LIGHTING")
+    gNum("Brightness", "Brightness", 0, 100, function(v) Lighting.Brightness = v end)
+    gNum("Clock Time (0-24)", "ClockTime", 0, 24, function(v) Lighting.ClockTime = v end)
+    gNum("Exposure", "Exposure", -10, 10, function(v) Lighting.ExposureCompensation = v end)
+    gNum("Geographic Latitude", "GeographicLatitude", -90, 90, function(v) Lighting.GeographicLatitude = v end)
+    gToggle("Global Shadows", "GlobalShadows", function(v) Lighting.GlobalShadows = v end)
+    toggleButton(GraphicsPage, "Env Diffuse", G.EnvDiffuse == 1,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.EnvDiffuse = v and 1 or 0; Lighting.EnvironmentDiffuseScale = G.EnvDiffuse; saveSettingsFull() end,
+        function() return G.EnvDiffuse == 1 end)
+    step(34)
+    toggleButton(GraphicsPage, "Env Specular", G.EnvSpecular == 1,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.EnvSpecular = v and 1 or 0; Lighting.EnvironmentSpecularScale = G.EnvSpecular; saveSettingsFull() end,
+        function() return G.EnvSpecular == 1 end)
+    step(38)
+
+    -- COLORS
+    hdr("COLORS")
+    gCol("Ambient", "Ambient", "Ambient Color", function(c) Lighting.Ambient = c end)
+    gCol("Outdoor Ambient", "OutdoorAmbient", "Outdoor Ambient", function(c) Lighting.OutdoorAmbient = c end)
+    gCol("ColorShift Top", "ColorShiftTop", "ColorShift Top", function(c) Lighting.ColorShift_Top = c end)
+    gCol("ColorShift Bottom", "ColorShiftBottom", "ColorShift Bottom", function(c) Lighting.ColorShift_Bottom = c end)
+
+    -- FOG
+    hdr("FOG")
+    gNum("Fog Start", "FogStart", -100000, 100000, function(v) Lighting.FogStart = v end)
+    gNum("Fog End", "FogEnd", -100000, 100000, function(v) Lighting.FogEnd = v end)
+    gCol("Fog Color", "FogColor", "Fog Color", function(c) Lighting.FogColor = c end)
+
+    -- EFFECTS
+    hdr("EFFECTS")
+
+    -- BLUR
+    local blur = getEff("BlurEffect", "SolaraBlur")
+    blur.Size = G.BlurSize
+    blur.Enabled = G.BlurEnabled
+    toggleButton(GraphicsPage, "Blur", G.BlurEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.BlurEnabled = v; blur.Enabled = v; saveSettingsFull() end,
+        function() return G.BlurEnabled end)
+    step(34)
+    gNum("Blur Size", "BlurSize", 0, 200, function(v) blur.Size = v end)
+
+    -- BLOOM
+    local bloom = getEff("BloomEffect", "SolaraBloom")
+    bloom.Intensity, bloom.Size, bloom.Threshold = G.BloomIntensity, G.BloomSize, G.BloomThreshold
+    bloom.Enabled = G.BloomEnabled
+    toggleButton(GraphicsPage, "Bloom", G.BloomEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.BloomEnabled = v; bloom.Enabled = v; saveSettingsFull() end,
+        function() return G.BloomEnabled end)
+    step(34)
+    gNum("Bloom Intensity", "BloomIntensity", 0, 50, function(v) bloom.Intensity = v end)
+    gNum("Bloom Size", "BloomSize", 0, 200, function(v) bloom.Size = v end)
+    gNum("Bloom Threshold", "BloomThreshold", 0, 20, function(v) bloom.Threshold = v end)
+
+    -- COLOR CORRECTION
+    local cc = getEff("ColorCorrectionEffect", "SolaraCC")
+    cc.Brightness, cc.Contrast, cc.Saturation = G.CCBrightness, G.CCContrast, G.CCSaturation
+    cc.Enabled = G.CCEnabled
+    if G.CCTint then cc.TintColor = G.CCTint end
+    toggleButton(GraphicsPage, "ColorCorrection", G.CCEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.CCEnabled = v; cc.Enabled = v; saveSettingsFull() end,
+        function() return G.CCEnabled end)
+    step(34)
+    gNum("CC Brightness", "CCBrightness", -10, 10, function(v) cc.Brightness = v end)
+    gNum("CC Contrast", "CCContrast", -10, 10, function(v) cc.Contrast = v end)
+    gNum("CC Saturation", "CCSaturation", -10, 10, function(v) cc.Saturation = v end)
+    gCol("CC Tint", "CCTint", "ColorCorrection Tint",
+        function(c) cc.TintColor = c end, cc.TintColor)
+
+    -- SUN RAYS
+    local sr = getEff("SunRaysEffect", "SolaraSunRays")
+    sr.Intensity, sr.Spread = G.SRIntensity, G.SRSpread
+    sr.Enabled = G.SunRaysEnabled
+    toggleButton(GraphicsPage, "SunRays", G.SunRaysEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.SunRaysEnabled = v; sr.Enabled = v; saveSettingsFull() end,
+        function() return G.SunRaysEnabled end)
+    step(34)
+    gNum("SunRays Intensity", "SRIntensity", 0, 10, function(v) sr.Intensity = v end)
+    gNum("SunRays Spread", "SRSpread", 0, 10, function(v) sr.Spread = v end)
+
+    -- DOF
+    local dof = getEff("DepthOfFieldEffect", "SolaraDOF")
+    dof.FarIntensity, dof.FocusDistance, dof.InFocusRadius, dof.NearIntensity =
+        G.DOFFar, G.DOFFocus, G.DOFRadius, G.DOFNear
+    dof.Enabled = G.DOFEnabled
+    toggleButton(GraphicsPage, "Depth of Field", G.DOFEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.DOFEnabled = v; dof.Enabled = v; saveSettingsFull() end,
+        function() return G.DOFEnabled end)
+    step(34)
+    gNum("DOF Far Intensity", "DOFFar", 0, 10, function(v) dof.FarIntensity = v end)
+    gNum("DOF Focus Distance", "DOFFocus", 0, 1000, function(v) dof.FocusDistance = v end)
+    gNum("DOF In-Focus Radius", "DOFRadius", 0, 1000, function(v) dof.InFocusRadius = v end)
+    gNum("DOF Near Intensity", "DOFNear", 0, 10, function(v) dof.NearIntensity = v end)
+
+    -- ATMOSPHERE
+    toggleButton(GraphicsPage, "Atmosphere", G.AtmoEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v)
+            G.AtmoEnabled = v
+            if v then
+                local a = Lighting:FindFirstChild("SolaraAtmosphere")
+                if not a then a = Instance.new("Atmosphere"); a.Name = "SolaraAtmosphere"; a.Parent = Lighting end
+                a.Density, a.Offset, a.Glare, a.Haze = G.AtmoDensity, G.AtmoOffset, G.AtmoGlare, G.AtmoHaze
+                if G.AtmoColor then a.Color = G.AtmoColor end
+                if G.AtmoDecay then a.Decay = G.AtmoDecay end
+            else
+                local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a:Destroy() end
+            end
+            saveSettingsFull()
+        end,
+        function() return G.AtmoEnabled end)
+    step(34)
+    gNum("Atmo Density", "AtmoDensity", 0, 10, function(v)
+        local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Density = v end
+    end)
+    gNum("Atmo Offset", "AtmoOffset", 0, 10, function(v)
+        local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Offset = v end
+    end)
+    gNum("Atmo Glare", "AtmoGlare", 0, 100, function(v)
+        local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Glare = v end
+    end)
+    gNum("Atmo Haze", "AtmoHaze", 0, 100, function(v)
+        local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Haze = v end
+    end)
+    gCol("Atmo Color", "AtmoColor", "Atmosphere Color", function(c)
+        local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Color = c end
+    end, Color3.fromRGB(199,199,199))
+    gCol("Atmo Decay", "AtmoDecay", "Atmosphere Decay", function(c)
+        local a = Lighting:FindFirstChild("SolaraAtmosphere"); if a then a.Decay = c end
+    end, Color3.fromRGB(106,112,125))
+
+    -- COLOR GRADING
+    local cgEff = getEff("ColorGradingEffect", "SolaraCG")
+    cgEff.Enabled = G.ColorGradingEnabled
+    toggleButton(GraphicsPage, "ColorGrading", G.ColorGradingEnabled,
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28),
+        function(v) G.ColorGradingEnabled = v; cgEff.Enabled = v; saveSettingsFull() end,
+        function() return G.ColorGradingEnabled end)
+    step(34)
+    local tonemappers = { "Default", "Retro", "ACES" }
+    local tmIdx = 1
+    for i, v in ipairs(tonemappers) do if v == G.Tonemapper then tmIdx = i end end
+    local tmBtn = selectBtn(GraphicsPage, "Tonemapper: "..tonemappers[tmIdx],
+        UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,28), function()
+            tmIdx = tmIdx + 1
+            if tmIdx > #tonemappers then tmIdx = 1 end
+            G.Tonemapper = tonemappers[tmIdx]
+            tmBtn.Text = "Tonemapper: "..tonemappers[tmIdx]
+            pcall(function() cgEff.TonemapperPreset = Enum.TonemapperPreset[G.Tonemapper] end)
+            saveSettingsFull()
+        end)
+    step(38)
+
+    -- SKY PRESETS
+    hdr("SKY PRESETS")
+    local presets = {
+        { "Dawn",   Color3.fromRGB(230,140,80), 6,    Color3.fromRGB(100,80,70),   Color3.fromRGB(180,140,120), 800,  Color3.fromRGB(230,180,150) },
+        { "Day",    Color3.fromRGB(80,140,240), 14,   Color3.fromRGB(80,80,80),    Color3.fromRGB(140,140,140), 2000, Color3.fromRGB(160,190,230) },
+        { "Sunset", Color3.fromRGB(240,100,60), 18.5, Color3.fromRGB(80,50,40),     Color3.fromRGB(160,90,60),  600,  Color3.fromRGB(240,150,100) },
+        { "Night",  Color3.fromRGB(40,40,80),   0,    Color3.fromRGB(15,15,35),    Color3.fromRGB(30,30,60),   400,  Color3.fromRGB(20,20,40) },
+    }
+    for i, pre in ipairs(presets) do
+        local b = mk("TextButton", GraphicsPage, {
+            Position=UDim2.fromOffset(20 + (i-1)*122, GY.y), Size=UDim2.fromOffset(118,32),
+            BackgroundColor3=pre[2], Text=pre[1], TextColor3=Color3.new(1,1,1),
+            Font=Enum.Font.GothamBold, TextSize=11, BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
+        })
+        corner(b, 5); addBtnFx(b)
+        bind(b.MouseButton1Click, function()
+            Lighting.ClockTime = pre[3]
+            Lighting.Ambient = pre[4]
+            Lighting.OutdoorAmbient = pre[5]
+            Lighting.FogEnd = pre[6]
+            Lighting.FogColor = pre[7]
+            G.ClockTime, G.Ambient, G.OutdoorAmbient, G.FogEnd, G.FogColor = pre[3], pre[4], pre[5], pre[6], pre[7]
+            saveSettingsFull(); refreshAllUI()
+        end)
+    end
+    step(40)
+
+    -- SKYBOX
+    hdr("CUSTOM SKYBOX")
+    local skyKeys = { "Bk", "Dn", "Ft", "Lf", "Rt", "Up" }
+    local skyLabels = { "Back", "Down", "Front", "Left", "Right", "Up" }
+    for i, k in ipairs(skyKeys) do
+        local inp = settingBlock(GraphicsPage, skyLabels[i], G.Skybox[k],
+            UDim2.fromOffset(20,GY.y), UDim2.fromOffset(488,36), 11,
+            function() return G.Skybox[k] end)
+        bind(inp.FocusLost, function()
+            local id = inp.Text:match("(%d+)")
+            G.Skybox[k] = id and ("rbxassetid://"..id) or inp.Text
+            saveSettingsFull()
+        end)
+        step(42)
+    end
+    local applySkyBtn = mk("TextButton", GraphicsPage, {
+        Position=UDim2.fromOffset(20,GY.y), Size=UDim2.fromOffset(488,34),
+        Text="Apply Custom Skybox", Font=Enum.Font.GothamBold, TextSize=13,
+        TextColor3=mkColor(20,20,20), BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
+    })
+    corner(applySkyBtn, 5); addBtnFx(applySkyBtn); registerAccentButton(applySkyBtn)
+    bind(applySkyBtn.MouseButton1Click, function()
+        local old = Lighting:FindFirstChildOfClass("Sky"); if old then old:Destroy() end
+        local sky = Instance.new("Sky")
+        if G.Skybox.Bk ~= "" then sky.SkyboxBk = G.Skybox.Bk end
+        if G.Skybox.Dn ~= "" then sky.SkyboxDn = G.Skybox.Dn end
+        if G.Skybox.Ft ~= "" then sky.SkyboxFt = G.Skybox.Ft end
+        if G.Skybox.Lf ~= "" then sky.SkyboxLf = G.Skybox.Lf end
+        if G.Skybox.Rt ~= "" then sky.SkyboxRt = G.Skybox.Rt end
+        if G.Skybox.Up ~= "" then sky.SkyboxUp = G.Skybox.Up end
+        sky.Parent = Lighting; saveSettingsFull()
+    end)
+    step(42)
+    local rmSky = mk("TextButton", GraphicsPage, {
+        Position=UDim2.fromOffset(20,GY.y), Size=UDim2.fromOffset(488,32),
+        BackgroundColor3=mkColor(150,60,60), Text="Remove Sky (reset)",
+        TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=12,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
+    })
+    corner(rmSky, 5); addBtnFx(rmSky)
+    bind(rmSky.MouseButton1Click, function()
+        local s = Lighting:FindFirstChildOfClass("Sky"); if s then s:Destroy() end
+        G.Skybox = {Bk="",Dn="",Ft="",Lf="",Rt="",Up=""}
+        saveSettingsFull(); refreshAllUI()
+    end)
+    step(44)
+
+    -- SUN / MOON / STARS
+    hdr("SUN / MOON / STARS")
+    gNum("Sun Angular Size", "SunAngularSize", 0, 100, function(v)
+        local s = Lighting:FindFirstChildOfClass("Sky"); if s then s.SunAngularSize = v end
+    end)
+    gNum("Moon Angular Size", "MoonAngularSize", 0, 100, function(v)
+        local s = Lighting:FindFirstChildOfClass("Sky"); if s then s.MoonAngularSize = v end
+    end)
+    gNum("Star Count", "StarCount", 0, 10000, function(v)
+        local s = Lighting:FindFirstChildOfClass("Sky"); if s then s.StarCount = v end
+    end)
+    gToggle("Celestial Bodies", "CelestialBodiesShown", function(v)
+        local s = Lighting:FindFirstChildOfClass("Sky"); if s then s.CelestialBodiesShown = v end
+    end)
+    step(6)
+end
+
+--==================== PARTICLES ====================
+rebuildParticles = function() end
+do
+    local GY, G = GraphicsGY, Config.Graphics
+    local starOrb, spinConn, followConn = nil, nil, nil
+
+    local function clearAll()
+        if spinConn then spinConn:Disconnect(); spinConn = nil end
+        if followConn then followConn:Disconnect(); followConn = nil end
+        if starOrb then starOrb:Destroy(); starOrb = nil end
+        local old = workspace:FindFirstChild("SolaraParticles")
+        if old then old:Destroy() end
+    end
+
+    local function applyTo(em)
+        if not em or not em.Parent then return end
+        pcall(function()
+            em.Texture = G.P_Texture
+            em.Rate = G.P_Rate
+            em.Lifetime = NumberRange.new(math.min(G.P_LifetimeMin, G.P_LifetimeMax),
+                math.max(G.P_LifetimeMin, G.P_LifetimeMax))
+            em.Size = NumberSequence.new(math.min(G.P_SizeMin, G.P_SizeMax),
+                math.max(G.P_SizeMin, G.P_SizeMax))
+            em.Color = G.P_UseGradient
+                and ColorSequence.new(G.P_ColorStart or WHITE, G.P_ColorEnd or WHITE)
+                or ColorSequence.new(G.P_ColorStart or WHITE)
+            em.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, G.P_TranspStart),
+                NumberSequenceKeypoint.new(0.5, G.P_TranspMid),
+                NumberSequenceKeypoint.new(1, G.P_TranspEnd),
+            })
+            em.Speed = NumberRange.new(math.min(G.P_SpeedMin, G.P_SpeedMax),
+                math.max(G.P_SpeedMin, G.P_SpeedMax))
+            em.SpreadAngle = Vector2.new(G.P_SpreadAngle, G.P_SpreadAngle)
+            em.Acceleration = Vector3.new(G.P_AccelX, G.P_AccelY, G.P_AccelZ)
+            em.Drag = G.P_Drag
+            em.Rotation = NumberRange.new(math.min(G.P_RotMin, G.P_RotMax),
+                math.max(G.P_RotMin, G.P_RotMax))
+            em.RotSpeed = NumberRange.new(math.min(G.P_RotSpeedMin, G.P_RotSpeedMax),
+                math.max(G.P_RotSpeedMin, G.P_RotSpeedMax))
+            em.LightEmission = G.P_LightEmission
+            em.LightInfluence = G.P_LightInfluence
+            em.ZOffset = G.P_ZOffset
+            em.Squash = NumberSequence.new(G.P_Squash)
+            em.VelocityInheritance = G.P_VelocityInherit
+            em.EmissionDirection = Enum.NormalId[G.P_EmissionDir] or Enum.NormalId.Top
+            em.WindAffectsDrag = G.P_WindAffectsDrag
+            em.LockedToPart = G.P_LockedToPart
+            em.TimeScale = G.P_TimeScale
+            pcall(function()
+                em.Orientation = Enum.ParticleOrientation[G.P_Orientation]
+                    or Enum.ParticleOrientation.FacingCamera
+            end)
+            if G.P_Mode == "Single" then
+                em.Shape = Enum.ParticleEmitterShape[G.P_Shape] or Enum.ParticleEmitterShape.Box
+                em.ShapeStyle = Enum.ParticleEmitterShapeStyle[G.P_ShapeStyle] or Enum.ParticleEmitterShapeStyle.Volume
+                em.ShapeInOut = Enum.ParticleEmitterShapeInOut[G.P_ShapeInOut] or Enum.ParticleEmitterShapeInOut.Outward
+                em.ShapePartial = G.P_ShapePartial
+            end
+            em.Enabled = G.P_Enabled
+        end)
+    end
+
+    local function build()
+        clearAll()
+        if not G.P_Enabled then return end
+        local ch = LocalPlayer.Character
+        local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local p = Instance.new("Part")
+        p.Name = "SolaraParticles"
+        p.Shape = Enum.PartType.Block
+        p.Material = Enum.Material.ForceField
+        p.Color = G.P_OrbColor or WHITE
+        p.Transparency = G.P_ShowOrb and G.P_OrbTransparency or 1
+        p.Reflectance = 0.1
+        p.Size = Vector3.new(G.P_OrbRadius*2, G.P_OrbRadius*2, G.P_OrbRadius*2)
+        p.Anchored = true; p.CanCollide = false; p.CanQuery = false
+        p.CanTouch = false; p.Massless = true
+        p.CFrame = CFrame.new(hrp.Position); p.Parent = workspace
+        starOrb = p
+        if G.P_Mode == "Single" then
+            local em = Instance.new("ParticleEmitter"); em.Name = "Main"; em.Parent = p
+            applyTo(em)
+        else
+            for _ = 1, math.floor(G.P_MultiCount) do
+                local dir
+                repeat
+                    dir = Vector3.new((math.random()-0.5)*2, (math.random()-0.5)*2, (math.random()-0.5)*2)
+                until dir.Magnitude <= 1 and dir.Magnitude > 0.01
+                local att = Instance.new("Attachment"); att.Position = dir * G.P_OrbRadius; att.Parent = p
+                local em = Instance.new("ParticleEmitter")
+                em.Shape = Enum.ParticleEmitterShape.Sphere
+                em.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+                em.ShapeInOut = Enum.ParticleEmitterShapeInOut.Outward
+                em.Parent = att; applyTo(em)
+            end
+        end
+        followConn = RunService.Heartbeat:Connect(function()
+            if starOrb and starOrb.Parent and hrp.Parent then
+                starOrb.Position = hrp.Position
+            elseif followConn then
+                followConn:Disconnect(); followConn = nil
+            end
+        end)
+        Runtime.Connections[#Runtime.Connections+1] = followConn
+        if G.P_AutoRotate then
+            local acc = 0
+            spinConn = RunService.Heartbeat:Connect(function(dt)
+                if starOrb and starOrb.Parent then
+                    acc = math.rad(G.P_AutoRotateSpeed) * dt
+                    starOrb.CFrame = starOrb.CFrame * CFrame.Angles(0, acc, 0)
+                end
+            end)
+            Runtime.Connections[#Runtime.Connections+1] = spinConn
+        end
+    end
+
+    rebuildParticles = function() clearAll(); if G.P_Enabled then build() end end
+
+    bind(LocalPlayer.CharacterAdded, function()
+        if G.P_Enabled then task.wait(0.6); build() end
+    end)
+
+    mk("TextLabel", GraphicsPage, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20, GraphicsGY.y),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="PARTICLES",
+        TextColor3=mkColor(220,220,225), TextSize=14,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local GY0 = { y = GraphicsGY.y + 24 }
+
+    local function pStep(h) GY0.y = GY0.y + h end
+    local function pNum(label, key, minV, maxV)
+        local p = settingBlock(GraphicsPage, label, G[key],
+            UDim2.fromOffset(20, GY0.y), UDim2.fromOffset(488, 36), 11,
+            function() return G[key] end)
+        bind(p.FocusLost, function()
+            local v = tonumber(p.Text)
+            if v then
+                G[key] = math.clamp(v, minV, maxV); p.Text = tostring(G[key])
+                if starOrb then build() end
+                saveSettingsFull()
+            end
+        end)
+        pStep(42)
+    end
+
+    toggleButton(GraphicsPage, "Particles Enabled", G.P_Enabled,
+        UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(488,28),
+        function(v) G.P_Enabled = v; if v then build() else clearAll() end; saveSettingsFull() end,
+        function() return G.P_Enabled end)
+    pStep(34)
+
+    local modes = { "Single", "Multi" }
+    local modeBtns = {}
+    for i, m in ipairs(modes) do
+        modeBtns[i] = selectBtn(GraphicsPage, m,
+            UDim2.fromOffset(20 + (i-1)*248, GY0.y), UDim2.fromOffset(240,28),
+            function() G.P_Mode = m; if G.P_Enabled then build() end; refreshStyleButtons(); saveSettingsFull() end)
+    end
+    registerStyleRefresh(function()
+        for i, b in ipairs(modeBtns) do
+            local on = (modes[i] == G.P_Mode)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+    pStep(36)
+
+    pNum("Multi Count (Multi mode)", "P_MultiCount", 1, 5000)
+    pNum("Orb Radius", "P_OrbRadius", 1, 5000)
+    pNum("Orb Transparency", "P_OrbTransparency", 0, 1)
+    pNum("Auto-Rotate Speed", "P_AutoRotateSpeed", 0, 3600)
+
+    colorSwatch(GraphicsPage, "Orb Color", UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(240,42),
+        function() return G.P_OrbColor or WHITE end,
+        function(c) G.P_OrbColor = c; if starOrb then starOrb.Color = c end; saveSettingsFull() end, "Orb Color")
+    toggleButton(GraphicsPage, "Auto-Rotate", G.P_AutoRotate,
+        UDim2.fromOffset(268,GY0.y), UDim2.fromOffset(240,42),
+        function(v) G.P_AutoRotate = v; if G.P_Enabled then build() end; saveSettingsFull() end,
+        function() return G.P_AutoRotate end)
+    pStep(48)
+
+    toggleButton(GraphicsPage, "Show Orb", G.P_ShowOrb,
+        UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(488,28),
+        function(v)
+            G.P_ShowOrb = v
+            if starOrb then starOrb.Transparency = v and G.P_OrbTransparency or 1 end
+            saveSettingsFull()
+        end,
+        function() return G.P_ShowOrb end)
+    pStep(34)
+
+    local shapeOpts = { "Box", "Sphere", "Cylinder", "Disc" }
+    local styleOpts = { "Volume", "Surface" }
+    local inoutOpts = { "Outward", "Inward", "InAndOut" }
+    local function cycleBtn(pos, opts, key)
+        local idx = 1
+        for i, v in ipairs(opts) do if v == G[key] then idx = i end end
+        local b = selectBtn(GraphicsPage, key:gsub("P_", "")..": "..opts[idx],
+            pos, UDim2.fromOffset(158,28), function() end)
+        bind(b.MouseButton1Click, function()
+            idx = idx + 1; if idx > #opts then idx = 1 end
+            G[key] = opts[idx]; b.Text = key:gsub("P_","")..": "..opts[idx]
+            if starOrb then build() end
+            saveSettingsFull()
+        end)
+    end
+    cycleBtn(UDim2.fromOffset(20,GY0.y), shapeOpts, "P_Shape")
+    cycleBtn(UDim2.fromOffset(185,GY0.y), styleOpts, "P_ShapeStyle")
+    cycleBtn(UDim2.fromOffset(350,GY0.y), inoutOpts, "P_ShapeInOut")
+    pStep(34)
+
+    pNum("Rate", "P_Rate", 0, 10000)
+    pNum("Lifetime Min", "P_LifetimeMin", 0, 100)
+    pNum("Lifetime Max", "P_LifetimeMax", 0, 100)
+    pNum("Size Min", "P_SizeMin", 0, 100)
+    pNum("Size Max", "P_SizeMax", 0, 100)
+
+    local texIn = settingBlock(GraphicsPage, "Texture ID", G.P_Texture,
+        UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(488,36), 11,
+        function() return G.P_Texture end)
+    bind(texIn.FocusLost, function()
+        local id = texIn.Text:match("(%d+)")
+        if id then
+            G.P_Texture = "rbxassetid://"..id
+            if starOrb then build() end
+            saveSettingsFull()
+        end
+    end)
+    pStep(42)
+
+    toggleButton(GraphicsPage, "Use Gradient", G.P_UseGradient,
+        UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(488,28),
+        function(v) G.P_UseGradient = v; if starOrb then build() end; saveSettingsFull() end,
+        function() return G.P_UseGradient end)
+    pStep(34)
+
+    colorSwatch(GraphicsPage, "Color Start", UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(240,42),
+        function() return G.P_ColorStart or WHITE end,
+        function(c) G.P_ColorStart = c; if starOrb then build() end; saveSettingsFull() end, "Start")
+    colorSwatch(GraphicsPage, "Color End", UDim2.fromOffset(268,GY0.y), UDim2.fromOffset(240,42),
+        function() return G.P_ColorEnd or WHITE end,
+        function(c) G.P_ColorEnd = c; if starOrb then build() end; saveSettingsFull() end, "End")
+    pStep(48)
+
+    pNum("Transparency Start", "P_TranspStart", 0, 1)
+    pNum("Transparency Mid", "P_TranspMid", 0, 1)
+    pNum("Transparency End", "P_TranspEnd", 0, 1)
+    pNum("Speed Min", "P_SpeedMin", 0, 500)
+    pNum("Speed Max", "P_SpeedMax", 0, 500)
+    pNum("Spread Angle", "P_SpreadAngle", 0, 360)
+
+    local dirs = { "Top", "Bottom", "Left", "Right", "Front", "Back" }
+    local dirBtns = {}
+    for i, d in ipairs(dirs) do
+        local b = selectBtn(GraphicsPage, d,
+            UDim2.fromOffset(20 + ((i-1)%6)*82, GY0.y), UDim2.fromOffset(78,24),
+            function() G.P_EmissionDir = d; if starOrb then build() end
+                refreshStyleButtons(); saveSettingsFull() end)
+        dirBtns[i] = { btn=b, dir=d }
+    end
+    registerStyleRefresh(function()
+        for _, item in ipairs(dirBtns) do
+            local on = (G.P_EmissionDir == item.dir)
+            item.btn.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            item.btn.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+    pStep(32)
+
+    pNum("Accel X", "P_AccelX", -500, 500)
+    pNum("Accel Y", "P_AccelY", -500, 500)
+    pNum("Accel Z", "P_AccelZ", -500, 500)
+    pNum("Drag", "P_Drag", 0, 100)
+    pNum("Velocity Inherit", "P_VelocityInherit", 0, 10)
+    pNum("Rotation Min", "P_RotMin", 0, 360)
+    pNum("Rotation Max", "P_RotMax", 0, 360)
+    pNum("RotSpeed Min", "P_RotSpeedMin", -3000, 3000)
+    pNum("RotSpeed Max", "P_RotSpeedMax", -3000, 3000)
+    pNum("LightEmission", "P_LightEmission", 0, 1)
+    pNum("LightInfluence", "P_LightInfluence", 0, 1)
+    pNum("Z-Offset", "P_ZOffset", -50, 50)
+    pNum("Squash", "P_Squash", 0, 10)
+    pNum("TimeScale", "P_TimeScale", 0, 10)
+    pNum("ShapePartial", "P_ShapePartial", 0, 1)
+
+    toggleButton(GraphicsPage, "Wind Affects Drag", G.P_WindAffectsDrag,
+        UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(488,28),
+        function(v) G.P_WindAffectsDrag = v; if starOrb then build() end; saveSettingsFull() end,
+        function() return G.P_WindAffectsDrag end)
+    pStep(34)
+    toggleButton(GraphicsPage, "Locked To Part", G.P_LockedToPart,
+        UDim2.fromOffset(20,GY0.y), UDim2.fromOffset(488,28),
+        function(v) G.P_LockedToPart = v; if starOrb then build() end; saveSettingsFull() end,
+        function() return G.P_LockedToPart end)
+    pStep(34)
+
+    local orientations = { "VelocityParallel", "VelocityPerpendicular", "FacingCamera", "FacingCameraWorldUp" }
+    local orientBtns = {}
+    for i, o in ipairs(orientations) do
+        local row, col = math.floor((i-1)/2), (i-1)%2
+        local b = selectBtn(GraphicsPage, o,
+            UDim2.fromOffset(20 + col*248, GY0.y + row*32), UDim2.fromOffset(240,28),
+            function() G.P_Orientation = o; if starOrb then build() end
+                refreshStyleButtons(); saveSettingsFull() end)
+        orientBtns[i] = { btn=b, val=o }
+    end
+    registerStyleRefresh(function()
+        for _, item in ipairs(orientBtns) do
+            local on = (G.P_Orientation == item.val)
+            item.btn.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            item.btn.TextColor3 = on and mkColor(20,20,20) or mkColor(220,220,225)
+        end
+    end)
+    pStep(72)
+
+    GraphicsGY.y = GY0.y
+end
+
+applyGraphicsFromConfig = function()
+    local G = Config.Graphics
+    if G.Brightness ~= nil then Lighting.Brightness = G.Brightness end
+    if G.ClockTime ~= nil then Lighting.ClockTime = G.ClockTime end
+    if G.Exposure ~= nil then Lighting.ExposureCompensation = G.Exposure end
+    if G.GlobalShadows ~= nil then Lighting.GlobalShadows = G.GlobalShadows end
+    if G.EnvDiffuse ~= nil then Lighting.EnvironmentDiffuseScale = G.EnvDiffuse end
+    if G.EnvSpecular ~= nil then Lighting.EnvironmentSpecularScale = G.EnvSpecular end
+    if G.GeographicLatitude ~= nil then Lighting.GeographicLatitude = G.GeographicLatitude end
+    if G.Ambient then Lighting.Ambient = G.Ambient end
+    if G.OutdoorAmbient then Lighting.OutdoorAmbient = G.OutdoorAmbient end
+    if G.ColorShiftTop then Lighting.ColorShift_Top = G.ColorShiftTop end
+    if G.ColorShiftBottom then Lighting.ColorShift_Bottom = G.ColorShiftBottom end
+    if G.FogStart ~= nil then Lighting.FogStart = G.FogStart end
+    if G.FogEnd ~= nil then Lighting.FogEnd = G.FogEnd end
+    if G.FogColor then Lighting.FogColor = G.FogColor end
+
+    local blur = getEff("BlurEffect", "SolaraBlur")
+    blur.Size = G.BlurSize; blur.Enabled = G.BlurEnabled
+    local bloom = getEff("BloomEffect", "SolaraBloom")
+    bloom.Intensity, bloom.Size, bloom.Threshold, bloom.Enabled =
+        G.BloomIntensity, G.BloomSize, G.BloomThreshold, G.BloomEnabled
+    local cc = getEff("ColorCorrectionEffect", "SolaraCC")
+    cc.Brightness, cc.Contrast, cc.Saturation, cc.Enabled =
+        G.CCBrightness, G.CCContrast, G.CCSaturation, G.CCEnabled
+    if G.CCTint then cc.TintColor = G.CCTint end
+    local sr = getEff("SunRaysEffect", "SolaraSunRays")
+    sr.Intensity, sr.Spread, sr.Enabled = G.SRIntensity, G.SRSpread, G.SunRaysEnabled
+    local dof = getEff("DepthOfFieldEffect", "SolaraDOF")
+    dof.FarIntensity, dof.FocusDistance, dof.InFocusRadius, dof.NearIntensity, dof.Enabled =
+        G.DOFFar, G.DOFFocus, G.DOFRadius, G.DOFNear, G.DOFEnabled
+    local cgEff = getEff("ColorGradingEffect", "SolaraCG")
+    cgEff.Enabled = G.ColorGradingEnabled
+    pcall(function() cgEff.TonemapperPreset = Enum.TonemapperPreset[G.Tonemapper] end)
+
+    local sky = Lighting:FindFirstChildOfClass("Sky")
+    if sky then
+        if G.CelestialBodiesShown ~= nil then sky.CelestialBodiesShown = G.CelestialBodiesShown end
+        if G.StarCount ~= nil then sky.StarCount = G.StarCount end
+        if G.SunAngularSize ~= nil then sky.SunAngularSize = G.SunAngularSize end
+        if G.MoonAngularSize ~= nil then sky.MoonAngularSize = G.MoonAngularSize end
+    end
+
+    local atmo = Lighting:FindFirstChild("SolaraAtmosphere")
+    if G.AtmoEnabled then
+        if not atmo then atmo = Instance.new("Atmosphere"); atmo.Name = "SolaraAtmosphere"; atmo.Parent = Lighting end
+        atmo.Density, atmo.Offset, atmo.Glare, atmo.Haze = G.AtmoDensity, G.AtmoOffset, G.AtmoGlare, G.AtmoHaze
+        if G.AtmoColor then atmo.Color = G.AtmoColor end
+        if G.AtmoDecay then atmo.Decay = G.AtmoDecay end
+    elseif atmo then
+        atmo:Destroy()
+    end
+
+    if rebuildParticles then task.defer(rebuildParticles) end
+end
+
+--==================== CONFIG PAGE ====================
+local LocalConfigs, SaveBtn
+do
+    local P = ConfigPage
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,44),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Config Manager",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    mk("Frame", P, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,68), Size=UDim2.new(1,-40,0,2), BorderSizePixel=0, ZIndex=3,
+    })
+    NameBox = mk("TextBox", P, {
+        Position=UDim2.fromOffset(20,80), Size=UDim2.fromOffset(340,30),
+        BackgroundColor3=mkColor(35,35,40), TextColor3=Color3.new(1,1,1),
+        Font=Enum.Font.Code, TextSize=13, Text="", PlaceholderText="config name...",
+        ClearTextOnFocus=false, BorderSizePixel=0, ZIndex=4,
+    })
+    corner(NameBox, 5)
+    SaveBtn = mk("TextButton", P, {
+        Position=UDim2.fromOffset(368,80), Size=UDim2.fromOffset(140,30),
+        Text="Save Current", Font=Enum.Font.GothamBold, TextSize=12,
+        TextColor3=mkColor(20,20,20), BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+    })
+    corner(SaveBtn, 5); addBtnFx(SaveBtn); registerAccentButton(SaveBtn)
+    StatusLabel = mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,116),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="",
+        TextColor3=mkColor(180,180,190), TextSize=11,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    LocalList = mk("ScrollingFrame", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,136),
+        Size=UDim2.fromOffset(488,190), ScrollBarThickness=3,
+        ScrollBarImageColor3=Config.UI.Accent, CanvasSize=UDim2.new(),
+        AutomaticCanvasSize=Enum.AutomaticSize.Y, BorderSizePixel=0, ZIndex=3,
+    })
+    mk("UIListLayout", LocalList, { Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder })
+end
+
+--==================== CUSTOM PAGE ====================
+local AddScriptBtn
+do
+    local P = CustomPage
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,44),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Custom Scripts",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    mk("Frame", P, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,68), Size=UDim2.new(1,-40,0,2), BorderSizePixel=0, ZIndex=3,
+    })
+    AddScriptBtn = mk("TextButton", P, {
+        Position=UDim2.fromOffset(20,80), Size=UDim2.fromOffset(200,32),
+        Text="+ Add Script", Font=Enum.Font.GothamBold, TextSize=13,
+        TextColor3=mkColor(20,20,20), BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+    })
+    corner(AddScriptBtn, 5); addBtnFx(AddScriptBtn); registerAccentButton(AddScriptBtn)
+    CustomStatusLabel = mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(230,80),
+        Size=UDim2.new(1,-250,0,32), Font=Enum.Font.Gotham,
+        Text="LMB bind / RMB clear", TextColor3=mkColor(160,160,170),
+        TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+        TextWrapped=true, TextYAlignment=Enum.TextYAlignment.Center,
+    })
+    CustomList = mk("ScrollingFrame", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,122),
+        Size=UDim2.fromOffset(488,212), ScrollBarThickness=3,
+        ScrollBarImageColor3=Config.UI.Accent, CanvasSize=UDim2.new(),
+        AutomaticCanvasSize=Enum.AutomaticSize.Y, BorderSizePixel=0, ZIndex=3,
+    })
+    mk("UIListLayout", CustomList, { Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder })
+end
+
+--==================== SETTINGS PAGE ====================
+do
+    local P = SetPage
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
+        Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Script Settings",
+        TextColor3=mkColor(210,210,215), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    mk("Frame", P, {
+        BackgroundColor3=mkColor(50,50,55), BackgroundTransparency=0.5,
+        Position=UDim2.fromOffset(20,70), Size=UDim2.new(1,-40,0,2), BorderSizePixel=0, ZIndex=3,
+    })
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,82),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="COLORS",
+        TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    colorSwatch(P, "Accent", UDim2.fromOffset(20,98), UDim2.fromOffset(240,46),
+        function() return Config.UI.Accent end,
+        function(c) Config.UI.Accent = c; applyAccent() end, "Script Accent")
+    colorSwatch(P, "Buttons", UDim2.fromOffset(268,98), UDim2.fromOffset(240,46),
+        function() return Config.UI.Button end,
+        function(c) Config.UI.Button = c; applyTabStyles(); refreshAllUI() end, "Button Color")
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,152),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="LAYOUT",
+        TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local scaleIn = settingBlock(P, "GUI Scale", Config.UI.Scale,
+        UDim2.fromOffset(20,168), UDim2.fromOffset(240,44), nil,
+        function() return Config.UI.Scale end)
+    bind(scaleIn.FocusLost, function()
+        Config.UI.Scale = math.clamp(tonumber(scaleIn.Text) or 1, 0.5, 2)
+        scaleIn.Text = tostring(Config.UI.Scale); MainScale.Scale = Config.UI.Scale; saveSettingsFull()
+    end)
+    local mBox = mk("Frame", P, {
+        Position=UDim2.fromOffset(268,168), Size=UDim2.fromOffset(240,44),
+        BackgroundColor3=Config.UI.Button, BorderSizePixel=0, ZIndex=3,
+    })
+    corner(mBox)
+    mk("TextLabel", mBox, {
+        BackgroundTransparency=1, Position=UDim2.new(0.05,0,0,0),
+        Size=UDim2.new(0.55,0,1,0), Font=Enum.Font.Gotham, Text="Menu Key",
+        TextColor3=mkColor(200,200,205), TextSize=12,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+    })
+    MenuKeyBtn = mk("TextButton", mBox, {
+        Position=UDim2.new(0.55,0,0.2,0), Size=UDim2.new(0.4,0,0.6,0),
+        BackgroundColor3=mkColor(28,28,32), Font=Enum.Font.GothamBold,
+        Text=Config.UI.ToggleKey.Name, TextColor3=Color3.new(1,1,1), TextSize=12,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+    })
+    corner(MenuKeyBtn); addBtnFx(MenuKeyBtn)
+    registerRefresh(function() MenuKeyBtn.Text = Config.UI.ToggleKey.Name end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,222),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="HEADER IMAGE ID",
+        TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local hIn = settingBlock(P, "Header", (Config.UI.HeaderImage:match("(%d+)") or "0"),
+        UDim2.fromOffset(20,238), UDim2.fromOffset(488,44), nil,
+        function() return (Config.UI.HeaderImage:match("(%d+)") or "0") end)
+    bind(hIn.FocusLost, function()
+        local t = hIn.Text:match("%d+"); if not t then return end
+        Config.UI.HeaderImage = "rbxassetid://"..t
+        decoR.Image = Config.UI.HeaderImage; decoL.Image = Config.UI.HeaderImage
+        saveSettingsFull()
+    end)
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,292),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="FONT",
+        TextColor3=mkColor(160,160,170), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local fontOpts = { "GothamBold", "Gotham", "GothamMedium", "Code", "SourceSans",
+        "SourceSansBold", "Arial", "ArialBold", "Roboto", "RobotoMono",
+        "Antique", "Fantasy", "SciFi", "Cartoon", "Legacy" }
+    local fIdx = 1
+    for i, v in ipairs(fontOpts) do if v == Config.UI.Font.Name then fIdx = i end end
+    fontBtn = selectBtn(P, "Font: "..fontOpts[fIdx],
+        UDim2.fromOffset(20,308), UDim2.fromOffset(240,44), function() end)
+    bind(fontBtn.MouseButton1Click, function()
+        fIdx = fIdx + 1; if fIdx > #fontOpts then fIdx = 1 end
+        Config.UI.Font = Enum.Font[fontOpts[fIdx]]
+        fontBtn.Text = "Font: "..fontOpts[fIdx]; applyFonts(); saveSettingsFull()
+    end)
+    local fsIn = settingBlock(P, "Font Scale", Config.UI.FontScale,
+        UDim2.fromOffset(268,308), UDim2.fromOffset(240,44), nil,
+        function() return Config.UI.FontScale end)
+    bind(fsIn.FocusLost, function()
+        Config.UI.FontScale = math.clamp(tonumber(fsIn.Text) or 1, 0.5, 3)
+        fsIn.Text = tostring(Config.UI.FontScale); applyFonts(); saveSettingsFull()
+    end)
+end
+
+--==================== WARNING MODAL ====================
+do
+    local overlay = mk("Frame", Gui, {
+        Name="WarnOverlay", Size=UDim2.fromScale(1,1),
+        BackgroundColor3=Color3.new(0,0,0), BackgroundTransparency=0.55,
+        Visible=false, ZIndex=900,
+    })
+    local box = mk("Frame", overlay, {
+        AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5),
+        Size=UDim2.fromOffset(420,240), BackgroundColor3=mkColor(25,25,25),
+        BorderSizePixel=0, ZIndex=901,
+    })
+    corner(box, 6); stroke(box, mkColor(255,100,100), 2)
+    mk("TextLabel", box, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,18),
+        Size=UDim2.new(1,-40,0,28), Font=Enum.Font.Code, Text="!! WARNING !!",
+        TextColor3=mkColor(255,100,100), TextSize=20,
+        TextXAlignment=Enum.TextXAlignment.Center, ZIndex=902,
+    })
+    local msg = mk("TextLabel", box, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,56),
+        Size=UDim2.new(1,-40,0,120), Font=Enum.Font.Gotham,
+        Text="", TextColor3=mkColor(220,220,220), TextSize=13,
+        TextWrapped=true, TextYAlignment=Enum.TextYAlignment.Top, ZIndex=902,
+    })
+    local yes = mk("TextButton", box, {
+        Position=UDim2.new(0,20,1,-60), Size=UDim2.new(0.5,-25,0,40),
+        BackgroundColor3=mkColor(200,60,60), Text="ENABLE",
+        TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=13,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=902,
+    })
+    corner(yes, 5); addBtnFx(yes)
+    local no = mk("TextButton", box, {
+        Position=UDim2.new(0.5,5,1,-60), Size=UDim2.new(0.5,-25,0,40),
+        BackgroundColor3=Config.UI.Button, Text="CANCEL",
+        TextColor3=mkColor(200,200,200), Font=Enum.Font.GothamBold, TextSize=13,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=902,
+    })
+    corner(no, 5); addBtnFx(no)
+    local pending = nil
+    showWarning = function(title, m, onYes)
+        msg.Text = m or "Are you sure?"
+        pending = onYes; overlay.Visible = true
+    end
+    bind(yes.MouseButton1Click, function()
+        overlay.Visible = false
+        local f = pending; pending = nil; if f then f() end
+    end)
+    bind(no.MouseButton1Click, function()
+        overlay.Visible = false; pending = nil
+    end)
+end
+
+--==================== COLOR PICKER ====================
+do
+    local CP_W, CP_H = 320, 440
+    local overlay = mk("Frame", Gui, {
+        Name="CPOverlay", Size=UDim2.fromScale(1,1),
+        BackgroundTransparency=1, Visible=false, ZIndex=500,
+    })
+    local CP = mk("Frame", overlay, {
+        AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5),
+        Size=UDim2.fromOffset(CP_W,CP_H), BackgroundColor3=mkColor(20,20,22),
+        BorderSizePixel=0, ZIndex=501,
+    })
+    corner(CP, 6)
+    local cs = stroke(CP, Color3.new(1,1,1), 2)
+    CPGrad = mk("UIGradient", cs, {
+        Color=ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromHex("#151517")),
+            ColorSequenceKeypoint.new(1, Config.UI.Accent),
+        }
+    })
+    local hdr = mk("Frame", CP, {
+        Size=UDim2.new(1,0,0,40), BackgroundTransparency=1, BorderSizePixel=0, ZIndex=502, Active=true,
+    })
+    CPTitle = mk("TextLabel", hdr, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(14,0),
+        Size=UDim2.new(1,-60,1,0), Font=Enum.Font.Code,
+        Text="COLOR PICKER", TextColor3=Color3.new(1,1,1), TextSize=15,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=503,
+    })
+    local cpX = mk("TextButton", hdr, {
+        Size=UDim2.fromOffset(24,24), Position=UDim2.new(1,-34,0,8),
+        BackgroundColor3=mkColor(200,60,80), Text="X",
+        TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=12,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=503,
+    })
+    corner(cpX, 4); addBtnFx(cpX)
+    local pv = mk("Frame", CP, {
+        Position=UDim2.fromOffset(14,46), Size=UDim2.fromOffset(CP_W-28,40),
+        BackgroundColor3=mkColor(255,60,60), BorderSizePixel=0, ZIndex=502,
+    })
+    corner(pv, 4); stroke(pv, mkColor(60,60,70), 1)
+    local pvT = mk("TextLabel", pv, {
+        BackgroundTransparency=1, Size=UDim2.new(1,0,1,0),
+        Font=Enum.Font.Code, Text="#FF3C3C", TextColor3=Color3.new(1,1,1),
+        TextStrokeTransparency=0.4, TextStrokeColor3=Color3.new(0,0,0),
+        TextSize=15, ZIndex=503,
+    })
+    mk("TextLabel", CP, {
+        Position=UDim2.fromOffset(14,92), Size=UDim2.fromOffset(CP_W-28,12),
+        BackgroundTransparency=1, Font=Enum.Font.Gotham, Text="HUE",
+        TextColor3=mkColor(140,140,150), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=502,
+    })
+    local hueS = mk("Frame", CP, {
+        Position=UDim2.fromOffset(14,106), Size=UDim2.fromOffset(CP_W-28,20),
+        BackgroundTransparency=1, BorderSizePixel=0, ZIndex=502,
+    })
+    local strips = mk("Frame", hueS, {
+        Size=UDim2.fromScale(1,1), BackgroundColor3=mkColor(20,20,22),
+        BorderSizePixel=0, ZIndex=502, ClipsDescendants=true,
+    })
+    corner(strips, 4)
+    local STEPS = 48
+    for i = 0, STEPS-1 do
+        local t = i/(STEPS-1)
+        mk("Frame", strips, {
+            Size=UDim2.new(1/(STEPS-1)+0.004,0,1,0),
+            Position=UDim2.new(t,0,0,0),
+            BackgroundColor3=Color3.fromHSV(t,1,1),
+            BorderSizePixel=0, ZIndex=503,
+        })
+    end
+    local hueC = mk("Frame", hueS, {
+        AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0,0.5),
+        Size=UDim2.fromOffset(6,26), BackgroundColor3=Color3.new(1,1,1),
+        BorderSizePixel=0, ZIndex=510,
+    })
+    corner(hueC, 3); stroke(hueC, Color3.new(0,0,0), 1)
+    mk("TextLabel", CP, {
+        Position=UDim2.fromOffset(14,132), Size=UDim2.fromOffset(CP_W-28,12),
+        BackgroundTransparency=1, Font=Enum.Font.Gotham, Text="SAT / VAL",
+        TextColor3=mkColor(140,140,150), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=502,
+    })
+    local sv = mk("Frame", CP, {
+        Position=UDim2.fromOffset(14,146), Size=UDim2.fromOffset(CP_W-28,150),
+        BackgroundColor3=mkColor(255,0,0), BorderSizePixel=0,
+        ZIndex=502, ClipsDescendants=true,
+    })
+    corner(sv, 4)
+    local satO = mk("Frame", sv, {
+        Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.new(1,1,1),
+        BorderSizePixel=0, ZIndex=503,
+    })
+    mk("UIGradient", satO, {
+        Transparency=NumberSequence.new{
+            NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,1),
+        }
+    })
+    local valO = mk("Frame", sv, {
+        Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.new(0,0,0),
+        BorderSizePixel=0, ZIndex=504,
+    })
+    mk("UIGradient", valO, {
+        Transparency=NumberSequence.new{
+            NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,1),
+        }, Rotation=270,
+    })
+    local svC = mk("Frame", sv, {
+        AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(1,0),
+        Size=UDim2.fromOffset(12,12), BackgroundColor3=Color3.new(1,1,1),
+        BorderSizePixel=0, ZIndex=505,
+    })
+    corner(svC, 6); stroke(svC, Color3.new(0,0,0), 2)
+    local hex = mk("TextBox", CP, {
+        Position=UDim2.fromOffset(14,306), Size=UDim2.fromOffset(CP_W-28,34),
+        BackgroundColor3=mkColor(35,35,40), TextColor3=Color3.new(1,1,1),
+        Font=Enum.Font.Code, TextSize=14, Text="#FF3C3C",
+        PlaceholderText="#RRGGBB", ClearTextOnFocus=false, ZIndex=502, BorderSizePixel=0,
+    })
+    corner(hex, 4); stroke(hex, mkColor(60,60,70), 1)
+    CPApply = mk("TextButton", CP, {
+        Position=UDim2.fromOffset(14, CP_H-48),
+        Size=UDim2.fromOffset((CP_W-34)/2, 34),
+        Text="Apply", TextColor3=mkColor(20,20,20),
+        Font=Enum.Font.GothamBold, TextSize=14, ZIndex=502, BorderSizePixel=0, AutoButtonColor=false,
+    })
+    corner(CPApply, 4); addBtnFx(CPApply); registerAccentButton(CPApply)
+    local cpCan = mk("TextButton", CP, {
+        Position=UDim2.fromOffset(20 + (CP_W-34)/2, CP_H-48),
+        Size=UDim2.fromOffset((CP_W-34)/2, 34),
+        BackgroundColor3=mkColor(45,45,55), Text="Cancel",
+        TextColor3=mkColor(200,200,200), Font=Enum.Font.GothamBold, TextSize=14,
+        ZIndex=502, BorderSizePixel=0, AutoButtonColor=false,
+    })
+    corner(cpCan, 4); addBtnFx(cpCan)
+    local st = { H=0, S=1, V=1, Color=Color3.new(1,0,0), OnApply=nil }
+    local function refreshPreview()
+        local c = Color3.fromHSV(st.H, st.S, st.V)
+        st.Color = c; pv.BackgroundColor3 = c
+        local hx = string.format("#%02X%02X%02X",
+            math.round(c.R*255), math.round(c.G*255), math.round(c.B*255))
+        pvT.Text = hx; hex.Text = hx
+    end
+    local function refreshSquare()
+        sv.BackgroundColor3 = Color3.fromHSV(st.H, 1, 1)
+        hueC.Position = UDim2.fromScale(st.H, 0.5)
+        svC.Position = UDim2.fromScale(st.S, 1 - st.V)
+    end
+    local function fromColor(c)
+        local h, s, v = Color3.toHSV(c)
+        st.H, st.S, st.V = h, s, v; refreshSquare(); refreshPreview()
+    end
+    local function setupDrag(frame, onMove)
+        bind(frame.InputBegan, function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+               or input.UserInputType == Enum.UserInputType.Touch then
+                onMove(input.Position)
+                local m, e
+                m = UserInputService.InputChanged:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseMovement
+                       or i.UserInputType == Enum.UserInputType.Touch then onMove(i.Position) end
+                end)
+                e = UserInputService.InputEnded:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1
+                       or i.UserInputType == Enum.UserInputType.Touch then
+                        m:Disconnect(); e:Disconnect()
+                    end
+                end)
+            end
+        end)
+    end
+    setupDrag(hueS, function(p)
+        local a, s = hueS.AbsolutePosition, hueS.AbsoluteSize
+        st.H = math.clamp((p.X - a.X) / math.max(s.X, 1), 0, 1)
+        refreshSquare(); refreshPreview()
+    end)
+    setupDrag(sv, function(p)
+        local a, s = sv.AbsolutePosition, sv.AbsoluteSize
+        st.S = math.clamp((p.X - a.X) / math.max(s.X, 1), 0, 1)
+        st.V = 1 - math.clamp((p.Y - a.Y) / math.max(s.Y, 1), 0, 1)
+        refreshSquare(); refreshPreview()
+    end)
+    bind(hex.FocusLost, function()
+        local h = hex.Text:match("^%s*#?(%x%x%x%x%x%x)%s*$")
+        if not h then return end
+        fromColor(mkColor(tonumber(h:sub(1,2),16), tonumber(h:sub(3,4),16), tonumber(h:sub(5,6),16)))
+    end)
+    openColorPicker = function(initial, title, onApply)
+        fromColor(initial or Color3.new(1,0,0))
+        CPTitle.Text = string.upper(title or "Color Picker")
+        st.OnApply = onApply; CP.Position = UDim2.fromScale(0.5, 0.5); overlay.Visible = true
+    end
+    local function close() overlay.Visible = false; st.OnApply = nil end
+    bind(cpX.MouseButton1Click, close)
+    bind(cpCan.MouseButton1Click, close)
+    bind(CPApply.MouseButton1Click, function()
+        if st.OnApply then st.OnApply(st.Color) end
+        close()
+    end)
+    do
+        local dragging, dragInput, dragStart, startPos
+        bind(hdr.InputBegan, function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+               or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true; dragStart = input.Position; startPos = CP.Position
+            end
+        end)
+        bind(hdr.InputChanged, function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement
+               or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end)
+        bind(UserInputService.InputChanged, function(input)
+            if input == dragInput and dragging then
+                local d = input.Position - dragStart
+                CP.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + d.X,
+                    startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            end
+        end)
+        bind(UserInputService.InputEnded, function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+               or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+    end
+end
+
+--==================== ACCENT / TITLE ====================
+applyAccent = function()
+    local seq = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromHex("#151517")),
+        ColorSequenceKeypoint.new(1, Config.UI.Accent),
+    }
+    MainGrad.Color = seq
+    if CPGrad then CPGrad.Color = seq end
+    if FOVStroke then FOVStroke.Color = Config.FOV.Color end
+    applyTabStyles()
+    refreshAccentButtons()
+end
+updateTitle = function()
+    Title.Text = "1Qlua Multi v5 | "..Config.UI.ToggleKey.Name..": menu"
+end
+updateTitle()
+
+--==================== FOV CIRCLE ====================
+do
+    local FOV = mk("Frame", Gui, {
+        Name="FOVCircle", AnchorPoint=Vector2.new(0.5,0.5),
+        BackgroundTransparency=1, Visible=false, ZIndex=50,
+        Size=UDim2.fromOffset(600,600),
+    })
+    corner(FOV, 9999)
+    FOVStroke = Instance.new("UIStroke")
+    FOVStroke.Thickness = Config.FOV.Thickness
+    FOVStroke.Color = Config.FOV.Color
+    FOVStroke.Transparency = Config.FOV.Transparency
+    FOVStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    FOVStroke.Parent = FOV
+    bind(RunService.RenderStepped, function()
+        if not (Config.Aim.ShowFOV and Config.Aim.Active) then
+            if FOV.Visible then FOV.Visible = false end
+            return
+        end
+        local m = UserInputService:GetMouseLocation()
+        FOV.Position = UDim2.fromOffset(m.X, m.Y)
+        FOV.Size = UDim2.fromOffset(Config.Aim.FOVRadius*2, Config.Aim.FOVRadius*2)
+        FOV.Visible = true
+    end)
+end
+
+--==================== BLACKLIST CARDS ====================
+local AimCards = {}
+do
+    local function makeCard(p)
+        local card = mk("TextButton", AimPlayerList, {
+            Name=tostring(p.UserId), BackgroundColor3=mkColor(40,40,46),
+            Size=UDim2.new(1,0,0,38), Text="", BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
+        })
+        corner(card, 5)
+        local icon = mk("ImageLabel", card, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(5,5),
+            Size=UDim2.fromOffset(28,28), ZIndex=4,
+        })
+        corner(icon, 5)
+        task.spawn(function()
+            local ok, img = pcall(function()
+                return Players:GetUserThumbnailAsync(p.UserId,
+                    Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+            end)
+            if ok and img then icon.Image = img end
+        end)
+        mk("TextLabel", card, {
+            BackgroundTransparency=1, Position=UDim2.new(0,42,0,4),
+            Size=UDim2.new(1,-160,0,16), Font=Enum.Font.Code,
+            Text=p.DisplayName, TextColor3=mkColor(220,220,225),
+            TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+        })
+        mk("TextLabel", card, {
+            BackgroundTransparency=1, Position=UDim2.new(0,42,0,20),
+            Size=UDim2.new(1,-160,0,12), Font=Enum.Font.Code,
+            Text="@"..p.Name, TextColor3=mkColor(140,140,150),
+            TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+        })
+        local ind = mk("Frame", card, {
+            BackgroundColor3=Blacklist[p.UserId] and COLOR_OFF or COLOR_ON,
+            BorderSizePixel=0, Position=UDim2.new(1,-18,0.5,-10),
+            Size=UDim2.fromOffset(7,20), ZIndex=4,
+        })
+        corner(ind, 5)
+        bind(card.MouseButton1Click, function()
+            Blacklist[p.UserId] = not Blacklist[p.UserId]
+            ind.BackgroundColor3 = Blacklist[p.UserId] and COLOR_OFF or COLOR_ON
+            saveBlacklist()
+        end)
+        return card
+    end
+    local function updateList()
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and not AimCards[p.UserId] then
+                AimCards[p.UserId] = makeCard(p)
+            end
+        end
+    end
+    bind(Players.PlayerAdded, updateList)
+    bind(Players.PlayerRemoving, function(p)
+        local c = AimCards[p.UserId]; if c then c:Destroy(); AimCards[p.UserId] = nil end
+    end)
+    updateList()
+end
+
+--==================== VFLY ====================
+do
+    local st = { Active=false, Conn=nil, Vel=Vector3.new(), Char=nil, Root=nil }
+    local function setChar(c)
+        st.Char = c; st.Root = c:WaitForChild("HumanoidRootPart")
+    end
+    bind(LocalPlayer.CharacterAdded, setChar)
+    if LocalPlayer.Character then setChar(LocalPlayer.Character) end
+    local function heartbeat(dt)
+        if not st.Active then return end
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+        local vel = Vector3.new()
+        if not UserInputService:GetFocusedTextBox() then
+            local s = Config.Flight.Speed
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then vel = vel + cam.CFrame.LookVector * s end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then vel = vel - cam.CFrame.LookVector * s end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then vel = vel - cam.CFrame.RightVector * s end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then vel = vel + cam.CFrame.RightVector * s end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then vel = vel + cam.CFrame.UpVector * s end
+            if UserInputService:IsKeyDown(Config.Flight.SpeedKey) then
+                vel = vel * Config.Flight.SpeedMultiplier
+            end
+        end
+        local root = st.Root
+        if root and root.Parent then
+            local ok, car = pcall(function() return root:GetRootPart() end)
+            if not ok or not car or car.Anchored then return end
+            local ok2, owned = pcall(function() return isnetworkowner(car) end)
+            if not ok2 or not owned then return end
+            st.Vel = st.Vel:Lerp(vel, math.clamp(dt * Config.Flight.Acceleration, 0, 1))
+            car.Velocity = st.Vel + Vector3.new(0,2,0)
+            if car ~= root then
+                car.RotVelocity = Vector3.new()
+                car.CFrame = car.CFrame:Lerp(CFrame.lookAt(
+                    car.Position, car.Position + st.Vel + cam.CFrame.LookVector
+                ), math.clamp(dt * Config.Flight.TurnSpeed, 0, 1))
+            end
+        end
+    end
+    local function notify(t)
+        pcall(function()
+            StarterGui:SetCore("SendNotification", { Title="Vfly", Text=t, Duration=2 })
+        end)
+    end
+    toggleFlight = function(force)
+        local new = force
+        if new == nil then new = not st.Active end
+        if new == st.Active then return end
+        if new then
+            st.Active = true
+            st.Vel = st.Root and st.Root.Velocity or Vector3.new()
+            st.Conn = RunService.Heartbeat:Connect(heartbeat)
+            Runtime.Connections[#Runtime.Connections+1] = st.Conn
+            notify("Flight enabled")
+        else
+            st.Active = false
+            if st.Conn then st.Conn:Disconnect(); st.Conn = nil end
+            notify("Flight disabled")
+        end
+        Config.Flight.Active = new
+        refreshAllUI()
+    end
+    Runtime.CleanupFlight = function()
+        if st.Conn then pcall(function() st.Conn:Disconnect() end) end
+    end
+end
+
+--==================== AIM LOGIC ====================
+do
+    local NPCCache, NPCLookup = {}, {}
+    local function tryAddNPC(inst)
+        if inst:IsA("Humanoid") then
+            task.defer(function()
+                local m = inst.Parent
+                if m and m:IsA("Model")
+                   and not Players:GetPlayerFromCharacter(m)
+                   and not NPCLookup[m] then
+                    NPCLookup[m] = true; NPCCache[#NPCCache+1] = m
+                end
+            end)
+        end
+    end
+    for _, d in ipairs(workspace:GetDescendants()) do tryAddNPC(d) end
+    bind(workspace.DescendantAdded, tryAddNPC)
+
+    local CurrentTarget = nil
+    local function isPlayerObj(t) return typeof(t) == "Instance" and t:IsA("Player") end
+    local function isValidTarget(t)
+        if not t then return false end
+        if isPlayerObj(t) then
+            if t.Parent ~= Players then return false end
+            if Blacklist[t.UserId] or Blacklist[tostring(t.UserId)] then return false end
+            local ch = t.Character
+            if not ch or not ch:FindFirstChild("Head") then return false end
+            local h = ch:FindFirstChildOfClass("Humanoid")
+            return h and h.Health > 0
+        end
+        if not t:IsDescendantOf(workspace) then return false end
+        if Players:GetPlayerFromCharacter(t) then return false end
+        if not t:FindFirstChild("Head") then return false end
+        local h = t:FindFirstChildOfClass("Humanoid")
+        return h and h.Health > 0
+    end
+    local function getHeadPos(t)
+        if not t then return nil end
+        if isPlayerObj(t) then
+            local ch = t.Character
+            return ch and (ch:FindFirstChild("Head") and ch.Head.Position)
+        end
+        local h = t:FindFirstChild("Head")
+        return h and h.Position
+    end
+    local function isAimingNow()
+        if not Config.Aim.Active then return false end
+        if Config.Aim.Mode == "Hold" then
+            return UserInputService:IsKeyDown(Config.Aim.AimKey)
+        elseif Config.Aim.Mode == "Toggle" then
+            return Config.Aim.ToggleActive == true
+        end
+        return false
+    end
+    local function restoreAutoRotate()
+        local ch = LocalPlayer.Character
+        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+        if hum and not hum.AutoRotate then hum.AutoRotate = true end
+    end
+    bind(RunService.RenderStepped, function()
+        if not isAimingNow() then
+            CurrentTarget = nil
+            restoreAutoRotate()
+            return
+        end
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+        if not isValidTarget(CurrentTarget) then CurrentTarget = nil end
+        if not CurrentTarget then
+            local mpos = UserInputService:GetMouseLocation()
+            local bestDist, best = Config.Aim.FOVRadius, nil
+            if Config.Aim.TargetPlayers then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and isValidTarget(p) then
+                        local hp = getHeadPos(p)
+                        if hp then
+                            local pos, vis = cam:WorldToViewportPoint(hp)
+                            if vis then
+                                local m = (Vector2.new(pos.X, pos.Y) - mpos).Magnitude
+                                if m < bestDist then bestDist = m; best = p end
+                            end
+                        end
+                    end
+                end
+            end
+            if Config.Aim.TargetNPCs then
+                for i = #NPCCache, 1, -1 do
+                    local m = NPCCache[i]
+                    if not m:IsDescendantOf(workspace) then
+                        NPCLookup[m] = nil; table.remove(NPCCache, i)
+                    elseif isValidTarget(m) then
+                        local hp = getHeadPos(m)
+                        if hp then
+                            local pos, vis = cam:WorldToViewportPoint(hp)
+                            if vis then
+                                local d = (Vector2.new(pos.X, pos.Y) - mpos).Magnitude
+                                if d < bestDist then bestDist = d; best = m end
+                            end
+                        end
+                    end
+                end
+            end
+            CurrentTarget = best
+        end
+        if CurrentTarget then
+            local hp = getHeadPos(CurrentTarget)
+            if hp then
+                if Config.Aim.AimType == "Real" then
+                    local ch = LocalPlayer.Character
+                    local root = ch and ch:FindFirstChild("HumanoidRootPart")
+                    local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                    if root and hum then
+                        hum.AutoRotate = false
+                        local cur = root.Position
+                        local lookAt = Vector3.new(hp.X, cur.Y, hp.Z)
+                        if (lookAt - cur).Magnitude > 0.05 then
+                            local targetCF = CFrame.lookAt(cur, lookAt)
+                            local rotLerp = math.clamp(math.max(Config.Aim.Smoothness, 0.35), 0, 1)
+                            root.CFrame = root.CFrame:Lerp(targetCF, rotLerp)
+                        end
+                    end
+                end
+                cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, hp), Config.Aim.Smoothness)
+            end
+        end
+    end)
+end
+
+--==============================================================
+-- ESP RENDERING (OPTIMIZED)
+--==============================================================
+local ESPStorage, ESPNPCStorage = {}, {}
+local ESPBones = {
+    R15 = {
+        {"UpperTorso","LowerTorso","Torso"},
+        {"UpperTorso","Head","Head"},
+        {"UpperTorso","LeftUpperArm","Arms"}, {"LeftUpperArm","LeftLowerArm","Arms"},
+        {"UpperTorso","RightUpperArm","Arms"}, {"RightUpperArm","RightLowerArm","Arms"},
+        {"LowerTorso","LeftUpperLeg","Legs"}, {"LeftUpperLeg","LeftLowerLeg","Legs"},
+        {"LowerTorso","RightUpperLeg","Legs"}, {"RightUpperLeg","RightLowerLeg","Legs"},
+    },
+    R6 = {
+        {"Torso","Head","Head"},
+        {"Torso","Left Arm","Arms"}, {"Torso","Right Arm","Arms"},
+        {"Torso","Left Leg","Legs"}, {"Torso","Right Leg","Legs"},
+    },
+}
+
+-- drawing fallback (no per-frame property churn)
+local function espNewDrawing(kind)
+    if Drawing and type(Drawing.new) == "function" then
+        local ok, d = pcall(Drawing.new, kind)
+        if ok and d then return d end
+    end
+    local visual = Instance.new("Frame", Gui)
+    visual.BorderSizePixel = 0
+    visual.Visible = false
+    visual.BackgroundTransparency = 1
+    local props = {
+        Visible=false, Color=Color3.new(1,1,1), Transparency=1, Thickness=1,
+        ZIndex=1, From=Vector2.zero, To=Vector2.zero,
+    }
+    local removed = false
+    local last = { from = nil, to = nil, color = nil, thick = nil, vis = nil, transp = nil }
+    local function render()
+        if removed then return end
+        local from, to = props.From, props.To
+        if last.from ~= from or last.to ~= to then
+            local d = to - from
+            local mid = (from + to) / 2
+            visual.AnchorPoint = Vector2.new(0.5, 0.5)
+            visual.Position = UDim2.fromOffset(mid.X, mid.Y)
+            visual.Size = UDim2.fromOffset(d.Magnitude, math.max(props.Thickness, 0.1))
+            visual.Rotation = math.deg(math.atan2(d.Y, d.X))
+            last.from, last.to = from, to
+        end
+        if last.color ~= props.Color then
+            visual.BackgroundColor3 = props.Color; last.color = props.Color
+        end
+        if last.transp ~= props.Transparency then
+            visual.BackgroundTransparency = 1 - props.Transparency; last.transp = props.Transparency
+        end
+        if last.vis ~= props.Visible then
+            visual.Visible = props.Visible; last.vis = props.Visible
+        end
+    end
+    return setmetatable({}, {
+        __index = function(_, k)
+            if k == "Remove" or k == "Destroy" then
+                return function() if not removed then removed = true; visual:Destroy() end end
+            end
+            return props[k]
+        end,
+        __newindex = function(_, k, v) props[k] = v; render() end,
+    })
+end
+
+local function espNewLines(n)
+    local t = table.create(n)
+    for i = 1, n do t[i] = espNewDrawing("Line") end
+    return t
+end
+
+-- create one entity bundle (used by both players and NPCs)
+local function espCreateEntity()
+    local a = {
+        Lines = espNewLines(12),
+        BoxLines = espNewLines(20),
+        HPSegments = {},
+        _lastHPLabel = "",
+        _lastDistLabel = "",
+        _hpVisible = false,
+        _boxVisible = false,
+        _headVisible = false,
+    }
+    a.HeadImg = mk("ImageLabel", Gui, {
+        BackgroundTransparency=1, AnchorPoint=Vector2.new(0.5,0.5),
+        Image=Config.ESP.HeadImage, Visible=false, ZIndex=100,
+    })
+    a.BoxFrame = mk("Frame", Gui, {
+        BackgroundTransparency=1, BorderSizePixel=0, Visible=false, ZIndex=79,
+    })
+    a.BoxStroke = Instance.new("UIStroke")
+    a.BoxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    a.BoxStroke.Parent = a.BoxFrame
+
+    a.HPBar = mk("Frame", Gui, {
+        BackgroundColor3=mkColor(15,15,18), BackgroundTransparency=0.35,
+        BorderSizePixel=0, Visible=false, ZIndex=80,
+    })
+    corner(a.HPBar, 999)
+
+    a.HPFill = mk("Frame", Gui, {
+        BackgroundColor3=Config.ESP.HPColor, BorderSizePixel=0, Visible=false, ZIndex=81,
+    })
+    corner(a.HPFill, 999)
+
+    a.HPSegContainer = mk("Frame", Gui, {
+        BackgroundColor3=mkColor(15,15,18), BackgroundTransparency=0.3,
+        BorderSizePixel=0, Visible=false, ZIndex=80,
+    })
+    corner(a.HPSegContainer, 3)
+    for i = 1, 10 do
+        a.HPSegments[i] = mk("Frame", a.HPSegContainer, {
+            BackgroundColor3=Config.ESP.HPColor, BorderSizePixel=0, ZIndex=81,
+        })
+        corner(a.HPSegments[i], 1)
+    end
+
+    a.HPLabel = mk("TextLabel", Gui, {
+        BackgroundTransparency=1, Font=Enum.Font.GothamBold,
+        TextColor3=Config.ESP.HPTextColor, TextSize=Config.ESP.HPSize,
+        TextStrokeTransparency=0.25, TextStrokeColor3=Color3.new(0,0,0),
+        Visible=false, ZIndex=84, Text="",
+        AnchorPoint=Vector2.new(0,0.5),
+        Size=UDim2.fromOffset(60,16),
+        TextXAlignment=Enum.TextXAlignment.Left,
+    })
+    a.DistLabel = mk("TextLabel", Gui, {
+        BackgroundTransparency=1, Font=Enum.Font.GothamBold,
+        TextColor3=Config.ESP.DistTextColor, TextSize=Config.ESP.DistSize,
+        TextStrokeTransparency=0.25, TextStrokeColor3=Color3.new(0,0,0),
+        Visible=false, ZIndex=84, Text="",
+        AnchorPoint=Vector2.new(0.5,0),
+        Size=UDim2.fromOffset(80,16),
+        TextXAlignment=Enum.TextXAlignment.Center,
+    })
+    return a
+end
+
+local function espCacheChar(a, char)
+    if not char then return end
+    a.hum = char:FindFirstChildOfClass("Humanoid")
+    a.head = char:FindFirstChild("Head")
+    a.root = char:FindFirstChild("HumanoidRootPart")
+              or char:FindFirstChild("UpperTorso")
+              or char:FindFirstChild("Torso")
+    a.bones = nil
+end
+
+local function espAddPlayer(p)
+    if p == LocalPlayer or ESPStorage[p] then return end
+    local a = espCreateEntity()
+    espCacheChar(a, p.Character)
+    bind(p.CharacterAdded, function(c) task.wait(0.3); espCacheChar(a, c); ESP_STATE.Dirty = true end)
+    ESPStorage[p] = a
+end
+
+local function espAddNPC(model)
+    if ESPNPCStorage[model] then return end
+    local a = espCreateEntity()
+    espCacheChar(a, model)
+    ESPNPCStorage[model] = a
+end
+
+local function espHide(a)
+    if a._headVisible then a.HeadImg.Visible = false; a._headVisible = false end
+    if a._boxVisible then
+        a.BoxFrame.Visible = false
+        for i = 1, #a.BoxLines do if a.BoxLines[i].Visible then a.BoxLines[i].Visible = false end end
+        a._boxVisible = false
+    end
+    if a._hpVisible then
+        a.HPBar.Visible = false
+        a.HPFill.Visible = false
+        a.HPSegContainer.Visible = false
+        a.HPLabel.Visible = false
+        a.DistLabel.Visible = false
+        a._hpVisible = false
+    end
+    for i = 1, #a.Lines do
+        if a.Lines[i].Visible then a.Lines[i].Visible = false end
+    end
+end
+
+-- called only when settings change (dirty)
+local function espApplyStyle(a)
+    local E = Config.ESP
+    a.HeadImg.Image = E.HeadImage
+    a.BoxStroke.Color = E.BoxColor
+    a.BoxStroke.Thickness = E.BoxThickness
+    a.BoxStroke.Transparency = E.BoxTransparency
+
+    a.HPFill.BackgroundColor3 = E.HPColor
+    for i = 1, 10 do a.HPSegments[i].BackgroundColor3 = E.HPColor end
+
+    local strokeTr = E.StrokeEnabled and E.StrokeTransparency or 1
+
+    a.HPLabel.TextColor3 = E.HPTextColor
+    a.HPLabel.TextTransparency = E.HPTextTransparency
+    a.HPLabel.TextStrokeTransparency = strokeTr
+    a.HPLabel.TextSize = E.HPSize
+    a.HPLabel.Font = Enum.Font[E.HPFont] or Enum.Font.GothamBold
+
+    a.DistLabel.TextColor3 = E.DistTextColor
+    a.DistLabel.TextTransparency = E.DistTextTransparency
+    a.DistLabel.TextStrokeTransparency = strokeTr
+    a.DistLabel.TextSize = E.DistSize
+    a.DistLabel.Font = Enum.Font[E.DistFont] or Enum.Font.GothamBold
+
+    -- corner styles
+    local hpStyle = E.HPBarStyle or 1
+    local rad = (hpStyle == 1) and UDim.new(1,0) or UDim.new(0,0)
+    local bc = a.HPBar:FindFirstChildOfClass("UICorner")
+    local fc = a.HPFill:FindFirstChildOfClass("UICorner")
+    if bc then bc.CornerRadius = rad end
+    if fc then fc.CornerRadius = rad end
+end
+
+local function espDrawBones(a, cam)
+    local bones = a.bones
+    if not bones and a.hum and a.hum.Parent then
+        local rig = a.hum.RigType == Enum.HumanoidRigType.R15 and ESPBones.R15 or ESPBones.R6
+        local char = a.hum.Parent
+        bones = table.create(#rig)
+        for i, b in ipairs(rig) do
+            bones[i] = { char:FindFirstChild(b[1]), char:FindFirstChild(b[2]), b[3] }
+        end
+        a.bones = bones
+    end
+    if not bones then return end
+    local colors = Config.ESP.Colors
+    local thick = Config.ESP.Thickness
+    local hide = Config.ESP.HideHead
+    for i = 1, #bones do
+        local p1, p2, part = bones[i][1], bones[i][2], bones[i][3]
+        local line = a.Lines[i]
+        if line then
+            if not (hide and part == "Head") and p1 and p2 and p1.Parent and p2.Parent then
+                local pos1, v1 = cam:WorldToViewportPoint(p1.Position)
+                local pos2, v2 = cam:WorldToViewportPoint(p2.Position)
+                if v1 and v2 then
+                    line.From = Vector2.new(pos1.X, pos1.Y)
+                    line.To = Vector2.new(pos2.X, pos2.Y)
+                    line.Color = colors[part] or WHITE
+                    line.Thickness = thick
+                    line.Visible = true
+                elseif line.Visible then
+                    line.Visible = false
+                end
+            elseif line.Visible then
+                line.Visible = false
+            end
+        end
+    end
+end
+
+local function espHideBones(a)
+    for i = 1, #a.Lines do
+        if a.Lines[i].Visible then a.Lines[i].Visible = false end
+    end
+end
+
+local function espDrawBox(a, left, top, right, bottom)
+    local E = Config.ESP
+    local style = E.BoxStyle or 2
+    local col = E.BoxColor
+    local thick = E.BoxThickness
+    local tr = 1 - E.BoxTransparency
+
+    for i = 1, #a.BoxLines do
+        if a.BoxLines[i].Visible then a.BoxLines[i].Visible = false end
+    end
+    a.BoxFrame.Visible = false
+    a._boxVisible = true
+
+    if style == 2 then
+        a.BoxFrame.Position = UDim2.fromOffset(left, top)
+        a.BoxFrame.Size = UDim2.fromOffset(math.max(right-left,1), math.max(bottom-top,1))
+        a.BoxFrame.Visible = true
+        return
+    end
+
+    local lines = a.BoxLines
+    local w, h = math.max(right-left,1), math.max(bottom-top,1)
+    local cSize = math.clamp(math.min(w,h)*0.28, 6, 45)
+
+    if style == 1 then
+        local segs = {
+            {Vector2.new(left,top), Vector2.new(left+cSize,top)},
+            {Vector2.new(left,top), Vector2.new(left,top+cSize)},
+            {Vector2.new(right-cSize,top), Vector2.new(right,top)},
+            {Vector2.new(right,top), Vector2.new(right,top+cSize)},
+            {Vector2.new(left,bottom-cSize), Vector2.new(left,bottom)},
+            {Vector2.new(left,bottom), Vector2.new(left+cSize,bottom)},
+            {Vector2.new(right-cSize,bottom), Vector2.new(right,bottom)},
+            {Vector2.new(right,bottom-cSize), Vector2.new(right,bottom)},
+        }
+        for i = 1, 8 do
+            local ln = lines[i]
+            if ln then
+                ln.From, ln.To = segs[i][1], segs[i][2]
+                ln.Color, ln.Thickness, ln.Transparency = col, thick, tr
+                ln.Visible = true
+            end
+        end
+    elseif style == 3 then
+        local segC, r, idx = 5, cSize, 1
+        local function arc(cx, cy, a1, a2)
+            for i = 0, segC-1 do
+                local t1 = a1 + (a2-a1)*(i/segC)
+                local t2 = a1 + (a2-a1)*((i+1)/segC)
+                local ln = lines[idx]
+                if ln then
+                    ln.From = Vector2.new(cx+math.cos(t1)*r, cy+math.sin(t1)*r)
+                    ln.To   = Vector2.new(cx+math.cos(t2)*r, cy+math.sin(t2)*r)
+                    ln.Color, ln.Thickness, ln.Transparency = col, thick, tr
+                    ln.Visible = true
+                end
+                idx = idx + 1
+            end
+        end
+        arc(left+r, top+r, math.rad(180), math.rad(270))
+        arc(right-r, top+r, math.rad(270), math.rad(360))
+        arc(right-r, bottom-r, 0, math.rad(90))
+        arc(left+r, bottom-r, math.rad(90), math.rad(180))
+    end
+end
+
+local function espDrawHP(a, hum, ft, fb, fl, fr)
+    local E = Config.ESP
+    local style = E.HPBarStyle or 1
+    local frac = math.clamp((hum.Health or 0) / math.max(hum.MaxHealth or 100, 1), 0, 1)
+    local thick = 5
+    local barX = fr + 4 + E.HPBarOffX
+    local barY = ft + E.HPBarOffY
+    local frameH = math.max(fb - ft, 12)
+
+    if style == 3 then
+        if a.HPBar.Visible then a.HPBar.Visible = false end
+        if a.HPFill.Visible then a.HPFill.Visible = false end
+        a.HPSegContainer.Visible = true
+        a.HPSegContainer.Position = UDim2.fromOffset(barX, barY)
+        a.HPSegContainer.Size = UDim2.fromOffset(thick, frameH)
+        local gap = 1
+        local segH = (frameH - 9*gap) / 10
+        local filled = math.floor(frac*10 + 0.5)
+        for i = 1, 10 do
+            local s = a.HPSegments[i]
+            s.Position = UDim2.fromOffset(0, (10-i)*(segH+gap))
+            s.Size = UDim2.fromOffset(thick, segH)
+            local t = (i <= filled) and 0 or 0.85
+            if s.BackgroundTransparency ~= t then s.BackgroundTransparency = t end
+            if not s.Visible then s.Visible = true end
+        end
+    else
+        if a.HPSegContainer.Visible then a.HPSegContainer.Visible = false end
+        if not a.HPBar.Visible then a.HPBar.Visible = true end
+        if not a.HPFill.Visible then a.HPFill.Visible = true end
+        a.HPBar.Position = UDim2.fromOffset(barX, barY)
+        a.HPBar.Size = UDim2.fromOffset(thick, frameH)
+        a.HPFill.AnchorPoint = Vector2.new(0,1)
+        a.HPFill.Position = UDim2.fromOffset(barX, barY + frameH)
+        a.HPFill.Size = UDim2.fromOffset(thick, math.max(frameH*frac, thick))
+    end
+
+    a.HPLabel.Visible = true
+    local hpTxt = string.format("%d%%", math.floor(frac*100 + 0.5))
+    if a._lastHPLabel ~= hpTxt then
+        a.HPLabel.Text = hpTxt; a._lastHPLabel = hpTxt
+    end
+    a.HPLabel.Position = UDim2.fromOffset(barX + thick + 6 + E.HPTextOffX,
+        ft + frameH*0.5 + E.HPTextOffY)
+end
+
+local function espRenderEntity(a, cam, camPos)
+    local hum, head, root = a.hum, a.head, a.root
+    if not head or not head.Parent or not hum or not hum.Parent or hum.Health <= 0 then
+        espHide(a); return
+    end
+
+    local dist = (head.Position - camPos).Magnitude
+    if dist > Config.ESP.MaxDist then espHide(a); return end
+
+    -- distance-based stride for optimization
+    local stride = 1
+    if dist > 300 then stride = 2 end
+    if dist > 700 then stride = 3 end
+    if stride > 1 and (ESP_STATE.Frame % stride) ~= 0 then
+        return
+    end
+
+    local hp, onScreen = cam:WorldToViewportPoint(head.Position)
+    if not onScreen then espHide(a); return end
+
+    local E = Config.ESP
+    local hSize = math.clamp((E.HeadScale * 2500) / math.max(dist, 0.1), 4, 300)
+    a.HeadImg.Size = UDim2.fromOffset(hSize, hSize)
+    a.HeadImg.Position = UDim2.fromOffset(hp.X, hp.Y)
+    if E.HideHead then
+        if a._headVisible then a.HeadImg.Visible = false; a._headVisible = false end
+    else
+        if not a._headVisible then a.HeadImg.Visible = true; a._headVisible = true end
+    end
+
+    if not root or not root.Parent then
+        espHideBones(a)
+        if a._boxVisible then
+            a.BoxFrame.Visible = false
+            for i = 1, #a.BoxLines do
+                if a.BoxLines[i].Visible then a.BoxLines[i].Visible = false end
+            end
+            a._boxVisible = false
+        end
+        if a._hpVisible then
+            a.HPBar.Visible = false; a.HPFill.Visible = false
+            a.HPSegContainer.Visible = false
+            a.HPLabel.Visible = false; a.DistLabel.Visible = false
+            a._hpVisible = false
+        end
+        return
+    end
+
+    local foot, fOn = cam:WorldToViewportPoint(root.Position + Vector3.new(0, -2.5, 0))
+    if not fOn then espHide(a); return end
+
+    local ft = hp.Y - hSize*0.5
+    local fb = foot.Y + 15
+    local baseW = math.max((1500/dist)*E.BoxWidthScale, hSize*0.6, 24)
+    local fcX = (hp.X + foot.X)*0.5
+    local fl = fcX - baseW*0.5
+    local fr = fl + baseW
+
+    if E.ESPMode == "Bones" or E.ESPMode == "Both" then
+        espDrawBones(a, cam)
+    else
+        espHideBones(a)
+    end
+
+    if E.ESPMode == "Box" or E.ESPMode == "Both" then
+        espDrawBox(a, fl, ft, fr, fb)
+    elseif a._boxVisible then
+        a.BoxFrame.Visible = false
+        for i = 1, #a.BoxLines do
+            if a.BoxLines[i].Visible then a.BoxLines[i].Visible = false end
+        end
+        a._boxVisible = false
+    end
+
+    if E.ShowHealth then
+        espDrawHP(a, hum, ft, fb, fl, fr)
+    else
+        if a.HPBar.Visible then a.HPBar.Visible = false end
+        if a.HPFill.Visible then a.HPFill.Visible = false end
+        if a.HPSegContainer.Visible then a.HPSegContainer.Visible = false end
+        if a.HPLabel.Visible then a.HPLabel.Visible = false end
+    end
+
+    if E.ShowDistance then
+        a.DistLabel.Visible = true
+        local dTxt = string.format("%dm", math.floor(dist*0.28 + 0.5))
+        if a._lastDistLabel ~= dTxt then
+            a.DistLabel.Text = dTxt; a._lastDistLabel = dTxt
+        end
+        a.DistLabel.Position = UDim2.fromOffset(fcX + E.DistOffX, fb + 4 + E.DistOffY)
+    elseif a.DistLabel.Visible then
+        a.DistLabel.Visible = false
+    end
+
+    a._hpVisible = E.ShowHealth
+end
+
+-- register initial
+for _, p in ipairs(Players:GetPlayers()) do espAddPlayer(p) end
+bind(Players.PlayerAdded, espAddPlayer)
+bind(Players.PlayerRemoving, function(p)
+    local a = ESPStorage[p]
+    if a then
+        for i = 1, #a.Lines do pcall(function() a.Lines[i]:Remove() end) end
+        for i = 1, #a.BoxLines do pcall(function() a.BoxLines[i]:Remove() end) end
+        a.HeadImg:Destroy(); a.BoxFrame:Destroy()
+        a.HPBar:Destroy(); a.HPFill:Destroy()
+        a.HPSegContainer:Destroy()
+        a.HPLabel:Destroy(); a.DistLabel:Destroy()
+        ESPStorage[p] = nil
+    end
+end)
+bind(workspace.DescendantAdded, function(inst)
+    if inst:IsA("Humanoid") then
+        local m = inst.Parent
+        if m and m:IsA("Model") and not Players:GetPlayerFromCharacter(m) and not ESPNPCStorage[m] then
+            task.defer(function() if m and m.Parent then espAddNPC(m) end end)
+        end
+    end
+end)
+for _, inst in ipairs(workspace:GetDescendants()) do
+    if inst:IsA("Humanoid") then
+        local m = inst.Parent
+        if m and m:IsA("Model") and not Players:GetPlayerFromCharacter(m) then
+            espAddNPC(m)
+        end
+    end
+end
+
+-- main ESP render loop
+bind(RunService.RenderStepped, function()
+    if not Config.ESP.Enabled then
+        if not ESP_STATE.Hidden then
+            for _, a in pairs(ESPStorage) do espHide(a) end
+            for _, a in pairs(ESPNPCStorage) do espHide(a) end
+            ESP_STATE.Hidden = true
+        end
+        return
+    end
+    ESP_STATE.Hidden = false
+    ESP_STATE.Frame = ESP_STATE.Frame + 1
+
+    if ESP_STATE.Dirty then
+        for _, a in pairs(ESPStorage) do espApplyStyle(a) end
+        for _, a in pairs(ESPNPCStorage) do espApplyStyle(a) end
+        ESP_STATE.Dirty = false
+    end
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+    local camPos = cam.CFrame.Position
+
+    for p, a in pairs(ESPStorage) do
+        if Blacklist[p.UserId] then
+            espHide(a)
+        else
+            local char = p.Character
+            if char and (not a.head or not a.head.Parent) then
+                espCacheChar(a, char)
+            end
+            espRenderEntity(a, cam, camPos)
+        end
+    end
+
+    if Config.ESP.NPCESPEnabled then
+        for m, a in pairs(ESPNPCStorage) do
+            if not m.Parent then
+                espHide(a); ESPNPCStorage[m] = nil
+            else
+                if not a.head or not a.head.Parent then espCacheChar(a, m) end
+                espRenderEntity(a, cam, camPos)
+            end
+        end
+    else
+        for _, a in pairs(ESPNPCStorage) do espHide(a) end
+    end
+end)
+
+--==================== CONFIG MANAGEMENT ====================
+do
+    local function refreshLocalList()
+        LocalConfigs = {}
+        if type(listfiles) ~= "function" then return end
+        local ok, files = pcall(listfiles, CONFIG_FOLDER)
+        if not ok or not files then return end
+        for _, f in ipairs(files) do
+            local name = f:match("([^/\\]+)%.json$")
+            if name then
+                local okR, d = pcall(readfile, f)
+                if okR and d and d ~= "" then
+                    local okD, dec = pcall(function() return HttpService:JSONDecode(d) end)
+                    if okD and type(dec) == "table" then LocalConfigs[name] = dec end
+                end
+            end
+        end
+    end
+    local function writeLocal(name, data)
+        if type(writefile) ~= "function" then return false end
+        data.meta = data.meta or {}; data.meta.created = os.time()
+        local ok = pcall(writefile, CONFIG_FOLDER.."/"..name..".json", HttpService:JSONEncode(data))
+        if ok then LocalConfigs[name] = data end
+        return ok
+    end
+    local function deleteLocal(name)
+        if type(delfile) == "function" then pcall(delfile, CONFIG_FOLDER.."/"..name..".json") end
+        LocalConfigs[name] = nil
+    end
+
+    applyConfigFull = function(data, skipWarn)
+        if type(data) ~= "table" then return end
+        applySnapshot(data)
+        if syncFullUI then syncFullUI() end
+        refreshAllUI()
+        saveSettingsFull()
+    end
+
+    rebuildLocalList = function()
+        for _, ch in ipairs(LocalList:GetChildren()) do
+            if ch:IsA("Frame") or ch:IsA("TextButton") then ch:Destroy() end
+        end
+        local names = {}
+        for n in pairs(LocalConfigs) do table.insert(names, n) end
+        table.sort(names)
+        if #names == 0 then
+            mk("TextLabel", LocalList, {
+                Name="Empty", BackgroundTransparency=1, Size=UDim2.new(1,0,0,60),
+                Font=Enum.Font.Gotham, Text="No saved configs yet.",
+                TextColor3=mkColor(140,140,150), TextSize=12,
+                TextWrapped=true, ZIndex=4, LayoutOrder=0,
+            })
+            return
+        end
+        for i, name in ipairs(names) do
+            local row = mk("Frame", LocalList, {
+                Size=UDim2.new(1,-4,0,32), BackgroundColor3=mkColor(35,35,40),
+                BorderSizePixel=0, ZIndex=3, LayoutOrder=i,
+            })
+            corner(row, 5)
+            mk("TextLabel", row, {
+                BackgroundTransparency=1, Position=UDim2.fromOffset(10,0),
+                Size=UDim2.new(0.55,0,1,0), Font=Enum.Font.Code,
+                Text=name, TextColor3=mkColor(220,220,225), TextSize=13,
+                TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+            })
+            local loadB = mk("TextButton", row, {
+                Position=UDim2.new(1,-160,0,3), Size=UDim2.fromOffset(78,26),
+                BackgroundColor3=Config.UI.Button, Text="Load",
+                TextColor3=mkColor(220,220,220), Font=Enum.Font.GothamBold, TextSize=11,
+                BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+            })
+            corner(loadB, 4); addBtnFx(loadB)
+            bind(loadB.MouseButton1Click, function()
+                local d = LocalConfigs[name]; if not d then return end
+                applyConfigFull(d)
+                StatusLabel.Text = "Loaded: "..name
+                StatusLabel.TextColor3 = mkColor(120,220,120)
+            end)
+            local delB = mk("TextButton", row, {
+                Position=UDim2.new(1,-78,0,3), Size=UDim2.fromOffset(68,26),
+                BackgroundColor3=mkColor(160,45,60), Text="Delete",
+                TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=11,
+                BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+            })
+            corner(delB, 4); addBtnFx(delB)
+            bind(delB.MouseButton1Click, function()
+                deleteLocal(name); rebuildLocalList()
+                StatusLabel.Text = "Deleted: "..name
+                StatusLabel.TextColor3 = mkColor(255,180,180)
+            end)
+        end
+    end
+
+    bind(SaveBtn.MouseButton1Click, function()
+        local name = NameBox.Text:gsub("^%s+", ""):gsub("%s+$", "")
+        if name == "" then
+            StatusLabel.Text = "Enter a name!"; StatusLabel.TextColor3 = mkColor(255,120,120); return
+        end
+        if #name > 40 then name = name:sub(1,40) end
+        if writeLocal(name, snapshot()) then
+            StatusLabel.Text = "Saved: "..name
+            StatusLabel.TextColor3 = mkColor(120,220,120)
+            NameBox.Text = ""; rebuildLocalList()
+        else
+            StatusLabel.Text = "Save failed"; StatusLabel.TextColor3 = mkColor(255,120,120)
+        end
+    end)
+
+    refreshLocalList(); rebuildLocalList()
+end
+
+--==================== CUSTOM SCRIPTS ====================
+runCustomScript = function(s)
+    if not s or not s.code or s.code == "" then return end
+    task.spawn(function()
+        local loader = loadstring or load
+        if not loader then
+            pcall(function() StarterGui:SetCore("SendNotification",
+                { Title="Custom Script", Text="loadstring unavailable", Duration=3 }) end)
+            return
+        end
+        local fn, err = loader(s.code)
+        if not fn then
+            pcall(function() StarterGui:SetCore("SendNotification",
+                { Title="Custom Script", Text="Load error: "..tostring(err), Duration=3 }) end)
+            return
+        end
+        local ok, err2 = pcall(fn)
+        if not ok then
+            pcall(function() StarterGui:SetCore("SendNotification",
+                { Title="Custom Script", Text="Runtime error", Duration=3 }) end)
+        else
+            pcall(function() StarterGui:SetCore("SendNotification",
+                { Title="Custom Script", Text="Executed: "..tostring(s.name), Duration=2 }) end)
+        end
+    end)
+end
+
+rebuildCustomList = function()
+    for _, ch in ipairs(CustomList:GetChildren()) do
+        if ch:IsA("Frame") or ch:IsA("TextButton") or ch:IsA("TextLabel") then ch:Destroy() end
+    end
+    if #Config.Scripts == 0 then
+        mk("TextLabel", CustomList, {
+            BackgroundTransparency=1, Size=UDim2.new(1,0,0,60),
+            Font=Enum.Font.Gotham, Text="No custom scripts. Click '+ Add Script'.",
+            TextColor3=mkColor(140,140,150), TextSize=12, TextWrapped=true,
+            ZIndex=4, LayoutOrder=0,
+        })
+        return
+    end
+    for i, s in ipairs(Config.Scripts) do
+        local row = mk("Frame", CustomList, {
+            Size=UDim2.new(1,-4,0,46), BackgroundColor3=mkColor(35,35,40),
+            BorderSizePixel=0, ZIndex=3, LayoutOrder=i,
+        })
+        corner(row, 5)
+        mk("TextLabel", row, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(10,4),
+            Size=UDim2.new(1,-280,0,18), Font=Enum.Font.Code,
+            Text=s.name or "Unnamed", TextColor3=mkColor(230,230,235),
+            TextSize=13, TextXAlignment=Enum.TextXAlignment.Left,
+            ZIndex=4, TextTruncate=Enum.TextTruncate.AtEnd,
+        })
+        mk("TextLabel", row, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(10,24),
+            Size=UDim2.new(1,-280,0,14), Font=Enum.Font.Gotham,
+            Text="Bind: "..(s.bind or "none"), TextColor3=mkColor(150,150,160),
+            TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4,
+        })
+        local runB = mk("TextButton", row, {
+            Position=UDim2.new(1,-260,0,10), Size=UDim2.fromOffset(70,26),
+            Text="Run", TextColor3=mkColor(20,20,20),
+            Font=Enum.Font.GothamBold, TextSize=11,
+            BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+        })
+        corner(runB, 4); addBtnFx(runB); registerAccentButton(runB)
+        bind(runB.MouseButton1Click, function() runCustomScript(s) end)
+        local bindB = mk("TextButton", row, {
+            Position=UDim2.new(1,-184,0,10), Size=UDim2.fromOffset(88,26),
+            BackgroundColor3=Config.UI.Button,
+            Text=s.bind or "Bind", TextColor3=mkColor(220,220,225),
+            Font=Enum.Font.GothamBold, TextSize=11,
+            BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+        })
+        corner(bindB, 4); addBtnFx(bindB)
+        bind(bindB.MouseButton1Click, function()
+            awaitingBind = "SCRIPT:"..i; bindB.Text = "..."
+        end)
+        bind(bindB.MouseButton2Click, function()
+            s.bind = nil; saveScripts(); rebuildCustomList()
+        end)
+        local delB = mk("TextButton", row, {
+            Position=UDim2.new(1,-90,0,10), Size=UDim2.fromOffset(80,26),
+            BackgroundColor3=mkColor(160,45,60), Text="Delete",
+            TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=11,
+            BorderSizePixel=0, AutoButtonColor=false, ZIndex=4,
+        })
+        corner(delB, 4); addBtnFx(delB)
+        bind(delB.MouseButton1Click, function()
+            table.remove(Config.Scripts, i); saveScripts(); rebuildCustomList()
+        end)
+    end
+end
+
+do
+    local function openAddModal()
+        local overlay = mk("Frame", Gui, {
+            Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.new(0,0,0),
+            BackgroundTransparency=0.55, ZIndex=800,
+        })
+        local box = mk("Frame", overlay, {
+            AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5),
+            Size=UDim2.fromOffset(500,440), BackgroundColor3=mkColor(22,22,24),
+            BorderSizePixel=0, ZIndex=801,
+        })
+        corner(box, 6); stroke(box, Config.UI.Accent, 2)
+        mk("TextLabel", box, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(20,14),
+            Size=UDim2.new(1,-40,0,24), Font=Enum.Font.Code, Text="ADD CUSTOM SCRIPT",
+            TextColor3=Color3.new(1,1,1), TextSize=16,
+            TextXAlignment=Enum.TextXAlignment.Left, ZIndex=802,
+        })
+        mk("TextLabel", box, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(20,44),
+            Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="NAME",
+            TextColor3=mkColor(160,160,170), TextSize=10,
+            TextXAlignment=Enum.TextXAlignment.Left, ZIndex=802,
+        })
+        local nameBox = mk("TextBox", box, {
+            Position=UDim2.fromOffset(20,60), Size=UDim2.new(1,-40,0,32),
+            BackgroundColor3=mkColor(35,35,40), TextColor3=Color3.new(1,1,1),
+            Font=Enum.Font.Code, TextSize=13, Text="", PlaceholderText="name...",
+            ClearTextOnFocus=false, BorderSizePixel=0, ZIndex=802,
+        })
+        corner(nameBox, 4)
+        mk("TextLabel", box, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(20,100),
+            Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham, Text="CODE",
+            TextColor3=mkColor(160,160,170), TextSize=10,
+            TextXAlignment=Enum.TextXAlignment.Left, ZIndex=802,
+        })
+        local codeBox = mk("TextBox", box, {
+            Position=UDim2.fromOffset(20,116), Size=UDim2.new(1,-40,0,232),
+            BackgroundColor3=mkColor(35,35,40), TextColor3=Color3.new(1,1,1),
+            Font=Enum.Font.Code, TextSize=12, Text="", PlaceholderText="-- paste here",
+            ClearTextOnFocus=false, BorderSizePixel=0, ZIndex=802,
+            MultiLine=true, TextWrapped=false,
+            TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top,
+        })
+        corner(codeBox, 4)
+        local cancel = mk("TextButton", box, {
+            Position=UDim2.new(0,20,1,-54), Size=UDim2.new(0.5,-25,0,40),
+            BackgroundColor3=Config.UI.Button, Text="Cancel",
+            TextColor3=mkColor(200,200,200), Font=Enum.Font.GothamBold, TextSize=13,
+            BorderSizePixel=0, AutoButtonColor=false, ZIndex=802,
+        })
+        corner(cancel, 5); addBtnFx(cancel)
+        local add = mk("TextButton", box, {
+            Position=UDim2.new(0.5,5,1,-54), Size=UDim2.new(0.5,-25,0,40),
+            Text="Add", TextColor3=mkColor(20,20,20), Font=Enum.Font.GothamBold, TextSize=13,
+            BorderSizePixel=0, AutoButtonColor=false, ZIndex=802,
+        })
+        corner(add, 5); addBtnFx(add); registerAccentButton(add)
+        bind(cancel.MouseButton1Click, function() overlay:Destroy() end)
+        bind(add.MouseButton1Click, function()
+            local n = nameBox.Text:gsub("^%s+", ""):gsub("%s+$", "")
+            local c = codeBox.Text
+            if n == "" then n = "Unnamed" end
+            if c == "" or c:gsub("%s", "") == "" then
+                CustomStatusLabel.Text = "Code cannot be empty!"
+                CustomStatusLabel.TextColor3 = mkColor(255,120,120); return
+            end
+            table.insert(Config.Scripts, { name=n, code=c, bind=nil })
+            saveScripts(); rebuildCustomList()
+            CustomStatusLabel.Text = "Added: "..n
+            CustomStatusLabel.TextColor3 = mkColor(120,220,120)
+            overlay:Destroy()
+        end)
+    end
+    bind(AddScriptBtn.MouseButton1Click, openAddModal)
+end
+
+rebuildCustomList()
+
+--==================== HANDLERS ====================
+handleBindAction = function(name)
+    if name == "Aimbot" then
+        Config.Aim.Active = not Config.Aim.Active
+        Config.Aim.ToggleActive = false
+        local ch = LocalPlayer.Character
+        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+        if hum then hum.AutoRotate = true end
+        refreshAimToggle(); saveSettingsFull()
+    elseif name == "Flight" then
+        if toggleFlight then toggleFlight() end
+    end
+end
+
+--==================== INPUT ====================
+bind(AimKeyBtn.MouseButton1Click, function()
+    awaitingBind = "Aim"; AimKeyBtn.Text = "..."
+end)
+bind(MenuKeyBtn.MouseButton1Click, function()
+    awaitingBind = "Menu"; MenuKeyBtn.Text = "..."
+end)
+bind(UserInputService.InputBegan, function(input, gp)
+    if awaitingBind and not gp and input.KeyCode ~= Enum.KeyCode.Unknown then
+        if awaitingBind == "Aim" then
+            Config.Aim.AimKey = input.KeyCode
+            AimKeyBtn.Text = input.KeyCode.Name
+        elseif awaitingBind == "Menu" then
+            Config.UI.ToggleKey = input.KeyCode
+            MenuKeyBtn.Text = input.KeyCode.Name
+            updateTitle()
+        elseif awaitingBind:sub(1,5) == "BIND:" then
+            local name = awaitingBind:sub(6)
+            Config.Binds[name] = input.KeyCode
+        elseif awaitingBind:sub(1,7) == "SCRIPT:" then
+            local idx = tonumber(awaitingBind:sub(8))
+            if idx and Config.Scripts[idx] then
+                Config.Scripts[idx].bind = input.KeyCode.Name
+                saveScripts()
+                if rebuildCustomList then rebuildCustomList() end
+            end
+        end
+        awaitingBind = nil
+        saveSettingsFull(); refreshAllUI(); return
+    end
+    if gp then return end
+    if input.KeyCode == Config.UI.ToggleKey then
+        Main.Visible = not Main.Visible; return
+    end
+    if input.KeyCode == Config.Aim.AimKey and Config.Aim.Mode == "Toggle" then
+        Config.Aim.ToggleActive = not Config.Aim.ToggleActive; return
+    end
+    for name, key in pairs(Config.Binds) do
+        if key and key == input.KeyCode then
+            handleBindAction(name); return
+        end
+    end
+    for _, s in ipairs(Config.Scripts) do
+        if s.bind and Enum.KeyCode[s.bind] == input.KeyCode then
+            runCustomScript(s); return
+        end
+    end
+end)
+
+--==================== DRAG ====================
+do
+    local dragging, dragInput, dragStart, startPos
+    Title.Active = true
+    bind(Title.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = Main.Position
+        end
+    end)
+    bind(Title.InputChanged, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    bind(UserInputService.InputChanged, function(input)
+        if input == dragInput and dragging then
+            local d = input.Position - dragStart
+            Main.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + d.X,
+                startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end)
+    bind(UserInputService.InputEnded, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+do
+    local rot = 0
+    bind(RunService.Heartbeat, function(dt)
+        rot = (rot + 300*dt) % 360
+        if rot > 180 then rot = rot - 360 end
+        MainGrad.Rotation = rot
+        if CPGrad then CPGrad.Rotation = rot end
+    end)
+end
+
+--==================== SYNC ====================
+syncFullUI = function()
+    refreshAllUI()
+    if applyAccent then applyAccent() end
+    MainScale.Scale = Config.UI.Scale
+    decoR.Image = Config.UI.HeaderImage
+    decoL.Image = Config.UI.HeaderImage
+    if refreshAimToggle then refreshAimToggle() end
+    if AimKeyBtn then AimKeyBtn.Text = Config.Aim.AimKey.Name end
+    if MenuKeyBtn then MenuKeyBtn.Text = Config.UI.ToggleKey.Name end
+    updateTitle()
+    ESP_STATE.Dirty = true
+end
+
+applyAccent()
+syncFullUI()
+applyFonts()
+
+task.spawn(function()
+    pcall(function() ContentProvider:PreloadAsync({ Config.UI.HeaderImage }) end)
+end)
+
+--==================== STARTUP PROMPT ====================
+if CachedSettings then
+    local prompt = mk("Frame", Gui, {
+        Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.new(0,0,0),
+        BackgroundTransparency=0.6, ZIndex=990,
+    })
+    local pbox = mk("Frame", prompt, {
+        AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5),
+        Size=UDim2.fromOffset(440,220), BackgroundColor3=mkColor(20,20,22),
+        BorderSizePixel=0, ZIndex=991,
+    })
+    corner(pbox, 6); stroke(pbox, Config.UI.Accent, 2)
+    mk("TextLabel", pbox, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,18),
+        Size=UDim2.new(1,-40,0,26), Font=Enum.Font.Code, Text="PREVIOUS SETTINGS FOUND",
+        TextColor3=Color3.new(1,1,1), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Center, ZIndex=992,
+    })
+    mk("TextLabel", pbox, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,56),
+        Size=UDim2.new(1,-40,0,100), Font=Enum.Font.Gotham,
+        Text="Load your previously saved settings, or start fresh?",
+        TextColor3=mkColor(220,220,220), TextSize=13,
+        TextWrapped=true, TextYAlignment=Enum.TextYAlignment.Top, ZIndex=992,
+    })
+    local yes = mk("TextButton", pbox, {
+        Position=UDim2.new(0,20,1,-60), Size=UDim2.new(0.5,-25,0,40),
+        Text="LOAD LAST", TextColor3=mkColor(20,20,20), Font=Enum.Font.GothamBold,
+        TextSize=13, BorderSizePixel=0, AutoButtonColor=false, ZIndex=992,
+    })
+    corner(yes, 5); addBtnFx(yes); registerAccentButton(yes)
+    local no = mk("TextButton", pbox, {
+        Position=UDim2.new(0.5,5,1,-60), Size=UDim2.new(0.5,-25,0,40),
+        BackgroundColor3=Config.UI.Button, Text="START FRESH",
+        TextColor3=mkColor(220,220,225), Font=Enum.Font.GothamBold, TextSize=13,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=992,
+    })
+    corner(no, 5); addBtnFx(no)
+    bind(yes.MouseButton1Click, function()
+        prompt:Destroy()
+        applyConfigFull(CachedSettings)
+    end)
+    bind(no.MouseButton1Click, function()
+        deleteSettingsFile(); CachedSettings = nil; prompt:Destroy()
+    end)
+end
+
+-- if particles are enabled by default, spawn them shortly after load
+if Config.Graphics.P_Enabled then
+    task.spawn(function()
+        task.wait(1.5)
+        if Config.Graphics.P_Enabled then rebuildParticles() end
+    end)
+end
+
+--==================== CLEANUP ====================
+Runtime.Cleanup = function()
+    if not Runtime.Running then return end
+    Runtime.Running = false
+    for i = 1, #Runtime.Connections do
+        pcall(function() Runtime.Connections[i]:Disconnect() end)
+    end
+    if Runtime.CleanupFlight then pcall(Runtime.CleanupFlight) end
+    local sp = workspace:FindFirstChild("SolaraParticles"); if sp then sp:Destroy() end
+    for _, a in pairs(ESPStorage) do
+        for i = 1, #(a.Lines or {}) do pcall(function() a.Lines[i]:Remove() end) end
+        for i = 1, #(a.BoxLines or {}) do pcall(function() a.BoxLines[i]:Remove() end) end
+    end
+    for _, a in pairs(ESPNPCStorage) do
+        for i = 1, #(a.Lines or {}) do pcall(function() a.Lines[i]:Remove() end) end
+        for i = 1, #(a.BoxLines or {}) do pcall(function() a.BoxLines[i]:Remove() end) end
+    end
+    Gui:Destroy()
+    if env.__MultiV5 == Runtime then env.__MultiV5 = nil end
+end
+
+print("[1Qlua Multi v5.1] loaded | menu: "..Config.UI.ToggleKey.Name..
+      " | vfly: "..(Config.Binds.Flight and Config.Binds.Flight.Name or "V")..
+      " | scripts: "..#Config.Scripts)
