@@ -2,6 +2,7 @@ return function(S)
     local Config = S.Config
     local P = S.AimPage
     local mk, corner, addBtnFx = S.mk, S.corner, S.addBtnFx
+    local bind = S.bind
     local settingBlock = S.settingBlock
     local toggleButton = S.toggleButton
     local colorSwatch = S.colorSwatch
