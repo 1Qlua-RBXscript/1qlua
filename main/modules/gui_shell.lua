@@ -2,11 +2,15 @@ return function(S)
     local mk, corner, stroke = S.mk, S.corner, S.stroke
     local mkColor, ACCENT = S.mkColor, S.ACCENT
 
-    local Gui = mk("ScreenGui", S.CoreGui, {
-        Name=S.GUI_LAYER_NAME, ResetOnSpawn=false, IgnoreGuiInset=true,
-        DisplayOrder=6, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
-    })
-    S.Gui = Gui
+    -- Используем готовый ScreenGui из main (в нём живёт loading-экран)
+    local Gui = S.Gui
+    if not Gui or not Gui.Parent then
+        Gui = mk("ScreenGui", S.CoreGui, {
+            Name=S.GUI_LAYER_NAME, ResetOnSpawn=false, IgnoreGuiInset=true,
+            DisplayOrder=6, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
+        })
+        S.Gui = Gui
+    end
 
     local Main = mk("Frame", Gui, {
         Name="MainFrame", BackgroundColor3=mkColor(20,20,22), BorderSizePixel=0,
