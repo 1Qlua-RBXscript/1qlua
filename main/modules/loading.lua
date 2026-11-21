@@ -1,3 +1,4 @@
+
 return function(S)
     local Gui           = S.Gui
     local TweenService  = S.TweenService
@@ -8,9 +9,9 @@ return function(S)
 
     local LOGO_ID = "rbxassetid://99235383301237"
 
-    local loadingFinished = false
-    local skipped = false
-    local errors = {}
+    local finished = false
+    local skipped  = false
+    local errors   = {}
     local statusMessage = "Initializing"
 
     -- ===== Blur =====
@@ -18,58 +19,56 @@ return function(S)
     blur.Name = "MultiLoadingBlur"
     blur.Size = 0
     blur.Parent = Lighting
-    TweenService:Create(blur, TweenInfo.new(0.6), {Size = 24}):Play()
+    TweenService:Create(blur, TweenInfo.new(0.6), {Size=24}):Play()
 
-    -- ===== Full-screen overlay =====
+    -- ===== Full-screen overlay (NOT Active → никогда не блокирует игру) =====
     local screen = mk("Frame", Gui, {
         Name="LoadingScreen",
         Size=UDim2.fromScale(1,1),
         BackgroundColor3=Color3.new(0,0,0),
         BackgroundTransparency=1,
         BorderSizePixel=0,
+        Active=false,
         ZIndex=9999,
     })
     TweenService:Create(screen, TweenInfo.new(0.5), {BackgroundTransparency=0.45}):Play()
 
-    -- ===== Logo container (animates position) =====
+    -- ===== Logo (всегда по центру, не двигается) =====
     local logoBox = mk("Frame", screen, {
         Name="LogoBox",
         AnchorPoint=Vector2.new(0.5,0.5),
         Position=UDim2.fromScale(0.5, 0.5),
-        Size=UDim2.fromOffset(200, 200),
+        Size=UDim2.fromOffset(200,200),
         BackgroundTransparency=1,
         BorderSizePixel=0,
-        ClipsDescendants=false,
         ZIndex=10000,
     })
 
-    -- ===== Glow layers (soft halo) =====
+    -- ===== Glow (мягкое свечение вокруг лого) =====
     local glows = {}
-    local function makeGlow(extraSize, transparency)
+    local function makeGlow(extra, transp)
         local g = mk("ImageLabel", logoBox, {
-            AnchorPoint=Vector2.new(0.5, 0.5),
-            Position=UDim2.fromScale(0.5, 0.5),
-            Size=UDim2.fromOffset(200 + extraSize, 200 + extraSize),
+            AnchorPoint=Vector2.new(0.5,0.5),
+            Position=UDim2.fromScale(0.5,0.5),
+            Size=UDim2.fromOffset(200+extra, 200+extra),
             BackgroundTransparency=1,
             Image=LOGO_ID,
             ImageTransparency=1,
             BorderSizePixel=0,
             ZIndex=10000,
         })
-        TweenService:Create(g, TweenInfo.new(1.0), {ImageTransparency=transparency}):Play()
+        TweenService:Create(g, TweenInfo.new(1.0), {ImageTransparency=transp}):Play()
         glows[#glows+1] = g
-        return g
     end
     makeGlow(150, 0.97)
     makeGlow(90,  0.93)
     makeGlow(40,  0.85)
 
-    -- ===== Main logo =====
     local logo = mk("ImageLabel", logoBox, {
         Name="Logo",
-        AnchorPoint=Vector2.new(0.5, 0.5),
-        Position=UDim2.fromScale(0.5, 0.5),
-        Size=UDim2.fromScale(1, 1),
+        AnchorPoint=Vector2.new(0.5,0.5),
+        Position=UDim2.fromScale(0.5,0.5),
+        Size=UDim2.fromScale(1,1),
         BackgroundTransparency=1,
         Image=LOGO_ID,
         ImageTransparency=1,
@@ -78,13 +77,13 @@ return function(S)
     })
     TweenService:Create(logo, TweenInfo.new(0.6), {ImageTransparency=0}):Play()
 
-    -- ===== Progress bar =====
+    -- ===== Прогресс-бар (под логотипом) =====
     local barBg = mk("Frame", screen, {
         Name="BarBg",
-        AnchorPoint=Vector2.new(0.5, 0),
-        Position=UDim2.new(0.5, 0, 0.5, 160),
+        AnchorPoint=Vector2.new(0.5,0.5),
+        Position=UDim2.new(0.5, 0, 0.5, 140),
         Size=UDim2.fromOffset(360, 6),
-        BackgroundColor3=Color3.fromRGB(50, 50, 55),
+        BackgroundColor3=Color3.fromRGB(60,60,66),
         BackgroundTransparency=1,
         BorderSizePixel=0,
         ZIndex=10001,
@@ -96,39 +95,39 @@ return function(S)
         AnchorPoint=Vector2.new(0, 0.5),
         Position=UDim2.new(0, 0, 0.5, 0),
         Size=UDim2.fromScale(0, 1),
-        BackgroundColor3=Color3.fromRGB(255, 255, 255),
+        BackgroundColor3=Color3.fromRGB(255,255,255),
         BackgroundTransparency=0.1,
         BorderSizePixel=0,
         ZIndex=10002,
     })
     corner(barFill, 3)
 
-    -- ===== Status label =====
+    -- ===== Статус (под баром) =====
     local status = mk("TextLabel", screen, {
         Name="Status",
-        AnchorPoint=Vector2.new(0.5, 0),
-        Position=UDim2.new(0.5, 0, 0.5, 178),
+        AnchorPoint=Vector2.new(0.5,0.5),
+        Position=UDim2.new(0.5, 0, 0.5, 158),
         Size=UDim2.fromOffset(500, 20),
         BackgroundTransparency=1,
         Font=Enum.Font.GothamMedium,
         Text="Initializing",
-        TextColor3=Color3.fromRGB(225, 225, 230),
+        TextColor3=Color3.fromRGB(225,225,230),
         TextSize=12,
         TextXAlignment=Enum.TextXAlignment.Center,
         TextTransparency=1,
         ZIndex=10001,
     })
 
-    -- ===== Error label =====
+    -- ===== Ошибки (под статусом) =====
     local errorText = mk("TextLabel", screen, {
         Name="Errors",
-        AnchorPoint=Vector2.new(0.5, 0),
-        Position=UDim2.new(0.5, 0, 0.5, 205),
+        AnchorPoint=Vector2.new(0.5,0),
+        Position=UDim2.new(0.5, 0, 0.5, 180),
         Size=UDim2.fromOffset(500, 120),
         BackgroundTransparency=1,
         Font=Enum.Font.Code,
         Text="",
-        TextColor3=Color3.fromRGB(255, 130, 130),
+        TextColor3=Color3.fromRGB(255,130,130),
         TextSize=11,
         TextXAlignment=Enum.TextXAlignment.Center,
         TextYAlignment=Enum.TextYAlignment.Top,
@@ -137,29 +136,34 @@ return function(S)
         ZIndex=10001,
     })
 
-    -- ===== Skip button =====
+    -- ===== Skip-кнопка (правый низ, крупная, доступна сразу) =====
     local skipBtn = mk("TextButton", screen, {
         Name="SkipBtn",
-        AnchorPoint=Vector2.new(0.5, 1),
-        Position=UDim2.new(0.5, 0, 1, -40),
-        Size=UDim2.fromOffset(140, 30),
-        BackgroundColor3=Color3.fromRGB(40, 40, 45),
+        AnchorPoint=Vector2.new(1,1),
+        Position=UDim2.new(1, -24, 1, -24),
+        Size=UDim2.fromOffset(160, 38),
+        BackgroundColor3=Color3.fromRGB(45,45,52),
         BackgroundTransparency=1,
-        Text="Skip",
+        Text="Skip  ▶",
         Font=Enum.Font.GothamBold,
-        TextSize=12,
-        TextColor3=Color3.fromRGB(200, 200, 205),
+        TextSize=13,
+        TextColor3=Color3.fromRGB(235,235,240),
+        TextTransparency=1,
         BorderSizePixel=0,
         AutoButtonColor=false,
+        Active=true,
         ZIndex=10005,
     })
-    corner(skipBtn, 5)
-    TweenService:Create(skipBtn, TweenInfo.new(0.6), {BackgroundTransparency=0.4, TextTransparency=0}):Play()
+    corner(skipBtn, 6)
+    TweenService:Create(skipBtn, TweenInfo.new(0.3), {
+        BackgroundTransparency=0.25,
+        TextTransparency=0
+    }):Play()
 
-    -- ===== Dots animation =====
+    -- ===== Точки анимация =====
     local dotPhase = 0
     local dotConn = RunService.Heartbeat:Connect(function(dt)
-        if loadingFinished or skipped then return end
+        if finished or skipped then return end
         dotPhase = (dotPhase + dt * 3) % 4
         local n = math.floor(dotPhase)
         status.Text = statusMessage .. string.rep(".", n)
@@ -167,24 +171,16 @@ return function(S)
     S.Runtime.Connections[#S.Runtime.Connections+1] = dotConn
     status.Text = statusMessage
 
-    -- ===== Reveal bar + status at t=0.4s =====
+    -- ===== Появление бара и текстов через 0.4с =====
     task.delay(0.4, function()
-        if skipped or loadingFinished then return end
+        if skipped or finished then return end
         TweenService:Create(barBg, TweenInfo.new(0.4), {BackgroundTransparency=0.4}):Play()
         TweenService:Create(status, TweenInfo.new(0.4), {TextTransparency=0}):Play()
     end)
 
-    -- ===== Move logo up at t=0.8s (make room for bar) =====
-    task.delay(0.8, function()
-        if skipped or loadingFinished then return end
-        TweenService:Create(logoBox,
-            TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Position=UDim2.fromScale(0.5, 0.36)}):Play()
-    end)
-
-    -- ===== Public API =====
+    -- ===== Публичный API =====
     local function updateProgress(label, pct)
-        if skipped or loadingFinished then return end
+        if skipped or finished then return end
         if label then statusMessage = label end
         if pct then
             pct = math.clamp(pct, 0, 1)
@@ -194,7 +190,7 @@ return function(S)
 
     local function addError(key, err)
         errors[#errors+1] = tostring(key) .. ": " .. tostring(err)
-        if skipped or loadingFinished then return end
+        if skipped or finished then return end
         local lines = {}
         for _, e in ipairs(errors) do lines[#lines+1] = "⚠  " .. e end
         errorText.Text = table.concat(lines, "\n")
@@ -202,30 +198,25 @@ return function(S)
     end
 
     local function finish()
-        if loadingFinished or skipped then return end
-        loadingFinished = true
+        if finished or skipped then return end
+        finished = true
         statusMessage = "Ready"
         status.Text = "Ready"
-        TweenService:Create(barFill, TweenInfo.new(0.3), {Size=UDim2.fromScale(1, 1)}):Play()
+        TweenService:Create(barFill, TweenInfo.new(0.3), {Size=UDim2.fromScale(1,1)}):Play()
 
         task.wait(0.4)
 
-        -- Fade loading widgets (bar / status / errors / skip)
+        -- fade-out всего, кроме логотипа
         for _, obj in ipairs({barBg, barFill}) do
             TweenService:Create(obj, TweenInfo.new(0.3), {BackgroundTransparency=1}):Play()
         end
-        TweenService:Create(status,   TweenInfo.new(0.3), {TextTransparency=1}):Play()
+        TweenService:Create(status,    TweenInfo.new(0.3), {TextTransparency=1}):Play()
         TweenService:Create(errorText, TweenInfo.new(0.3), {TextTransparency=1}):Play()
-        TweenService:Create(skipBtn,  TweenInfo.new(0.3), {BackgroundTransparency=1, TextTransparency=1}):Play()
+        TweenService:Create(skipBtn,   TweenInfo.new(0.3), {BackgroundTransparency=1, TextTransparency=1}):Play()
 
-        -- Logo returns to center
-        TweenService:Create(logoBox,
-            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
-            {Position=UDim2.fromScale(0.5, 0.5)}):Play()
+        task.wait(0.3)
 
-        task.wait(0.5)
-
-        -- Fade logo + glows + screen + blur
+        -- fade-out логотип + glow + фон + blur (логотип НЕ двигается)
         TweenService:Create(logo, TweenInfo.new(0.6), {ImageTransparency=1}):Play()
         for _, g in ipairs(glows) do
             TweenService:Create(g, TweenInfo.new(0.6), {ImageTransparency=1}):Play()
@@ -238,19 +229,24 @@ return function(S)
         if blur and blur.Parent then blur:Destroy() end
     end
 
+    -- ===== Skip: мгновенно убирает экран, игра доступна сразу =====
     local function skip()
         if skipped then return end
         skipped = true
-        loadingFinished = true
-        TweenService:Create(blur, TweenInfo.new(0.2), {Size=0}):Play()
+        finished = true
+        -- убираем визуальный слой мгновенно (клики уже не перехватывались — screen.Active=false)
         if screen and screen.Parent then screen:Destroy() end
+        -- blur плавно за 0.2с
+        local localBlur = blur
+        TweenService:Create(localBlur, TweenInfo.new(0.2), {Size=0}):Play()
         task.delay(0.25, function()
-            if blur and blur.Parent then blur:Destroy() end
+            if localBlur and localBlur.Parent then localBlur:Destroy() end
         end)
     end
 
     bind(skipBtn.MouseButton1Click, skip)
 
+    -- ===== Обновление текста подписи =====
     local api = {
         updateProgress = updateProgress,
         addError       = addError,
