@@ -17,7 +17,7 @@ return function(S)
                   Aimbot=nil, Flight=Enum.KeyCode.V },
         FOV = { Color=S.mkColor(255,255,255), Thickness=1.5, Transparency=0.4 },
         UI  = { Accent=S.mkColor(255,255,255), Button=S.mkColor(25,24,24), Scale=1,
-                ToggleKey=Enum.KeyCode.P, HeaderImage="rbxassetid://0",
+                ToggleKey=Enum.KeyCode.P, HeaderImage="rbxassetid://99235383301237",
                 Font=Enum.Font.GothamBold, FontScale=1 },
         Scripts = {},
         Graphics = {
