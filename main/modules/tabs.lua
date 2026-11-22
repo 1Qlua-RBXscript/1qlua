@@ -26,6 +26,7 @@ return function(S)
 
     Config.UI.TabPosition = Config.UI.TabPosition or "Top"
     Config.UI.TabStyle = Config.UI.TabStyle or "Pills"
+    Config.UI.TabsOutline = (Config.UI.TabsOutline ~= false)
 
     --==== ОДНА ПАНЕЛЬ ВКЛАДОК ====--
     local Nav = mk("Frame", Main, {
@@ -36,6 +37,26 @@ return function(S)
     })
     corner(Nav, 8)
     S.TabBar = Nav
+
+    -- такая же бегущая обводка, как у главного окна
+    local NavStroke = S.stroke(Nav, Config.UI.Accent, 1.6)
+    local NavGrad = mk("UIGradient", NavStroke, {
+        Color=ColorSequence.new{
+            ColorSequenceKeypoint.new(0, mkColor(28, 28, 34)),
+            ColorSequenceKeypoint.new(1, Config.UI.Accent),
+        },
+    })
+    S.TabStroke = NavStroke
+
+    local navRot = 0
+    if S.RunService then
+        S.RunService.Heartbeat:Connect(function(dt)
+            if not Nav.Parent then return end
+            navRot = (navRot + 300*dt) % 360
+            if navRot > 180 then navRot = navRot - 360 end
+            NavGrad.Rotation = navRot
+        end)
+    end
 
     local NavScroll = mk("ScrollingFrame", Nav, {
         BackgroundTransparency=1, Size=UDim2.fromScale(1,1),
@@ -93,6 +114,11 @@ return function(S)
                 end
             end
         end
+        NavGrad.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, mkColor(28, 28, 34)),
+            ColorSequenceKeypoint.new(1, Config.UI.Accent),
+        }
+        NavStroke.Transparency = (Config.UI.TabsOutline ~= false) and 0 or 1
         refreshStyleButtons()
         if S.refreshTabPositionUI then pcall(S.refreshTabPositionUI) end
     end
