@@ -120,52 +120,136 @@ return function(S)
         saveSettingsFull()
     end)
 
+    --==== TABS: положение и вид (одна кнопка) ====--
     mk("TextLabel", P, {
         BackgroundTransparency=1, Position=UDim2.fromOffset(20,364),
         Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
-        Text="NAVIGATION", TextColor3=mkColor(160,160,170),
+        Text="TABS", TextColor3=mkColor(160,160,170),
         TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
     })
-    local posRow = mk("Frame", P, {
-        BackgroundTransparency=1, Position=UDim2.fromOffset(20,380),
-        Size=UDim2.new(1,-40,0,34), BorderSizePixel=0, ZIndex=3,
+    local tabsOpen = mk("TextButton", P, {
+        Position=UDim2.fromOffset(20,380), Size=UDim2.new(1,-40,0,44),
+        BackgroundColor3=Config.UI.Button, Text="  Configure tabs  (position & look)",
+        Font=Enum.Font.GothamBold, TextSize=13,
+        TextColor3=mkColor(205,205,212), TextXAlignment=Enum.TextXAlignment.Left,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=3,
     })
-    mk("UIListLayout", posRow, {
-        Padding=UDim.new(0,8), FillDirection=Enum.FillDirection.Horizontal,
-        SortOrder=Enum.SortOrder.LayoutOrder,
+    corner(tabsOpen, 6); addBtnFx(tabsOpen)
+
+    local overlay = mk("Frame", S.Gui, {
+        Name="TabsConfig", Size=UDim2.fromScale(1,1),
+        BackgroundColor3=Color3.new(0,0,0), BackgroundTransparency=0.55,
+        Visible=false, BorderSizePixel=0, ZIndex=900,
     })
-    local TAB_POSITIONS = {"Top","Bottom","Left","Right"}
-    local posBtns = {}
-    for i, key in ipairs(TAB_POSITIONS) do
-        local b = mk("TextButton", posRow, {
-            Size=UDim2.fromOffset(113,34), LayoutOrder=i,
-            BackgroundColor3=Config.UI.Button, Text=key,
-            Font=Enum.Font.GothamBold, TextSize=12,
-            TextColor3=mkColor(205,205,212), BorderSizePixel=0,
-            AutoButtonColor=false, ZIndex=3,
+    local panel = mk("Frame", overlay, {
+        AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5),
+        Size=UDim2.fromOffset(440,286), BackgroundColor3=mkColor(22,22,26),
+        BorderSizePixel=0, ZIndex=901,
+    })
+    corner(panel, 8)
+    local panelStroke = S.stroke(panel, Config.UI.Accent, 1)
+    panelStroke.Transparency = 0.45
+
+    mk("TextLabel", panel, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(18,14),
+        Size=UDim2.new(1,-70,0,24), Font=Enum.Font.Code, Text="TABS",
+        TextColor3=Color3.new(1,1,1), TextSize=16,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=902,
+    })
+    local tabsClose = mk("TextButton", panel, {
+        Size=UDim2.fromOffset(26,26), Position=UDim2.new(1,-44,0,12),
+        BackgroundColor3=mkColor(60,62,70), Text="X",
+        TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=12,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=903,
+    })
+    corner(tabsClose, 5); addBtnFx(tabsClose)
+    bind(tabsClose.MouseButton1Click, function() overlay.Visible = false end)
+
+    local function sectionLabel(text, y)
+        mk("TextLabel", panel, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(18,y),
+            Size=UDim2.new(1,-36,0,12), Font=Enum.Font.Gotham,
+            Text=text, TextColor3=mkColor(150,150,162),
+            TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=902,
         })
-        corner(b, 6); addBtnFx(b, 0.04)
-        bind(b.MouseButton1Click, function()
-            if S.setTabPosition then
-                S.setTabPosition(key)
-            else
-                Config.UI.TabPosition = key
-            end
-            if S.saveSettingsFull then S.saveSettingsFull() end
-        end)
-        posBtns[key] = b
     end
-    local function styleTabs()
-        local cur = Config.UI.TabPosition or "Top"
-        for key, b in next, posBtns do
+    local function optionRow(y, list, getCur, onPick)
+        local row = mk("Frame", panel, {
+            BackgroundTransparency=1, Position=UDim2.fromOffset(18,y),
+            Size=UDim2.new(1,-36,0,34), BorderSizePixel=0, ZIndex=902,
+        })
+        mk("UIListLayout", row, {
+            Padding=UDim.new(0,6), FillDirection=Enum.FillDirection.Horizontal,
+            SortOrder=Enum.SortOrder.LayoutOrder,
+        })
+        local btns = {}
+        local n = #list
+        for i, key in ipairs(list) do
+            local b = mk("TextButton", row, {
+                Size=UDim2.new(1/n, -(6*(n-1)/n), 1, 0), LayoutOrder=i,
+                BackgroundColor3=Config.UI.Button, Text=key,
+                Font=Enum.Font.GothamBold, TextSize=12,
+                TextColor3=mkColor(205,205,212), BorderSizePixel=0,
+                AutoButtonColor=false, ZIndex=903,
+            })
+            corner(b, 6); addBtnFx(b, 0.04)
+            bind(b.MouseButton1Click, function() onPick(key) end)
+            btns[key] = b
+        end
+        return btns
+    end
+
+    sectionLabel("POSITION", 52)
+    local posBtns
+    sectionLabel("STYLE", 112)
+    local styleBtns
+
+    local function paint(btns, cur)
+        for key, b in next, btns or {} do
             local on = (key == cur)
             b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
             b.TextColor3 = on and mkColor(18,18,18) or mkColor(205,205,212)
         end
     end
-    S.refreshTabPositionUI = styleTabs
-    registerRefresh(styleTabs)
-    styleTabs()
+
+    local function refreshTabsUI()
+        paint(posBtns, Config.UI.TabPosition or "Top")
+        paint(styleBtns, Config.UI.TabStyle or "Pills")
+    end
+
+    posBtns = optionRow(68, {"Top","Bottom","Left","Right"},
+        function() return Config.UI.TabPosition end,
+        function(key)
+            if S.setTabPosition then S.setTabPosition(key) else Config.UI.TabPosition = key end
+            if S.saveSettingsFull then S.saveSettingsFull() end
+            refreshTabsUI()
+        end)
+    styleBtns = optionRow(128, {"Pills","Text","Line"},
+        function() return Config.UI.TabStyle end,
+        function(key)
+            if S.setTabStyle then S.setTabStyle(key) else Config.UI.TabStyle = key end
+            if S.saveSettingsFull then S.saveSettingsFull() end
+            refreshTabsUI()
+        end)
+
+    local tabsDone = mk("TextButton", panel, {
+        AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,1,-52),
+        Size=UDim2.fromOffset(180,38), Text="DONE",
+        TextColor3=mkColor(20,20,20), Font=Enum.Font.GothamBold, TextSize=14,
+        BorderSizePixel=0, AutoButtonColor=false, ZIndex=903,
+    })
+    corner(tabsDone, 6); addBtnFx(tabsDone)
+    if S.registerAccentButton then S.registerAccentButton(tabsDone) end
+    bind(tabsDone.MouseButton1Click, function() overlay.Visible = false end)
+
+    bind(tabsOpen.MouseButton1Click, function()
+        refreshTabsUI()
+        overlay.Visible = true
+    end)
+
+    S.refreshTabPositionUI = refreshTabsUI
+    registerRefresh(refreshTabsUI)
+    refreshTabsUI()
 
     S.MenuKeyBtn = MenuKeyBtn
     return { MenuKeyBtn=MenuKeyBtn, refreshTabPositionUI=styleTabs }
