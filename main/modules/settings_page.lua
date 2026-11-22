@@ -7,6 +7,8 @@ return function(S)
     local saveSettingsFull = S.saveSettingsFull
     local applyFonts = S.applyFonts
 
+    Config.UI.TabPosition = Config.UI.TabPosition or "Top"
+
     mk("TextLabel", P, {
         BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
         Size=UDim2.new(1,-40,0,20), Font=Enum.Font.Code, Text="Script Settings",
@@ -118,6 +120,53 @@ return function(S)
         saveSettingsFull()
     end)
 
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,364),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="NAVIGATION", TextColor3=mkColor(160,160,170),
+        TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local posRow = mk("Frame", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,380),
+        Size=UDim2.new(1,-40,0,34), BorderSizePixel=0, ZIndex=3,
+    })
+    mk("UIListLayout", posRow, {
+        Padding=UDim.new(0,8), FillDirection=Enum.FillDirection.Horizontal,
+        SortOrder=Enum.SortOrder.LayoutOrder,
+    })
+    local TAB_POSITIONS = {"Top","Bottom","Left","Right"}
+    local posBtns = {}
+    for i, key in ipairs(TAB_POSITIONS) do
+        local b = mk("TextButton", posRow, {
+            Size=UDim2.fromOffset(113,34), LayoutOrder=i,
+            BackgroundColor3=Config.UI.Button, Text=key,
+            Font=Enum.Font.GothamBold, TextSize=12,
+            TextColor3=mkColor(205,205,212), BorderSizePixel=0,
+            AutoButtonColor=false, ZIndex=3,
+        })
+        corner(b, 6); addBtnFx(b, 0.04)
+        bind(b.MouseButton1Click, function()
+            if S.setTabPosition then
+                S.setTabPosition(key)
+            else
+                Config.UI.TabPosition = key
+            end
+            if S.saveSettingsFull then S.saveSettingsFull() end
+        end)
+        posBtns[key] = b
+    end
+    local function styleTabs()
+        local cur = Config.UI.TabPosition or "Top"
+        for key, b in next, posBtns do
+            local on = (key == cur)
+            b.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            b.TextColor3 = on and mkColor(18,18,18) or mkColor(205,205,212)
+        end
+    end
+    S.refreshTabPositionUI = styleTabs
+    registerRefresh(styleTabs)
+    styleTabs()
+
     S.MenuKeyBtn = MenuKeyBtn
-    return { MenuKeyBtn=MenuKeyBtn }
+    return { MenuKeyBtn=MenuKeyBtn, refreshTabPositionUI=styleTabs }
 end
