@@ -8,6 +8,9 @@ return function(S)
     local applyFonts = S.applyFonts
 
     Config.UI.TabPosition = Config.UI.TabPosition or "Top"
+    Config.UI.BackgroundTransparency = Config.UI.BackgroundTransparency or 0.2
+    Config.UI.BackgroundColor = Config.UI.BackgroundColor or S.mkColor(20,20,22)
+    Config.UI.BlurEnabled = (Config.UI.BlurEnabled ~= false)
 
     mk("TextLabel", P, {
         BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
@@ -251,6 +254,43 @@ return function(S)
     registerRefresh(refreshTabsUI)
     refreshTabsUI()
 
+    --==== ОКНО: прозрачность, цвет, блюр ====--
+    mk("TextLabel", P, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(20,436),
+        Size=UDim2.new(1,-40,0,14), Font=Enum.Font.Gotham,
+        Text="WINDOW", TextColor3=mkColor(160,160,170),
+        TextSize=10, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
+    })
+    local TrIn = settingBlock(P, "Transparency", Config.UI.BackgroundTransparency,
+        UDim2.fromOffset(20,452), UDim2.fromOffset(240,44), nil,
+        function() return Config.UI.BackgroundTransparency end)
+    bind(TrIn.FocusLost, function()
+        Config.UI.BackgroundTransparency =
+            math.clamp(tonumber(TrIn.Text) or 0.2, 0, 0.95)
+        TrIn.Text = string.format("%.2f", Config.UI.BackgroundTransparency)
+        if S.applyAppearance then S.applyAppearance() end
+        saveSettingsFull()
+    end)
+    toggleButton(P, "Blur", Config.UI.BlurEnabled,
+        UDim2.fromOffset(268,452), UDim2.fromOffset(240,44),
+        function(v)
+            Config.UI.BlurEnabled = v
+            if S.applyAppearance then S.applyAppearance() end
+            saveSettingsFull()
+        end,
+        function() return Config.UI.BlurEnabled end)
+    colorSwatch(P, "Background", UDim2.fromOffset(20,502), UDim2.fromOffset(488,46),
+        function() return Config.UI.BackgroundColor end,
+        function(c)
+            Config.UI.BackgroundColor = c
+            if S.applyAppearance then S.applyAppearance() end
+            saveSettingsFull()
+        end, "Window background")
+
+    registerRefresh(function()
+        if S.applyAppearance then pcall(S.applyAppearance) end
+    end)
+
     S.MenuKeyBtn = MenuKeyBtn
-    return { MenuKeyBtn=MenuKeyBtn, refreshTabPositionUI=styleTabs }
+    return { MenuKeyBtn=MenuKeyBtn, refreshTabPositionUI=refreshTabsUI }
 end
