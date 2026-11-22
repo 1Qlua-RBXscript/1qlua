@@ -11,6 +11,8 @@ return function(S)
     Config.UI.BackgroundTransparency = Config.UI.BackgroundTransparency or 0.2
     Config.UI.BackgroundColor = Config.UI.BackgroundColor or S.mkColor(20,20,22)
     Config.UI.BlurEnabled = (Config.UI.BlurEnabled ~= false)
+    Config.UI.MainOutline = (Config.UI.MainOutline ~= false)
+    Config.UI.TabsOutline = (Config.UI.TabsOutline ~= false)
 
     mk("TextLabel", P, {
         BackgroundTransparency=1, Position=UDim2.fromOffset(20,46),
@@ -287,12 +289,27 @@ return function(S)
             saveSettingsFull()
         end, "Window background")
 
+    S.toggleButton(P, "Main outline", Config.UI.MainOutline,
+        UDim2.fromOffset(20,556), UDim2.fromOffset(240,44),
+        function(v)
+            Config.UI.MainOutline = v
+            if S.applyAppearance then S.applyAppearance() end
+            saveSettingsFull()
+        end,
+        function() return Config.UI.MainOutline end)
+    S.toggleButton(P, "Tabs outline", Config.UI.TabsOutline,
+        UDim2.fromOffset(268,556), UDim2.fromOffset(240,44),
+        function(v)
+            Config.UI.TabsOutline = v
+            if S.applyTabStyles then S.applyTabStyles() end
+            saveSettingsFull()
+        end,
+        function() return Config.UI.TabsOutline end)
+
     registerRefresh(function()
         if S.applyAppearance then pcall(S.applyAppearance) end
     end)
 
     S.MenuKeyBtn = MenuKeyBtn
     return { MenuKeyBtn=MenuKeyBtn, refreshTabPositionUI=refreshTabsUI }
-
-
 end
