@@ -9,6 +9,7 @@ return function(S)
 
     local TabBar = mk("Frame", Main, {
         Name="TabBar", BackgroundColor3=mkColor(26,26,30),
+        BackgroundTransparency=0.15,
         Position=UDim2.fromOffset(0,-38), Size=UDim2.new(1,0,0,32),
         BorderSizePixel=0, ClipsDescendants=true, ZIndex=20,
     })
@@ -35,7 +36,7 @@ return function(S)
     end
 
     local TabOrder = { "Aim", "Fling", "Local", "Teleport", "Graphics", "Config", "Market", "Custom", "Settings" }
-    local TabButtons = {}
+    local TabButtons, RailButtons = {}, {}
     local CurrentTab, tabSwitching = "Aim", false
     local setTab
     local applyTabStyles
@@ -47,6 +48,7 @@ return function(S)
         local newIdx = tabIndex(name, TabOrder)
         local dir = (newIdx >= oldIdx) and 1 or -1
         CurrentTab = name
+        applyTabStyles()
         local out = TweenService:Create(PageContainer,
             TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
             {Position=UDim2.fromOffset(-30*dir,0)})
@@ -75,6 +77,50 @@ return function(S)
         bind(btn.MouseButton1Click, function() setTab(name) end)
     end
 
+    --==== ВЕРТИКАЛЬНЫЙ СПИСОК СТРАНИЦ СПРАВА ====--
+    local RAIL_W = 108
+    local Rail = mk("Frame", Main, {
+        Name="SideRail", Position=UDim2.new(1, 8, 0, 0),
+        Size=UDim2.fromOffset(RAIL_W, 350),
+        BackgroundColor3=mkColor(24,24,28), BackgroundTransparency=0.2,
+        BorderSizePixel=0, ZIndex=19,
+    })
+    corner(Rail, 8)
+    local railStroke = S.stroke(Rail, Config.UI.Accent, 1)
+    railStroke.Transparency = 0.65
+    S.SideRail = Rail
+
+    mk("TextLabel", Rail, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(12,11),
+        Size=UDim2.new(1,-24,0,12), Font=Enum.Font.Gotham, Text="PAGES",
+        TextColor3=mkColor(150,150,160), TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left, ZIndex=20,
+    })
+
+    local RailList = mk("Frame", Rail, {
+        BackgroundTransparency=1, Position=UDim2.fromOffset(0,32),
+        Size=UDim2.new(1,0,1,-40), BorderSizePixel=0, ZIndex=20,
+    })
+    mk("UIListLayout", RailList, {
+        Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder,
+        HorizontalAlignment=Enum.HorizontalAlignment.Center,
+        VerticalAlignment=Enum.VerticalAlignment.Top,
+    })
+    mk("UIPadding", RailList, {PaddingLeft=UDim.new(0,8), PaddingRight=UDim.new(0,8)})
+
+    for i, name in ipairs(TabOrder) do
+        local rbtn = mk("TextButton", RailList, {
+            Size=UDim2.new(1,0,0,29), LayoutOrder=i,
+            BackgroundColor3=Config.UI.Button, BackgroundTransparency=0.45,
+            Text="  "..name, Font=Enum.Font.GothamBold, TextSize=12,
+            TextColor3=mkColor(205,205,212), BorderSizePixel=0,
+            TextXAlignment=Enum.TextXAlignment.Left, AutoButtonColor=false, ZIndex=21,
+        })
+        corner(rbtn, 6); addBtnFx(rbtn, 0.04)
+        bind(rbtn.MouseButton1Click, function() setTab(name) end)
+        RailButtons[name] = rbtn
+    end
+
     applyTabStyles = function()
         for name, btn in next, TabButtons do
             if name == CurrentTab then
@@ -85,10 +131,18 @@ return function(S)
                 btn.TextColor3 = mkColor(210,210,215)
             end
         end
+        for name, btn in next, RailButtons do
+            local on = (name == CurrentTab)
+            btn.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+            btn.BackgroundTransparency = on and 0.08 or 0.45
+            btn.TextColor3 = on and mkColor(18,18,18) or mkColor(205,205,212)
+        end
+        railStroke.Color = Config.UI.Accent
         refreshStyleButtons()
     end
     applyTabStyles()
 
     S.applyTabStyles = applyTabStyles
-    return { applyTabStyles=applyTabStyles }
+    S.setTab = setTab
+    return { applyTabStyles=applyTabStyles, setTab=setTab }
 end
