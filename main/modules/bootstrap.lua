@@ -65,6 +65,61 @@ return function(S)
         if S.applyFlingState then pcall(S.applyFlingState) end
     end
 
+    -- ==== PATCH: APPLY LOCAL SETTINGS (Speed / Jump / FOV / Zoom) ====
+    -- Каждый кадр держим значения, пока toggle включён. Оригиналы сохраняются
+    -- при первом включении и восстанавливаются при выключении. Сбрасываются
+    -- при смене персонажа (респавн) и смене камеры.
+    local LS = { hum=nil, cam=nil, origWS=nil, origJP=nil, origFOV=nil, origZoom=nil }
+    bind(RunService.Heartbeat, function()
+        local cfg = S.Config and S.Config.Local
+        if not cfg then return end
+        local ch = LocalPlayer.Character
+        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+        local cam = workspace.CurrentCamera
+
+        if hum ~= LS.hum then LS.hum = hum; LS.origWS, LS.origJP = nil, nil end
+        if cam ~= LS.cam then LS.cam = cam; LS.origFOV = nil end
+
+        if hum then
+            if cfg.SpeedEnabled then
+                if not LS.origWS then LS.origWS = hum.WalkSpeed end
+                if hum.WalkSpeed ~= cfg.Speed then hum.WalkSpeed = cfg.Speed end
+            elseif LS.origWS then
+                hum.WalkSpeed = LS.origWS
+                LS.origWS = nil
+            end
+
+            if cfg.JumpEnabled then
+                if not LS.origJP then LS.origJP = hum.JumpPower end
+                hum.UseJumpPower = true
+                if hum.JumpPower ~= cfg.Jump then hum.JumpPower = cfg.Jump end
+            elseif LS.origJP then
+                hum.JumpPower = LS.origJP
+                LS.origJP = nil
+            end
+        end
+
+        if cam then
+            if cfg.FOVEnabled then
+                if not LS.origFOV then LS.origFOV = cam.FieldOfView end
+                if cam.FieldOfView ~= cfg.FOV then cam.FieldOfView = cfg.FOV end
+            elseif LS.origFOV then
+                cam.FieldOfView = LS.origFOV
+                LS.origFOV = nil
+            end
+        end
+
+        if cfg.ZoomEnabled then
+            if not LS.origZoom then LS.origZoom = LocalPlayer.CameraMaxZoomDistance end
+            if LocalPlayer.CameraMaxZoomDistance ~= cfg.Zoom then
+                LocalPlayer.CameraMaxZoomDistance = cfg.Zoom
+            end
+        elseif LS.origZoom then
+            LocalPlayer.CameraMaxZoomDistance = LS.origZoom
+            LS.origZoom = nil
+        end
+    end)
+
     task.spawn(function()
         pcall(function() S.ContentProvider:PreloadAsync({ S.Config.UI.HeaderImage }) end)
     end)
