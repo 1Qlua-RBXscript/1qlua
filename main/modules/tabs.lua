@@ -18,7 +18,16 @@ return function(S)
 
     local setTab, applyStyles, layout
 
-    --==== КОНТЕЙНЕР ВКЛАДОК (один на все положения) ====--
+    -- панель от прошлой версии не должна остаться второй
+    local oldRail = Main:FindFirstChild("SideRail")
+    if oldRail then pcall(function() oldRail:Destroy() end) end
+    local oldBar = Main:FindFirstChild("TabBar")
+    if oldBar then pcall(function() oldBar:Destroy() end) end
+
+    Config.UI.TabPosition = Config.UI.TabPosition or "Top"
+    Config.UI.TabStyle = Config.UI.TabStyle or "Pills"
+
+    --==== ОДНА ПАНЕЛЬ ВКЛАДОК ====--
     local Nav = mk("Frame", Main, {
         Name="TabBar", BackgroundColor3=mkColor(26,26,30),
         BackgroundTransparency=0.15,
@@ -55,18 +64,33 @@ return function(S)
             AutoButtonColor=false, ZIndex=22,
         })
         corner(btn, 6); addBtnFx(btn, 0.05)
+        mk("Frame", btn, {
+            Name="Underline", AnchorPoint=Vector2.new(0.5,1),
+            Position=UDim2.new(0.5,0,1,-3), Size=UDim2.new(0.55,0,0,2),
+            BackgroundColor3=Config.UI.Accent, BackgroundTransparency=1,
+            BorderSizePixel=0, ZIndex=23,
+        })
         TabButtons[name] = btn
         bind(btn.MouseButton1Click, function() setTab(name) end)
     end
 
     applyStyles = function()
+        local style = Config.UI.TabStyle or "Pills"
         for name, btn in next, TabButtons do
-            if name == CurrentTab then
-                btn.BackgroundColor3 = Config.UI.Accent
-                btn.TextColor3 = mkColor(20,20,20)
+            local on = (name == CurrentTab)
+            local line = btn:FindFirstChild("Underline")
+            if style == "Pills" then
+                btn.BackgroundTransparency = 0
+                btn.BackgroundColor3 = on and Config.UI.Accent or Config.UI.Button
+                btn.TextColor3 = on and mkColor(20,20,20) or mkColor(210,210,215)
+                if line then line.BackgroundTransparency = 1 end
             else
-                btn.BackgroundColor3 = Config.UI.Button
-                btn.TextColor3 = mkColor(210,210,215)
+                btn.BackgroundTransparency = 1
+                btn.TextColor3 = on and mkColor(255,255,255) or mkColor(145,145,158)
+                if line then
+                    line.BackgroundColor3 = Config.UI.Accent
+                    line.BackgroundTransparency = (style == "Line" and on) and 0 or 1
+                end
             end
         end
         refreshStyleButtons()
@@ -114,6 +138,12 @@ return function(S)
         if S.saveSettingsFull then pcall(S.saveSettingsFull) end
     end
 
+    S.setTabStyle = function(style)
+        Config.UI.TabStyle = style
+        applyStyles()
+        if S.saveSettingsFull then pcall(S.saveSettingsFull) end
+    end
+
     setTab = function(name)
         if CurrentTab == name or tabSwitching then return end
         tabSwitching = true
@@ -146,5 +176,5 @@ return function(S)
 
     S.applyTabStyles = applyStyles
     S.setTab = setTab
-    return { applyTabStyles=applyStyles, setTab=setTab, setPosition=S.setTabPosition }
+    return { applyTabStyles=applyStyles, setTab=setTab, setPosition=S.setTabPosition, setStyle=S.setTabStyle }
 end
