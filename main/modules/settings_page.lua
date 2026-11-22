@@ -271,7 +271,7 @@ return function(S)
         if S.applyAppearance then S.applyAppearance() end
         saveSettingsFull()
     end)
-    toggleButton(P, "Blur", Config.UI.BlurEnabled,
+    S.toggleButton(P, "Blur", Config.UI.BlurEnabled,
         UDim2.fromOffset(268,452), UDim2.fromOffset(240,44),
         function(v)
             Config.UI.BlurEnabled = v
