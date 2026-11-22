@@ -248,8 +248,10 @@ return function(S)
         end)
     end
 
-    return {
-        open = open,
-        refreshAccent = function(seq) CPGrad.Color = seq end,
-    }
+    -- ==== PATCH: expose picker to widgets & bootstrap ====
+    local function refreshAccent(seq) CPGrad.Color = seq end
+    S.openColorPicker          = open
+    S.refreshColorPickerAccent = refreshAccent
+
+    return { open = open, refreshAccent = refreshAccent }
 end
